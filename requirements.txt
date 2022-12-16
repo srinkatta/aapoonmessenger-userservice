@@ -1,0 +1,6 @@
+Django==4.1.4
+django-allauth==0.51.0
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.2.2
+drf-spectacular==0.25.1
+pycountry==22.3.5
