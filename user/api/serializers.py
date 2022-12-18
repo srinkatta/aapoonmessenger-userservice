@@ -5,8 +5,7 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.models import update_last_login
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from user.models import User
+from user.models import User, UserLogs, UserFeedback, UserInvite, UserDevice
 
 UserModel: object = get_user_model()
 
@@ -98,3 +97,27 @@ class UserLoginSerializer(serializers.Serializer):
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")
+
+
+class UserLogsSerializer(serializers.Serializer):
+    class Meta:
+        model = UserLogs
+        fields = "__all__"
+
+
+class UserFeedbackSerializer(serializers.Serializer):
+    class Meta:
+        model = UserFeedback
+        fields = "__all__"
+
+
+class UserInviteSerializer(serializers.Serializer):
+    class Meta:
+        model = UserInvite
+        fields = "__all__"
+
+
+class UserDeviceSerializer(serializers.Serializer):
+    class Meta:
+        model = UserDevice
+        fields = "__all__"
