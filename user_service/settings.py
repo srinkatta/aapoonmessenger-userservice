@@ -9,14 +9,16 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 from datetime import timedelta
 
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv()  # take environment variables from .env.
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -27,7 +29,7 @@ SECRET_KEY = "django-insecure-dt^l_+peijv0p69+@ug%45=s71#ubhb2ninx-vf&6p&l3&a$yr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -176,5 +178,8 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Chat Circle Connect",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    # OTHER SETTINGS
 }
+
+SNS_AWS_ACCESS_KEY = os.environ.get("SNS_AWS_ACCESS_KEY", "")
+SNS_AWS_SECRET_KEY = os.environ.get("SNS_AWS_SECRET_KEY", "")
+FAST_API_KEY = os.environ.get("FAST_API_KEY", "")

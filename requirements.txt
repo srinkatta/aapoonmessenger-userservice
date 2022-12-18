@@ -4,3 +4,5 @@ djangorestframework==3.14.0
 djangorestframework-simplejwt==5.2.2
 drf-spectacular==0.25.1
 pycountry==22.3.5
+python-dotenv==0.21.0
+boto3==1.26.32

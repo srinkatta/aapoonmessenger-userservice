@@ -6,9 +6,14 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from user.api.serializers import (
     UserLoginSerializer,
-    RegisterSerializer, UserLogsSerializer, UserFeedbackSerializer, UserInviteSerializer, UserDeviceSerializer,
+    RegisterSerializer,
+    UserLogSerializer,
+    UserFeedbackSerializer,
+    UserInviteSerializer,
+    UserDeviceSerializer,
+    UserProfileSerializer,
 )
-from user.models import UserLogs, UserFeedback, UserInvite, UserDevice
+from user.models import UserLog, UserFeedback, UserInvite, UserDevice, UserProfile
 
 
 class AuthUserRegistrationView(APIView):
@@ -45,8 +50,9 @@ class UserLogsViewSet(viewsets.ModelViewSet):
     """
     Viewset to create, list, update and delete UserLogs.
     """
-    queryset = UserLogs.objects.all()
-    serializer_class = UserLogsSerializer
+
+    queryset = UserLog.objects.all()
+    serializer_class = UserLogSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 
@@ -54,6 +60,7 @@ class UserFeedbackViewSet(viewsets.ModelViewSet):
     """
     Viewset to create, list, update and delete UserFeedback.
     """
+
     queryset = UserFeedback.objects.all()
     serializer_class = UserFeedbackSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -63,6 +70,7 @@ class UserInviteViewSet(viewsets.ModelViewSet):
     """
     Viewset to create, list, update and delete UserInvite.
     """
+
     queryset = UserInvite.objects.all()
     serializer_class = UserInviteSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -72,6 +80,17 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
     """
     Viewset to create, list, update and delete UserDevice.
     """
+
     queryset = UserDevice.objects.all()
     serializer_class = UserDeviceSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """
+    Viewset to create, list, update and delete UserProfile.
+    """
+
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)

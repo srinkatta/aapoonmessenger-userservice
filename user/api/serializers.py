@@ -1,13 +1,13 @@
 from allauth.account.adapter import get_adapter
-from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
-from django.contrib.auth import get_user_model, login
+from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-from user.models import User, UserLogs, UserFeedback, UserInvite, UserDevice
 
-UserModel: object = get_user_model()
+from user.choices import SPORTS_CHOICES, INTEREST_CHOICES
+from user.helpers import sms
+from user.models import User, UserLog, UserFeedback, UserInvite, UserDevice, UserProfile
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -47,16 +47,26 @@ class RegisterSerializer(serializers.Serializer):
         country_code = self.get_cleaned_data()["country_code"]
         phone_number = self.get_cleaned_data()["phone_number"]
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
+        phone = f"{country_code}{phone_number}"
         if user.exists():
-            # TODO: send otp here
-            return user.first()
+            user = user.first()
+            self.send_otp(phone_number, "43433", user, phone)
+            return user
 
         user = User.objects.create(**self.get_cleaned_data())
 
         if request.data.get("password"):
             user.set_password(request.data["password"])
-        # TODO: send otp here
+        self.send_otp(phone_number, "43433", user, phone)
         return user
+
+    def send_otp(self, phone_number, otp, user, number):
+        if user.country_code == "91":
+            fast_sms = sms.FAST_SMS(phone_number, otp, user)
+            fast_sms.send_message()
+        else:
+            sms_client = sms.SMS(number, otp, user)
+            sms_client.send_message()
 
 
 class UserLoginSerializer(serializers.Serializer):
@@ -99,25 +109,36 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid login credentials")
 
 
-class UserLogsSerializer(serializers.Serializer):
+class UserLogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserLogs
+        model = UserLog
         fields = "__all__"
 
 
-class UserFeedbackSerializer(serializers.Serializer):
+class UserFeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFeedback
         fields = "__all__"
 
 
-class UserInviteSerializer(serializers.Serializer):
+class UserInviteSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserInvite
         fields = "__all__"
 
 
-class UserDeviceSerializer(serializers.Serializer):
+class UserDeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDevice
+        fields = "__all__"
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
+    interests = serializers.MultipleChoiceField(
+        choices=INTEREST_CHOICES, required=False
+    )
+
+    class Meta:
+        model = UserProfile
         fields = "__all__"

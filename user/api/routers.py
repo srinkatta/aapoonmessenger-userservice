@@ -2,18 +2,24 @@ from rest_framework import routers
 from django.urls import path, include
 from rest_framework_simplejwt import views as jwt_views
 from user.api.viewsets import (
-    AuthUserRegistrationView, AuthUserLoginView, UserLogsViewSet, UserFeedbackViewSet,
-    UserDeviceViewSet, UserInviteViewSet,
+    AuthUserRegistrationView,
+    AuthUserLoginView,
+    UserLogsViewSet,
+    UserFeedbackViewSet,
+    UserDeviceViewSet,
+    UserInviteViewSet,
+    UserProfileViewSet,
 )
 
 router = routers.SimpleRouter()
-router.register(r"UserLogs", UserLogsViewSet, basename="user_logs"),
-router.register(r"UserFeedback", UserFeedbackViewSet, basename="user_feedback"),
-router.register(r"UserInvite", UserInviteViewSet, basename="user_invite"),
-router.register(r"UserDevice", UserDeviceViewSet, basename="user_device")
+router.register(r"profile", UserProfileViewSet, basename="user_profile"),
+router.register(r"logs", UserLogsViewSet, basename="user_logs"),
+router.register(r"feedback", UserFeedbackViewSet, basename="user_feedback"),
+router.register(r"invite", UserInviteViewSet, basename="user_invite"),
+router.register(r"device", UserDeviceViewSet, basename="user_device")
 
 urlpatterns = [
-    path(r"auth/", include(router.urls)),
+    path(r"", include(router.urls)),
     path(
         "auth/token/obtain/",
         jwt_views.TokenObtainPairView.as_view(),
