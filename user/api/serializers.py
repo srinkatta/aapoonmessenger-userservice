@@ -2,6 +2,7 @@ from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
+from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -110,31 +111,56 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid login credentials")
 
 
-class UserLogSerializer(serializers.ModelSerializer):
+class UserSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = User
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+
+
+class UserLogSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = UserLog
         fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+        expandable_fields = {"user": UserSerializer}
 
 
-class UserFeedbackSerializer(serializers.ModelSerializer):
+class UserFeedbackSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = UserFeedback
         fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+        expandable_fields = {"user": UserSerializer}
 
 
-class UserInviteSerializer(serializers.ModelSerializer):
+class UserInviteSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = UserInvite
         fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+        expandable_fields = {"user": UserSerializer}
 
 
-class UserDeviceSerializer(serializers.ModelSerializer):
+class UserDeviceSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = UserDevice
         fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+        expandable_fields = {"user": UserSerializer}
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(FlexFieldsModelSerializer):
     photo_id = serializers.CharField(required=True, allow_null=True, allow_blank=True)
     sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
     interests = serializers.MultipleChoiceField(
@@ -144,6 +170,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+        expandable_fields = {"user": UserSerializer}
 
     def validate(self, attrs):
         request = self.context["request"]
