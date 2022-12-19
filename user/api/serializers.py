@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.choices import SPORTS_CHOICES, INTEREST_CHOICES
 from user.helpers import sms
+from user.helpers.otp import generate_otp
 from user.models import User, UserLog, UserFeedback, UserInvite, UserDevice, UserProfile
 
 
@@ -37,6 +38,7 @@ class RegisterSerializer(serializers.Serializer):
 
     def get_cleaned_data(self) -> dict:
         return {
+            "username": f"{self.validated_data.get('first_name', '')}-{generate_otp()}",
             "password": self.validated_data.get("password", ""),
             "email": self.validated_data.get("email", ""),
             "country_code": self.validated_data.get("country_code", ""),
@@ -50,16 +52,19 @@ class RegisterSerializer(serializers.Serializer):
         phone_number = self.get_cleaned_data()["phone_number"]
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
         phone = f"{country_code}{phone_number}"
+        otp = generate_otp()
+        print(f"Generated otp: {otp}")
+
         if user.exists():
             user = user.first()
-            self.send_otp(phone_number, "43433", user, phone)
+            self.send_otp(phone_number, otp, user, phone)
             return user
 
         user = User.objects.create(**self.get_cleaned_data())
 
         if request.data.get("password"):
             user.set_password(request.data["password"])
-        self.send_otp(phone_number, "43433", user, phone)
+        self.send_otp(phone_number, otp, user, phone)
         return user
 
     def send_otp(self, phone_number, otp, user, number):
@@ -69,16 +74,19 @@ class RegisterSerializer(serializers.Serializer):
         else:
             sms_client = sms.SMS(number, otp, user)
             sms_client.send_message()
+        user.otp_requested = otp
+        user.save()
 
 
 class UserLoginSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
-    otp = serializers.CharField(required=False)
+    otp = serializers.CharField(required=True)
 
     def validate(self, data):
         country_code = data["country_code"]
         phone_number = data["phone_number"]
+        otp = data["otp"]
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
 
         if not user:
@@ -86,6 +94,11 @@ class UserLoginSerializer(serializers.Serializer):
 
         try:
             user = user.first()
+
+            if otp and otp != user.otp_requested:
+                # TODO: add wrong attempts logic
+                raise serializers.ValidationError("Wrong otp")
+
             refresh = RefreshToken.for_user(user)
             refresh_token = str(refresh)
             access_token = str(refresh.access_token)
@@ -105,7 +118,8 @@ class UserLoginSerializer(serializers.Serializer):
                 user,
                 backend="django.contrib.auth.backends.ModelBackend",
             )
-
+            user.otp_requested = None
+            user.save()
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")

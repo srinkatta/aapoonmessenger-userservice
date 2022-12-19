@@ -111,6 +111,7 @@ class FAST_SMS:
                 "GET", self.url, headers=headers, params=querystring
             )
             if response.status_code == 200:
+                print(response.json())
                 return True
             else:
                 print(response.json())
