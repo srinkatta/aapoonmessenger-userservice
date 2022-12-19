@@ -11,6 +11,8 @@ from user.api.viewsets import (
     UserProfileViewSet,
 )
 
+from user.api.kyc import viewsets as kyc_viewsets
+
 router = routers.SimpleRouter()
 router.register(r"profile", UserProfileViewSet, basename="user_profile"),
 router.register(r"logs", UserLogsViewSet, basename="user_logs"),
@@ -35,4 +37,21 @@ urlpatterns = [
     ),
     path("auth/register/", AuthUserRegistrationView.as_view(), name="register"),
     path("auth/login/", AuthUserLoginView.as_view(), name="login"),
+    # KYC urls
+    path("selfie/", kyc_viewsets.SelfieViewSet.as_view(), name="selfie"),
+    path(
+        "photo_id/verification/",
+        kyc_viewsets.PhotoIDVerifyViewSet.as_view(),
+        name="photo_id_verification",
+    ),
+    path(
+        "profile/",
+        kyc_viewsets.ProfileUpdateViewSet.as_view(),
+        name="profile_picture_update",
+    ),
+    path(
+        "kyc/verification/",
+        kyc_viewsets.ComparefacesViewSet.as_view(),
+        name="kyc_verification",
+    ),
 ]

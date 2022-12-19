@@ -183,3 +183,6 @@ SPECTACULAR_SETTINGS = {
 SNS_AWS_ACCESS_KEY = os.environ.get("SNS_AWS_ACCESS_KEY", "")
 SNS_AWS_SECRET_KEY = os.environ.get("SNS_AWS_SECRET_KEY", "")
 FAST_API_KEY = os.environ.get("FAST_API_KEY", "")
+
+S3_AWS_ACCESS_KEY_ID = os.environ.get("S3_AWS_ACCESS_KEY_ID", "")
+S3_AWS_SECRET_ACCESS_KEY = os.environ.get("S3_AWS_SECRET_ACCESS_KEY", "")

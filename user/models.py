@@ -34,6 +34,8 @@ class User(AbstractUser):
     fcm_token = models.CharField(max_length=100, null=True, blank=True)
     apns_token = models.CharField(max_length=100, null=True, blank=True)
     otp_requested = models.CharField(max_length=100, null=True, blank=True)
+    secondary_picture = models.CharField(max_length=100, null=True, blank=True)
+    logo = models.CharField(max_length=100, null=True, blank=True)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
@@ -48,6 +50,11 @@ class User(AbstractUser):
     @property
     def name(self):
         return f"{self.first_name} {self.last_name}"
+
+    @property
+    def picture(self):
+        picture = self.user.profile.get().picutre if self.user.profile.get() else False
+        return picture
 
 
 class UserLog(BaseTimeStampedModel):
@@ -176,6 +183,7 @@ class UserKycSetting(BaseTimeStampedModel):
     selfie = models.BooleanField(default=False)
     picture = models.BooleanField(default=False)
     scanned = models.BooleanField(default=False)
+    attachment = models.CharField(max_length=100, null=True, blank=True)
 
     user = models.ForeignKey(
         User,

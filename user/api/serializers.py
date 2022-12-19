@@ -3,6 +3,7 @@ from allauth.utils import email_address_exists
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.choices import SPORTS_CHOICES, INTEREST_CHOICES
@@ -134,6 +135,7 @@ class UserDeviceSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    photo_id = serializers.CharField(required=True, allow_null=True, allow_blank=True)
     sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
@@ -142,3 +144,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = "__all__"
+
+    def validate(self, attrs):
+        request = self.context["request"]
+        attrs = super().validate(attrs)
+        if not attrs["photo_id"]:
+            raise ValidationError("Photo id can't be blank")
+        user_kyc_setting = request.user.profile.get()
+        user_kyc_setting.photo_id = attrs["photo_id"]
+        user_kyc_setting.save()
+        del attrs["photo_id"]
+        return attrs
