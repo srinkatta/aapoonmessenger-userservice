@@ -36,8 +36,8 @@ class SelfieViewSet(BaseViewSet):
         )
         serializer.is_valid(raise_exception=True)
         url = serializer.data.get("url")
-        # link = self.cloudfront_cdn(url)
-        # serializer.data["url"] = self.cloudfront_cdn(url)
+        link = self.cloudfront_cdn(url)
+        serializer.data["url"] = self.cloudfront_cdn(url)
 
         response = serializer.selfie(request.user)
 

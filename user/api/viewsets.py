@@ -51,9 +51,11 @@ class UserLogsViewSet(viewsets.ModelViewSet):
     Viewset to create, list, update and delete UserLogs.
     """
 
-    queryset = UserLog.objects.all()
     serializer_class = UserLogSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return UserLog.objects.filter(user=self.request.user)
 
 
 class UserFeedbackViewSet(viewsets.ModelViewSet):
@@ -61,9 +63,11 @@ class UserFeedbackViewSet(viewsets.ModelViewSet):
     Viewset to create, list, update and delete UserFeedback.
     """
 
-    queryset = UserFeedback.objects.all()
     serializer_class = UserFeedbackSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return UserFeedback.objects.filter(user=self.request.user)
 
 
 class UserInviteViewSet(viewsets.ModelViewSet):
@@ -71,9 +75,11 @@ class UserInviteViewSet(viewsets.ModelViewSet):
     Viewset to create, list, update and delete UserInvite.
     """
 
-    queryset = UserInvite.objects.all()
     serializer_class = UserInviteSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return UserInvite.objects.filter(user=self.request.user)
 
 
 class UserDeviceViewSet(viewsets.ModelViewSet):
@@ -81,9 +87,11 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
     Viewset to create, list, update and delete UserDevice.
     """
 
-    queryset = UserDevice.objects.all()
     serializer_class = UserDeviceSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return UserDevice.objects.filter(user=self.request.user)
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -91,9 +99,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     Viewset to create, list, update and delete UserProfile.
     """
 
-    queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return UserProfile.objects.filter(user=self.request.user)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
