@@ -9,11 +9,13 @@ from user.api.viewsets import (
     UserDeviceViewSet,
     UserInviteViewSet,
     UserProfileViewSet,
+    UserViewSet,
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
 
 router = routers.SimpleRouter()
+router.register(r"user", UserViewSet, basename="user"),
 router.register(r"profile", UserProfileViewSet, basename="user_profile"),
 router.register(r"logs", UserLogsViewSet, basename="user_logs"),
 router.register(r"feedback", UserFeedbackViewSet, basename="user_feedback"),

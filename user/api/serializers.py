@@ -119,6 +119,7 @@ class UserLoginSerializer(serializers.Serializer):
                 backend="django.contrib.auth.backends.ModelBackend",
             )
             user.otp_requested = None
+            user.phone_number_verified = True
             user.save()
             return validation
         except User.DoesNotExist:
@@ -128,10 +129,11 @@ class UserLoginSerializer(serializers.Serializer):
 class UserSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = User
-        fields = "__all__"
+        # fields = "__all__"
         extra_kwargs = {
             "id": {"read_only": True},
         }
+        exclude = ("password", "is_superuser", "is_staff", "user_permissions", "groups")
 
 
 class UserLogSerializer(FlexFieldsModelSerializer):
@@ -174,7 +176,7 @@ class UserDeviceSerializer(FlexFieldsModelSerializer):
         expandable_fields = {"user": UserSerializer}
 
 
-class UserProfileSerializer(FlexFieldsModelSerializer):
+class UserProfileInputSerializer(FlexFieldsModelSerializer):
     photo_id = serializers.CharField(required=True, allow_null=True, allow_blank=True)
     sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
     interests = serializers.MultipleChoiceField(
@@ -199,3 +201,22 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
         user_kyc_setting.save()
         del attrs["photo_id"]
         return attrs
+
+
+class UserProfileSerializer(FlexFieldsModelSerializer):
+    photo_id = serializers.SerializerMethodField()
+    sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
+    interests = serializers.MultipleChoiceField(
+        choices=INTEREST_CHOICES, required=False
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+        expandable_fields = {"user": UserSerializer}
+
+    def get_photo_id(self, instance):
+        return "354"
