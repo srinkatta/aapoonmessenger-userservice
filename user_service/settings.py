@@ -90,6 +90,20 @@ DATABASES = {
     }
 }
 
+DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'aapoonuserservicedevdb',
+            'USER': 'admin',
+            'PASSWORD': "aapoonInc$%^78",
+            'HOST': "aapoonuserservicedevdb.ckqgz6u3jrul.us-east-1.rds.amazonaws.com",  # Or an IP Address that your DB is hosted on
+            'PORT': '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                "init_command": "SET foreign_key_checks = 0;",
+            },
+        }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
