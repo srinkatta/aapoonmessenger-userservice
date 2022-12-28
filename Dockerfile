@@ -11,6 +11,9 @@ COPY . /code/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+RUN python manage.py makemigrations
+RUN python manage.py migrate
+
 # start serverd
 EXPOSE 8000
 #CMD ["gunicorn", "--preload", "--bind", "0.0.0.0:8000", "--keep-alive", "180", "--workers", "3", "--worker-connections", "1000", "aapooncontact.wsgi:application"]
