@@ -12,18 +12,18 @@ from user_service.router_urls import router_urlpatterns
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("/users/api/", include(router_urlpatterns)),
-    path("/users/api-auth/", include("rest_framework.urls")),
-    path("users/accounts/", include("allauth.urls")),
-    path("users/api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("/api/users/", include(router_urlpatterns)),
+    path("/api-auth/users/", include("rest_framework.urls")),
+    path("accounts/users/", include("allauth.urls")),
+    path("api/users/schema/", SpectacularAPIView.as_view(), name="schema"),
     # Optional UI:
     path(
-        "users/api/schema/swagger-ui/",
+        "api/users/schema/swagger-ui/",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
     path(
-        "users/api/schema/redoc/",
+        "api/users/schema/redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
