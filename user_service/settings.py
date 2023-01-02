@@ -96,10 +96,10 @@ WSGI_APPLICATION = "user_service.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": env["USERSERVICEDBNAME"],
-        "USER": env["USERSERVICEDBUSER"],
-        "PASSWORD": env["USERSERVICEDBPASSWORD"],
-        "HOST": env["USERSERVICEDBHOST"],  # Or an IP Address that your DB is hosted on
+        "NAME": env["USER_SERVICE_DB_NAME"],
+        "USER": env["USER_SERVICE_DB_USER"],
+        "PASSWORD": env["USER_SERVICE_DB_PASSWORD"],
+        "HOST": env["USER_SERVICE_DB_HOST"],  # Or an IP Address that your DB is hosted on
         "PORT": "3306",
         "OPTIONS": {
             "charset": "utf8mb4",
