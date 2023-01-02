@@ -12,7 +12,7 @@ from user_service.router_urls import router_urlpatterns
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("/api/users/", include(router_urlpatterns)),
+    path("api/users/", include(router_urlpatterns)),
     path("/api-auth/users/", include("rest_framework.urls")),
     path("accounts/users/", include("allauth.urls")),
     path("api/users/schema/", SpectacularAPIView.as_view(), name="schema"),
