@@ -96,10 +96,10 @@ WSGI_APPLICATION = "user_service.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "aapoonuserservicedevdb",
-        "USER": "admin",
-        "PASSWORD": "aapoonInc$%^78",
-        "HOST": "aapoonuserservicedevdb.ckqgz6u3jrul.us-east-1.rds.amazonaws.com",  # Or an IP Address that your DB is hosted on
+        "NAME": env["USERSERVICEDBNAME"],
+        "USER": env["USERSERVICEDBUSER"],
+        "PASSWORD": env["USERSERVICEDBPASSWORD"],
+        "HOST": env["USERSERVICEDBHOST"],  # Or an IP Address that your DB is hosted on
         "PORT": "3306",
         "OPTIONS": {
             "charset": "utf8mb4",
@@ -202,5 +202,6 @@ FAST_API_KEY = env["FAST_API_KEY"]
 SNS_AWS_ACCESS_KEY = env["SNS_AWS_ACCESS_KEY"]
 SNS_AWS_SECRET_KEY = env["SNS_AWS_SECRET_KEY"]
 
-S3_AWS_ACCESS_KEY_ID = env["S3_AWS_ACCESS_KEY_ID"]
-S3_AWS_SECRET_ACCESS_KEY = env["S3_AWS_SECRET_ACCESS_KEY"]
+S3_AWS_ACCESS_KEY_ID = env["S3_MEDIA_AWS_ACCESS_KEY_ID"]
+S3_AWS_SECRET_ACCESS_KEY = env["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
+
