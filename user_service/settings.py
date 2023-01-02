@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
+import json
 import os
 from pathlib import Path
 from datetime import timedelta
@@ -23,8 +24,10 @@ load_dotenv()  # take environment variables from .env.
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
+env = os.environ
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-dt^l_+peijv0p69+@ug%45=s71#ubhb2ninx-vf&6p&l3&a$yr"
+SECRET_KEY = env["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -195,9 +198,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
-SNS_AWS_ACCESS_KEY = os.environ.get("SNS_AWS_ACCESS_KEY", "")
-SNS_AWS_SECRET_KEY = os.environ.get("SNS_AWS_SECRET_KEY", "")
-FAST_API_KEY = os.environ.get("FAST_API_KEY", "")
+FAST_API_KEY = env["FAST_API_KEY"]
+SNS_AWS_ACCESS_KEY = env["SNS_AWS_ACCESS_KEY"]
+SNS_AWS_SECRET_KEY = env["SNS_AWS_SECRET_KEY"]
 
-S3_AWS_ACCESS_KEY_ID = os.environ.get("S3_AWS_ACCESS_KEY_ID", "")
-S3_AWS_SECRET_ACCESS_KEY = os.environ.get("S3_AWS_SECRET_ACCESS_KEY", "")
+S3_AWS_ACCESS_KEY_ID = env["S3_AWS_ACCESS_KEY_ID"]
+S3_AWS_SECRET_ACCESS_KEY = env["S3_AWS_SECRET_ACCESS_KEY"]
