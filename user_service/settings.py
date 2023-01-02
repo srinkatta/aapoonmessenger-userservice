@@ -27,7 +27,7 @@ load_dotenv()  # take environment variables from .env.
 env = os.environ
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env["SECRET_KEY"]
+SECRET_KEY = env["USER_SECRET"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
