@@ -115,7 +115,12 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
         return UserDevice.objects.filter(user=self.request.user)
 
     def get_object(self):
-        return get_object_or_404(UserDevice.objects.all(), user=self.request.user)
+        queryset = UserDevice.objects.filter(user=self.request.user)
+        if queryset:
+            return queryset.first()
+        return Response(
+            {"error": "Object not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
