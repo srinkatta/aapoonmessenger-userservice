@@ -370,9 +370,9 @@ class BaseKYCSerializer(serializers.Serializer):
             "id_number": user_kyc_setting.photo_id,
             "text_extracted": matches,
         }
-        text_content = render_to_string("config/email/id_failed_user.html", context)
-        charset.add_charset("utf-8", charset.SHORTEST, None, "utf-8")
-        send_mail(subject, text_content, from_email, toemail)
+        # text_content = render_to_string("config/email/id_failed_user.html", context)
+        # charset.add_charset("utf-8", charset.SHORTEST, None, "utf-8")
+        # send_mail(subject, text_content, from_email, toemail)
 
     def target_image_validation(
         self,
@@ -729,6 +729,14 @@ class PhotoIDSerializer(BaseKYCSerializer):
                     "image and text detected for Photo Id uploaded but ID is not Aadhar",
                 )
                 add_log_entries(user, log_message)
+                matches = [rec["text"] for rec in source_recognitionResult]
+                text_match = distance_finder(
+                    user, matches, user_kyc_setting.photo_id, log_message
+                )
+                if not text_match:
+                    verification = self.id_text_not_match(
+                        user, log_message, verification, matches
+                    )
                 return verification
 
             verification["is_verified"] = False

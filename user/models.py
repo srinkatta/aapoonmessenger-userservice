@@ -35,7 +35,7 @@ class User(AbstractUser):
     apns_token = models.CharField(max_length=100, null=True, blank=True)
     otp_requested = models.CharField(max_length=100, null=True, blank=True)
     login_attempts = models.IntegerField(default=0)
-    updated = models.DateTimeField(null=True, blank=True)
+    last_login_time = models.DateTimeField(null=True, blank=True)
     secondary_picture = models.TextField(null=True, blank=True)
     logo = models.CharField(max_length=100, null=True, blank=True)
 
@@ -185,7 +185,7 @@ class UserKycSetting(BaseTimeStampedModel):
     selfie = models.BooleanField(default=False)
     picture = models.BooleanField(default=False)
     scanned = models.BooleanField(default=False)
-    attachment = models.CharField(max_length=100, null=True, blank=True)
+    attachment = models.TextField(null=True, blank=True)
 
     user = models.ForeignKey(
         User,
