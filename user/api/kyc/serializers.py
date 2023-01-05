@@ -44,7 +44,7 @@ def failure_attempt_check(self, verification, user):
             "email": user.phone_number,
             "module": "Social Proof",
         }
-        text_content = render_to_string("config/email/kyc_failed_user.html", context)
+        # text_content = render_to_string("config/email/kyc_failed_user.html", context)
         charset.add_charset("utf-8", charset.SHORTEST, None, "utf-8")
         # send_mail(subject, text_content, from_email, toemail)
     return verification
@@ -98,7 +98,7 @@ def find_match(user, matches, string, log_message, field_name=None):
 def add_log_entries(user, messages):
     logs = user.logs.get()
     try:
-        messages = messages + logs.kyc_logs
+        messages = messages + str(logs.kyc_logs)
         logs.kyc_logs = messages
         logs.save()
     except Exception:

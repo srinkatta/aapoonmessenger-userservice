@@ -30,13 +30,13 @@ class User(AbstractUser):
     second_last_login = models.DateTimeField(null=True, blank=True)
     additional_last_login = models.DateTimeField(null=True, blank=True)
     online_status = models.BooleanField(default=False)
-    jid = models.URLField(max_length=255, null=True, blank=True)
+    jid = models.CharField(max_length=255, null=True, blank=True)
     fcm_token = models.CharField(max_length=100, null=True, blank=True)
     apns_token = models.CharField(max_length=100, null=True, blank=True)
     otp_requested = models.CharField(max_length=100, null=True, blank=True)
     login_attempts = models.IntegerField(default=0)
     updated = models.DateTimeField(null=True, blank=True)
-    secondary_picture = models.CharField(max_length=100, null=True, blank=True)
+    secondary_picture = models.TextField(null=True, blank=True)
     logo = models.CharField(max_length=100, null=True, blank=True)
 
     USERNAME_FIELD = "username"
@@ -60,8 +60,8 @@ class User(AbstractUser):
 
 
 class UserLog(BaseTimeStampedModel):
-    s3_logs = models.CharField(max_length=100, null=True, blank=True)
-    kyc_logs = models.CharField(max_length=100, null=True, blank=True)
+    s3_logs = models.TextField(null=True, blank=True)
+    kyc_logs = models.TextField(null=True, blank=True)
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
