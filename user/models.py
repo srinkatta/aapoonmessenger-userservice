@@ -34,6 +34,8 @@ class User(AbstractUser):
     fcm_token = models.CharField(max_length=100, null=True, blank=True)
     apns_token = models.CharField(max_length=100, null=True, blank=True)
     otp_requested = models.CharField(max_length=100, null=True, blank=True)
+    login_attempts = models.IntegerField(default=0)
+    updated = models.DateTimeField(null=True, blank=True)
     secondary_picture = models.CharField(max_length=100, null=True, blank=True)
     logo = models.CharField(max_length=100, null=True, blank=True)
 
