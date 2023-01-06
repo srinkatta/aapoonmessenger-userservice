@@ -150,7 +150,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return UserProfile.objects.filter(user=self.request.user)
 
     def get_object(self):
-        return get_object_or_404(UserProfile.objects.all(), user=self.request.user)
+        return UserProfile.objects.filter(user=self.request.user).first()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

@@ -37,7 +37,7 @@ class User(AbstractUser):
     login_attempts = models.IntegerField(default=0)
     last_login_time = models.DateTimeField(null=True, blank=True)
     secondary_picture = models.TextField(null=True, blank=True)
-    logo = models.CharField(max_length=100, null=True, blank=True)
+    logo = models.TextField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []

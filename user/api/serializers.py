@@ -80,7 +80,7 @@ class RegisterSerializer(serializers.Serializer):
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
-        user.updated = datetime.datetime.now()
+        user.last_login_time = datetime.datetime.now()
         user.save()
 
     def max_attempts(self, user):
