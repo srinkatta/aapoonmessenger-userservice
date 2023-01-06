@@ -84,31 +84,29 @@ class RegisterSerializer(serializers.Serializer):
         user.save()
 
     def max_attempts(self, user):
-        if user:
-            if not user.is_active and user.login_attempts == 1:
-                user.is_active = True
-                user.login_attempts = 0
-                user.save()
-            if user.login_attempts >= 3:
-                msg = "You reached maximum attempts to login. Please try again after 10 minutes."
-                raise serializers.ValidationError({"message": msg})
+        if user and not user.is_active and user.login_attempts == 1:
+            user.is_active = True
+            user.login_attempts = 0
+            user.save()
+        if user.login_attempts >= 3:
+            msg = "You reached maximum attempts to login. Please try again after 10 minutes."
+            raise serializers.ValidationError({"message": msg})
 
     def login_attempts_reset(self, user):
-        if user:
-            if user and user.login_attempts >= 3:
-                updated = str(user.updated)
-                updated_date = updated.split("+")[0]
-                datetime_format = "%Y-%m-%d %H:%M:%S.%f"
-                diff = datetime.datetime.strptime(
-                    str(datetime.datetime.now()), datetime_format
-                ) - datetime.datetime.strptime(str(updated_date), datetime_format)
-                hours, remainder = divmod(diff.seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                if minutes >= 15:
-                    user.login_attempts = 0
-                    user.save()
-                elif minutes < 10:
-                    self.max_attempts(user)
+        if user and user.login_attempts >= 3 and user.last_login_time:
+            updated = str(user.last_login_time)
+            updated_date = updated.split("+")[0]
+            datetime_format = "%Y-%m-%d %H:%M:%S.%f"
+            diff = datetime.datetime.strptime(
+                str(datetime.datetime.now()), datetime_format
+            ) - datetime.datetime.strptime(str(updated_date), datetime_format)
+            hours, remainder = divmod(diff.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            if minutes >= 15:
+                user.login_attempts = 0
+                user.save()
+            elif minutes < 10:
+                self.max_attempts(user)
 
 
 class UserLoginSerializer(serializers.Serializer):
