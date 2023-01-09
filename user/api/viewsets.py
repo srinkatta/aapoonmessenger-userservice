@@ -182,3 +182,17 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_object(self):
         return get_object_or_404(User.objects.all(), id=self.request.user.id)
+
+
+class push_notification_settings(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        user_id = request.data.get("user")
+        user = User.objects.get(id=user_id)
+        user.fcm_token = request.data.get("fcm_token", "")
+        user.apns_token = request.data.get("apns_token", "")
+        user.save()
+
+        return Response({"Data": "Push Notification Settings Updated."}, status=200)

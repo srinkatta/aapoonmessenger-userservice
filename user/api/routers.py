@@ -10,6 +10,7 @@ from user.api.viewsets import (
     UserInviteViewSet,
     UserProfileViewSet,
     UserViewSet,
+    push_notification_settings,
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
@@ -39,6 +40,11 @@ urlpatterns = [
     ),
     path("auth/register/", AuthUserRegistrationView.as_view(), name="register"),
     path("auth/login/", AuthUserLoginView.as_view(), name="login"),
+    path(
+        "notify_settings/",
+        push_notification_settings.as_view(),
+        name="push_notification_settings",
+    ),
     # KYC urls
     path("selfie/", kyc_viewsets.SelfieViewSet.as_view(), name="selfie"),
     path(

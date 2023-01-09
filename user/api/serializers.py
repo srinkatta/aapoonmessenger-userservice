@@ -23,6 +23,8 @@ class RegisterSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
     password = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    device_model = serializers.CharField(required=False)
+    device_os_version = serializers.CharField(required=False)
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
@@ -51,6 +53,8 @@ class RegisterSerializer(serializers.Serializer):
     def save(self, request) -> User:
         country_code = self.get_cleaned_data()["country_code"]
         phone_number = self.get_cleaned_data()["phone_number"]
+        device_model = request.data.get("device_model", "")
+        device_os_version = request.data.get("device_os_version", "")
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
         phone = f"{country_code}{phone_number}"
         otp = generate_otp()
@@ -60,6 +64,7 @@ class RegisterSerializer(serializers.Serializer):
             user = user.first()
             self.login_attempts_reset(user)
             self.send_otp(phone_number, otp, user, phone)
+            self.save_user_device(user, device_model, device_os_version)
             return user
 
         user = User.objects.create(**self.get_cleaned_data())
@@ -68,7 +73,7 @@ class RegisterSerializer(serializers.Serializer):
             user.set_password(request.data["password"])
         self.login_attempts_reset(user)
         self.send_otp(phone_number, otp, user, phone)
-
+        self.save_user_device(user, device_model, device_os_version)
         return user
 
     def send_otp(self, phone_number, otp, user, number):
@@ -107,6 +112,14 @@ class RegisterSerializer(serializers.Serializer):
                 user.save()
             elif minutes < 10:
                 self.max_attempts(user)
+
+    def save_user_device(self, user, device, device_version):
+        user_id = User.objects.get(id=user.id)
+        user_device, created = UserDevice.objects.get_or_create(
+            device_model=device, device_os_version=device_version, user=user_id
+        )
+        if created:
+            user_device.save()
 
 
 class UserLoginSerializer(serializers.Serializer):
@@ -151,6 +164,7 @@ class UserLoginSerializer(serializers.Serializer):
             )
             user.otp_requested = None
             user.phone_number_verified = True
+
             user.save()
             return validation
         except User.DoesNotExist:
@@ -227,7 +241,8 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         attrs = super().validate(attrs)
         if not attrs["photo_id"]:
             raise ValidationError("Photo id can't be blank")
-        user_kyc_setting = request.user.profile.get()
+        user_kyc_setting = request.user.profile.filter()
+        user_kyc_setting = user_kyc_setting.first()
         user_kyc_setting.photo_id = attrs["photo_id"]
         user_kyc_setting.save()
         del attrs["photo_id"]
