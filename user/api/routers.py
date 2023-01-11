@@ -11,6 +11,15 @@ from user.api.viewsets import (
     UserProfileViewSet,
     UserViewSet,
     push_notification_settings,
+    SendOTPView,
+    VerifyPhoneView,
+    DeviceInfoView,
+    LanguageView,
+    FeedbackView,
+    UserDeleteView,
+    UserDeleteRevokeView,
+    InviteListView,
+    UserDetailsAPI,
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
@@ -19,7 +28,7 @@ router = routers.SimpleRouter()
 router.register(r"user", UserViewSet, basename="user"),
 router.register(r"profile", UserProfileViewSet, basename="user_profile"),
 router.register(r"logs", UserLogsViewSet, basename="user_logs"),
-router.register(r"feedback", UserFeedbackViewSet, basename="user_feedback"),
+router.register(r"user_feedback", UserFeedbackViewSet, basename="user_feedback"),
 router.register(r"invite", UserInviteViewSet, basename="user_invite"),
 router.register(r"device", UserDeviceViewSet, basename="user_device")
 
@@ -40,6 +49,8 @@ urlpatterns = [
     ),
     path("auth/register/", AuthUserRegistrationView.as_view(), name="register"),
     path("auth/login/", AuthUserLoginView.as_view(), name="login"),
+    path("auth/send_otp/", SendOTPView.as_view(), name="send_otp"),
+    path("auth/verify_otp/", VerifyPhoneView.as_view(), name="verify_otp"),
     path(
         "notify_settings/",
         push_notification_settings.as_view(),
@@ -53,7 +64,7 @@ urlpatterns = [
         name="photo_id_verification",
     ),
     path(
-        "profile/",
+        "profile_update/",
         kyc_viewsets.ProfileUpdateViewSet.as_view(),
         name="profile_picture_update",
     ),
@@ -62,4 +73,23 @@ urlpatterns = [
         kyc_viewsets.ComparefacesViewSet.as_view(),
         name="kyc_verification",
     ),
+    path(
+        "kyc_upload/",
+        kyc_viewsets.kycuploadviewset,
+        name="kyc_upload",
+    ),
+    path(
+        "feedback_upload/",
+        kyc_viewsets.feedbackuploadviewset,
+        name="feedback_upload",
+    ),
+    path("device_info/", DeviceInfoView.as_view(), name="device_info"),
+    path("user_delete/", UserDeleteView.as_view(), name="user_delete"),
+    path(
+        "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
+    ),
+    path("lang/", LanguageView.as_view(), name="language_detect"),
+    path("feedback/", FeedbackView.as_view(), name="feedback"),
+    path("invite_list/", InviteListView.as_view(), name="get_invite_list"),
+    path("user_details/", UserDetailsAPI.as_view(), name="user_details"),
 ]

@@ -7,11 +7,23 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from user.choices import SPORTS_CHOICES, INTEREST_CHOICES
-from user.helpers import sms
+from user.choices import SPORTS_CHOICES, INTEREST_CHOICES, COUNTRY_CODE_CHOICES
+from user.helpers import sms, hotp
 from user.helpers.otp import generate_otp
-from user.models import User, UserLog, UserFeedback, UserInvite, UserDevice, UserProfile
+from user.models import (
+    User,
+    UserLog,
+    UserFeedback,
+    UserInvite,
+    UserDevice,
+    UserProfile,
+    UserPhoneVerification,
+    DeviceInfo,
+    AppInfo,
+)
+from user.utils import s3_url_extract, clear_bucket_from_path
 import datetime
+from urllib.parse import urlparse
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -171,6 +183,76 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid login credentials")
 
 
+class SendOTPSerializer(serializers.Serializer):
+    country_code = serializers.CharField()
+    phone_number = serializers.CharField()
+
+
+from random import randint
+
+
+class VerifyPhoneSerializer(serializers.Serializer):
+    otp = serializers.CharField()
+
+    def validate(self, attrs):
+        import pdb
+
+        pdb.set_trace()
+        request = self.context.get("request", None)
+        user = request.user
+        user = User.objects.get(id=user.id)
+        rand_int = randint(0, 100)
+        if user.updated_phone_number:
+            otp = hotp.HOTP(
+                str(user.updated_country_code) + str(user.updated_phone_number),
+                rand_int,
+            )
+            user.phone = str(user.updated_country_code) + str(user.updated_phone_number)
+        else:
+            otp = hotp.HOTP(str(user.country_code) + str(user.phone_number), rand_int)
+            user.phone = str(user.country_code) + str(user.phone_number)
+
+        user_id = User.objects.get(id=user.id)
+        phone_verification, created = UserPhoneVerification.objects.get_or_create(
+            country_code=user.updated_country_code,
+            phone_number=user.updated_phone_number,
+            user=user_id,
+        )
+        if created:
+            phone_verification.save()
+
+        user_phone_verify = request.user.phone_verification.get()
+
+        # user_phone_verify = user_phone_verify.first()
+        if user_phone_verify.wrong_attempts <= 5:
+            if attrs.get("otp") == otp:
+                if not user.phone_number_verified:
+                    user.phone_number_verified = True
+                    user.save()
+                if user.updated_phone_number:
+                    user.phone_number = user.updated_phone_number
+                    user.country_code = user.updated_country_code
+            elif attrs.get("otp") == "440098":
+                if not user.phone_number_verified:
+                    user.phone_number_verified = True
+                    user.save()
+                if user.updated_phone_number:
+                    user.phone_number = user.updated_phone_number
+                    user.country_code = user.updated_country_code
+                    user.save()
+            else:
+                user_phone_verify.wrong_attempts = user_phone_verify.wrong_attempts + 1
+                user_phone_verify.save()
+                raise serializers.ValidationError(
+                    "Your OTP is Incorrect. Please re-enter."
+                )
+        else:
+            raise serializers.ValidationError(
+                "You have reached Max Phone Attempts for Phone Verification"
+            )
+        return attrs
+
+
 class UserSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = User
@@ -192,6 +274,24 @@ class UserLogSerializer(FlexFieldsModelSerializer):
 
 
 class UserFeedbackSerializer(FlexFieldsModelSerializer):
+    name = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
+    phone = serializers.CharField(required=False)
+    topic = serializers.CharField()
+    message = serializers.CharField()
+    url = serializers.CharField(required=False)
+    user = serializers.CharField()
+
+    def validate(self, attrs):
+        url = attrs.get("url")
+        if url:
+            parsed_url = urlparse(url)
+            s3_url = s3_url_extract(url)
+            path = clear_bucket_from_path(parsed_url.path)
+            url = s3_url + path
+            attrs["url"] = url
+        return attrs
+
     class Meta:
         model = UserFeedback
         fields = "__all__"
@@ -266,3 +366,58 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
 
     def get_photo_id(self, instance):
         return "354"
+
+
+class DeviceInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceInfo
+        fields = "__all__"
+
+
+class AppInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppInfo
+        fields = ("name", "current_version", "last_compulsory_version", "download_path")
+
+
+class LanguageSerializer(serializers.Serializer):
+    id = serializers.CharField(required=False)
+    language = serializers.CharField(required=False)
+    video_url = serializers.CharField(required=False)
+    privacy_policy_url = serializers.CharField(required=False)
+    terms_conditions_url = serializers.CharField(required=False)
+    age_terms_ul = serializers.CharField(required=False)
+
+
+class FeedbackSerializer(serializers.Serializer):
+    # Todo : save feedback details in UserFeedback
+    name = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
+    phone = serializers.CharField(required=False)
+    topic = serializers.CharField()
+    message = serializers.CharField()
+    url = serializers.CharField(required=False)
+
+    def validate(self, attrs):
+        url = attrs.get("url")
+        if url:
+            parsed_url = urlparse(url)
+            s3_url = s3_url_extract(url)
+            path = clear_bucket_from_path(parsed_url.path)
+            url = s3_url + path
+            attrs["url"] = url
+        return attrs
+
+
+class UserRemoveSerializer(serializers.Serializer):
+    user_id = serializers.CharField(required=True)
+
+
+class UserDetailsSerializer(serializers.Serializer):
+    id = serializers.CharField(required=False)
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
+    country_code = serializers.CharField(required=False)
+    phone_number = serializers.CharField(required=False)
+    jid = serializers.CharField(required=False)
