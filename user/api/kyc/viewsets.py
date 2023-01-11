@@ -1,8 +1,10 @@
 from urllib.parse import urlparse
+import uuid
 
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet
 
 from user.api.kyc.serializers import (
     SelfieSerializer,
@@ -10,6 +12,7 @@ from user.api.kyc.serializers import (
     ProfileSerializer,
     CompareFacesV2Serializer,
 )
+from user.api.kyc.s3uploadserializer import S3UploadPolicySerializer
 from user.utils import s3_url_extract, clear_bucket_from_path
 
 
@@ -139,3 +142,39 @@ class ComparefacesViewSet(BaseViewSet):
             request.user.logo = self.cloudfront_cdn(link)
             request.user.save()
         return Response(response)
+
+
+class KYCUploadViewSet(GenericViewSet):
+    serializer_class = S3UploadPolicySerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def list(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"detail": "You must login before accessing services"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        key = "kyc/%s/${filename}" % str(uuid.uuid1())
+        serializer = self.serializer_class(key=key, content_type="image/png/jpeg/jpg")
+        return Response(serializer.to_native())
+
+
+class FeedbackUploadViewSet(GenericViewSet):
+    serializer_class = S3UploadPolicySerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def list(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"detail": "You must login before accessing services"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        key = "feedback/%s/${filename}" % str(uuid.uuid1())
+        serializer = self.serializer_class(key=key, content_type="image/png/jpeg/jpg")
+        return Response(serializer.to_native())
+
+
+kycuploadviewset = KYCUploadViewSet.as_view({"get": "list"})
+feedbackuploadviewset = FeedbackUploadViewSet.as_view({"get": "list"})

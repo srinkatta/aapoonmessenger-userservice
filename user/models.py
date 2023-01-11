@@ -22,6 +22,8 @@ class User(AbstractUser):
         max_length=10, choices=COUNTRY_CODE_CHOICES, null=True
     )
     phone_number = models.CharField(max_length=30, null=True)
+    updated_phone_number = models.CharField(max_length=30, null=True)
+    updated_country_code = models.CharField(max_length=30, null=True)
     phone_number_verified = models.BooleanField(
         verbose_name="Phone Verified", default=False
     )
@@ -37,6 +39,8 @@ class User(AbstractUser):
     login_attempts = models.IntegerField(default=0)
     last_login_time = models.DateTimeField(null=True, blank=True)
     secondary_picture = models.TextField(null=True, blank=True)
+    # kyc_done = models.BooleanField(default=False)
+
     logo = models.TextField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
@@ -96,6 +100,10 @@ class UserInvite(BaseTimeStampedModel):
     invite_token = models.CharField(max_length=100, null=True, blank=True)
     invite_code = models.CharField(max_length=100, null=True, blank=True)
     group_code = models.CharField(max_length=100, null=True, blank=True)
+    invited_email = models.CharField(max_length=100, null=True, blank=True)
+    invited_country_code = models.CharField(max_length=100, null=True, blank=True)
+    invited_phone_number = models.CharField(max_length=100, null=True, blank=True)
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -263,3 +271,64 @@ class UserProfile(BaseTimeStampedModel):
     class Meta:
         verbose_name = "UserProfile"
         verbose_name_plural = "UserProfiles"
+
+
+class DeviceInfo(models.Model):
+    deviceId = models.CharField(max_length=300, null=True, blank=True)
+    os = models.CharField(max_length=300, null=True, blank=True)
+    os_version = models.CharField(max_length=300, null=True, blank=True)
+    device_name = models.CharField(max_length=300, null=True, blank=True)
+    appVersion = models.CharField(max_length=300, null=True, blank=True)
+    appVersionCode = models.CharField(max_length=300, null=True, blank=True)
+    timeZone = models.CharField(max_length=300, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="device_info",
+    )
+
+    def __str__(self):
+        return self.device_name
+
+    class Meta:
+        verbose_name = "DeviceInfo"
+        verbose_name_plural = "DeviceInfos"
+
+
+class AppInfo(models.Model):
+    name = models.CharField(max_length=300, null=True, blank=True)
+    current_version = models.CharField(max_length=300, null=True, blank=True)
+    last_compulsory_version = models.CharField(max_length=300, null=True, blank=True)
+    download_path = models.CharField(max_length=300, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "AppInfo"
+        verbose_name_plural = "AppInfos"
+
+
+class Languages(models.Model):
+    language = models.CharField(max_length=300, null=True, blank=True)
+    video_url = models.CharField(max_length=300, null=True, blank=True)
+    privacy_policy_url = models.CharField(max_length=300, null=True, blank=True)
+    terms_conditions_url = models.CharField(max_length=300, null=True, blank=True)
+    age_terms_ul = models.CharField(max_length=300, null=True, blank=True)
+
+    def __str__(self):
+        return self.language
+
+
+class DeletedUser(BaseTimeStampedModel):
+    is_deleted = models.BooleanField(default=False)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="deleted_object",
+    )

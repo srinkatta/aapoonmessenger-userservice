@@ -12,6 +12,10 @@ from user.models import (
     UserKycSetting,
     UserProfile,
     UserPhoneVerification,
+    DeviceInfo,
+    AppInfo,
+    Languages,
+    DeletedUser,
 )
 
 admin.site.register(UserLog)
@@ -21,6 +25,10 @@ admin.site.register(UserDevice)
 admin.site.register(UserKycSetting)
 admin.site.register(UserProfile)
 admin.site.register(UserPhoneVerification)
+admin.site.register(DeviceInfo)
+admin.site.register(AppInfo)
+admin.site.register(Languages)
+admin.site.register(DeletedUser)
 
 
 class UserAdmin(admin.ModelAdmin):

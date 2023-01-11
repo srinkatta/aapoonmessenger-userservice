@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_api_key",
     "allauth",
     "allauth.account",
     "drf_spectacular",
@@ -154,7 +155,10 @@ AUTH_USER_MODEL = "user.User"
 
 # REST framework settings
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework_api_key.permissions.HasAPIKey",
+        "rest_framework.permissions.IsAuthenticated",
+    ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
@@ -205,3 +209,13 @@ SNS_AWS_SECRET_KEY = env["SNS_AWS_SECRET_KEY"]
 S3_AWS_ACCESS_KEY_ID = env["S3_MEDIA_AWS_ACCESS_KEY_ID"]
 S3_AWS_SECRET_ACCESS_KEY = env["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
 
+AWS_S3_BUCKET_NAME = env["AWS_S3_BUCKET_NAME"]
+AWS_S3_ACL = env["AWS_S3_ACL"]
+AUTHORIZATION = env["AUTHORIZATION"]
+DEFAULT_FROM_EMAIL = "support@aapoon.net"
+SUPPORT_EMAIL = "support@aapoon.net"
+XMPP_HOST = env["XMPP_HOST"]
+XMPP_PORT = "5280"
+XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
+# API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
+CACHE_TTL = 10
