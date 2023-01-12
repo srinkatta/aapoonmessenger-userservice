@@ -97,16 +97,12 @@ def phone_failure(self, request):
         "module": "Phone Verification",
     }
 
-    # text_content = render_to_string(
-    #     'config/email/kyc_failed_user.html', context)
+    # text_content = render_to_string('config/email/kyc_failed_user.html', context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    # send_mail(subject, text_content, from_email, toemail)
+    send_mail(subject, context, from_email, toemail)
 
 
 def feedback_mail(request, data):
-    import pdb
-
-    pdb.set_trace()
     user = request.user
     subject = _("Feedback")
     from_email = settings.DEFAULT_FROM_EMAIL
@@ -134,4 +130,4 @@ def feedback_mail(request, data):
     }
     # text_content = render_to_string('config/email/feedback.html',context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    # send_mail(subject, text_content, from_email, [toemail])
+    send_mail(subject, context, from_email, [toemail])
