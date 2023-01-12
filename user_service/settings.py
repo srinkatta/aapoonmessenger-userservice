@@ -24,6 +24,7 @@ load_dotenv()  # take environment variables from .env.
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
+
 env = os.environ
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -217,5 +218,5 @@ SUPPORT_EMAIL = "support@aapoon.net"
 XMPP_HOST = env["XMPP_HOST"]
 XMPP_PORT = "5280"
 XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
-# API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
+API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10

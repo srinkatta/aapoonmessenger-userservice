@@ -149,12 +149,6 @@ class KYCUploadViewSet(GenericViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def list(self, request):
-        user = request.user
-        if not user.is_authenticated:
-            return Response(
-                {"detail": "You must login before accessing services"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         key = "kyc/%s/${filename}" % str(uuid.uuid1())
         serializer = self.serializer_class(key=key, content_type="image/png/jpeg/jpg")
         return Response(serializer.to_native())
@@ -165,12 +159,6 @@ class FeedbackUploadViewSet(GenericViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def list(self, request):
-        user = request.user
-        if not user.is_authenticated:
-            return Response(
-                {"detail": "You must login before accessing services"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         key = "feedback/%s/${filename}" % str(uuid.uuid1())
         serializer = self.serializer_class(key=key, content_type="image/png/jpeg/jpg")
         return Response(serializer.to_native())

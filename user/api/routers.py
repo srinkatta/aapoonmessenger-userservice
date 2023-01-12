@@ -10,7 +10,7 @@ from user.api.viewsets import (
     UserInviteViewSet,
     UserProfileViewSet,
     UserViewSet,
-    push_notification_settings,
+    PushNotificationSettings,
     SendOTPView,
     VerifyPhoneView,
     DeviceInfoView,
@@ -53,7 +53,7 @@ urlpatterns = [
     path("auth/verify_otp/", VerifyPhoneView.as_view(), name="verify_otp"),
     path(
         "notify_settings/",
-        push_notification_settings.as_view(),
+        PushNotificationSettings.as_view(),
         name="push_notification_settings",
     ),
     # KYC urls

@@ -39,7 +39,6 @@ class User(AbstractUser):
     login_attempts = models.IntegerField(default=0)
     last_login_time = models.DateTimeField(null=True, blank=True)
     secondary_picture = models.TextField(null=True, blank=True)
-    # kyc_done = models.BooleanField(default=False)
 
     logo = models.TextField(null=True, blank=True)
 

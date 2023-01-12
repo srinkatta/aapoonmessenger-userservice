@@ -33,6 +33,7 @@ from user.api.serializers import (
     FeedbackSerializer,
     UserRemoveSerializer,
     UserDetailsSerializer,
+    NotificationSettingsSerializer,
 )
 from user.models import (
     UserLog,
@@ -227,12 +228,13 @@ class UserViewSet(viewsets.ModelViewSet):
         return get_object_or_404(User.objects.all(), id=self.request.user.id)
 
 
-class push_notification_settings(APIView):
+class PushNotificationSettings(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = NotificationSettingsSerializer
 
     def post(self, request):
-        user_id = request.data.get("user")
+        user_id = request.data.get("user_id")
         user = User.objects.get(id=user_id)
         user.fcm_token = request.data.get("fcm_token", "")
         user.apns_token = request.data.get("apns_token", "")
@@ -416,10 +418,7 @@ class DeviceInfoView(APIView):
         serializer = AppInfoSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request, *args, **kwargs):
-        import pdb
-
-        pdb.set_trace()
+    def post(self, request):
         serializer = self.get_serializer(
             data=request.data, context={"request": request}
         )
@@ -528,7 +527,7 @@ class InviteListView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     allowed_methods = ("GET",)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request):
         try:
             user = request.user
 
@@ -592,8 +591,9 @@ class UserDetailsAPI(APIView):
     def get_serializer(self, *args, **kwargs):
         return UserDetailsSerializer(*args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         user_id = request.data["user_id"]
-        user = User.objects.filter(id=user_id)
+        jid = request.data["jid"]
+        user = User.objects.filter(id=user_id, jid=jid)
         serializer = self.get_serializer(user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

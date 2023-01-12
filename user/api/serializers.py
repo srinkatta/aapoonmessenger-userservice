@@ -195,9 +195,6 @@ class VerifyPhoneSerializer(serializers.Serializer):
     otp = serializers.CharField()
 
     def validate(self, attrs):
-        import pdb
-
-        pdb.set_trace()
         request = self.context.get("request", None)
         user = request.user
         user = User.objects.get(id=user.id)
@@ -413,6 +410,12 @@ class UserRemoveSerializer(serializers.Serializer):
     user_id = serializers.CharField(required=True)
 
 
+class NotificationSettingsSerializer(serializers.Serializer):
+    user_id = serializers.CharField(required=True)
+    fcm_token = serializers.CharField(required=False)
+    apns_token = serializers.CharField(required=False)
+
+
 class UserDetailsSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
@@ -421,3 +424,5 @@ class UserDetailsSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False)
     jid = serializers.CharField(required=False)
+
+
