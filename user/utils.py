@@ -99,7 +99,7 @@ def phone_failure(self, request):
 
     # text_content = render_to_string('config/email/kyc_failed_user.html', context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    send_mail(subject, context, from_email, toemail)
+    # send_mail(subject, context, from_email, toemail)
 
 
 def feedback_mail(request, data):
@@ -130,4 +130,4 @@ def feedback_mail(request, data):
     }
     # text_content = render_to_string('config/email/feedback.html',context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    send_mail(subject, context, from_email, [toemail])
+    # send_mail(subject, context, from_email, [toemail])
