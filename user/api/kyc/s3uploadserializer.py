@@ -6,21 +6,21 @@ from datetime import datetime, timedelta
 from rest_framework import serializers
 
 
-
 class S3UploadPolicySerializer(serializers.Serializer):
-
-    def __init__(self, key='',
-                 expires_after=timedelta(days=1),
-                 acl=settings.AWS_S3_ACL,
-                 success_action_redirect=None,
-                 content_type=None,
-                 min_size=0,
-                 max_size=None,
-                 feed_obj=False,
-                 chat_obj=False,
-                 *args,
-                 **kwargs
-                 ):
+    def __init__(
+        self,
+        key="",
+        expires_after=timedelta(days=1),
+        acl=settings.AWS_S3_ACL,
+        success_action_redirect=None,
+        content_type=None,
+        min_size=0,
+        max_size=None,
+        feed_obj=False,
+        chat_obj=False,
+        *args,
+        **kwargs
+    ):
         self.aws_access_key = settings.S3_AWS_ACCESS_KEY_ID
         self.aws_secret_key = settings.S3_AWS_SECRET_ACCESS_KEY
         self.bucket = settings.AWS_S3_BUCKET_NAME
@@ -36,44 +36,43 @@ class S3UploadPolicySerializer(serializers.Serializer):
         super(S3UploadPolicySerializer, self).__init__(*args, **kwargs)
 
     def to_native(self, obj={}):
-        policy = base64.b64encode(
-            bytes(
-                self.calculate_policy(),
-                encoding='utf-8'))
+        policy = base64.b64encode(bytes(self.calculate_policy(), encoding="utf-8"))
         signature = self.sign_policy(policy)
 
         obj = {
-            'key': self.key,
-            'AWSAccessKeyId': self.aws_access_key,
-            'AWSSecretKey': self.aws_secret_key,
-            'acl': self.acl,
-            'policy': policy,
-            'signature': signature,
-            "expiry": (
-                datetime.now() + self.expires_after).strftime('%Y-%m-%dT%H:%M:%S.000Z'),
-            "epoch_time": int(
-                (datetime.now() + self.expires_after).timestamp())}
+            "key": self.key,
+            "AWSAccessKeyId": self.aws_access_key,
+            "AWSSecretKey": self.aws_secret_key,
+            "acl": self.acl,
+            "policy": policy,
+            "signature": signature,
+            "expiry": (datetime.now() + self.expires_after).strftime(
+                "%Y-%m-%dT%H:%M:%S.000Z"
+            ),
+            "epoch_time": int((datetime.now() + self.expires_after).timestamp()),
+        }
         if self.success_action_redirect:
-            obj['success_action_redirect'] = self.success_action_redirect
+            obj["success_action_redirect"] = self.success_action_redirect
 
         unique_id = str(uuid.uuid1())
 
-        obj['post_action'] = self.post_action()
+        obj["post_action"] = self.post_action()
         return obj
 
     def calculate_policy(self):
         from json import dumps
+
         conditions = [
-            {'bucket': self.bucket},
-            {'acl': self.acl},
-            {'success_action_status': "201"}
+            {"bucket": self.bucket},
+            {"acl": self.acl},
+            {"success_action_status": "201"},
         ]
         if self.success_action_redirect:
-            conditions.append(
-                {'success_action_redirect': self.success_action_redirect})
+            conditions.append({"success_action_redirect": self.success_action_redirect})
         if self.key.endswith("${filename}"):
-            conditions.append(["starts-with", "$key", "%s" %
-                              self.key[:-len("${filename}")]])
+            conditions.append(
+                ["starts-with", "$key", "%s" % self.key[: -len("${filename}")]]
+            )
         else:
             conditions.append({"key": "%s"} % self.key)
         if self.content_type:
@@ -81,29 +80,28 @@ class S3UploadPolicySerializer(serializers.Serializer):
                 conditions.append(["starts-with", "$Content-Type", "image/"])
             else:
                 conditions.append(
-                    ["starts-with", "$Content-Type", "%s" % self.content_type])
+                    ["starts-with", "$Content-Type", "%s" % self.content_type]
+                )
         policy_document = {
-            "expiration": (
-                datetime.now() +
-                self.expires_after).strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            "expiration": (datetime.now() + self.expires_after).strftime(
+                "%Y-%m-%dT%H:%M:%S.000Z"
+            ),
             "conditions": conditions,
         }
-        return dumps(policy_document).replace('\n', '').replace('\r', '')
+        return dumps(policy_document).replace("\n", "").replace("\r", "")
 
     def sign_policy(self, policy):
         import hmac
         import hashlib
+
         signature = hmac.new(
-            (bytes(
-                self.aws_secret_key,
-                encoding='utf-8')),
-            policy,
-            hashlib.sha1).digest()
+            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha1
+        ).digest()
         return base64.b64encode(signature)
 
     def post_action(self):
-        return 'https://%s.s3-accelerate.amazonaws.com/' % settings.AWS_S3_BUCKET_NAME
+        return "https://%s.s3-accelerate.amazonaws.com/" % settings.AWS_S3_BUCKET_NAME
 
     perms_map = {
-        'GET': {'features': [], 'view_perms': []},
+        "GET": {"features": [], "view_perms": []},
     }

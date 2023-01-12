@@ -24,11 +24,8 @@ load_dotenv()  # take environment variables from .env.
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
-
-env = os.environ
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env["USER_SECRET"]
+SECRET_KEY = os.environ["SECRET"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -88,28 +85,25 @@ WSGI_APPLICATION = "user_service.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ["DB_NAME"],
+        "USER": os.environ["DB_USER"],
+        "PASSWORD": os.environ["DB_PASSWORD"],
+        "HOST": os.environ["DB_HOST"],
+        "PORT": os.environ["DB_PORT"],
+    }
+}
+
+
 # DATABASES = {
 #     "default": {
 #         "ENGINE": "django.db.backends.sqlite3",
 #         "NAME": BASE_DIR / "db.sqlite3",
 #     }
 # }
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": env["USERSERVICEDBNAME"],
-        "USER": env["USERSERVICEDBUSER"],
-        "PASSWORD": env["USERSERVICEDBPASSWORD"],
-        "HOST": env["USERSERVICEDBHOST"],  # Or an IP Address that your DB is hosted on
-        "PORT": "3306",
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "init_command": "SET foreign_key_checks = 0;",
-        },
-    }
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -203,20 +197,19 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
-FAST_API_KEY = env["FAST_API_KEY"]
-SNS_AWS_ACCESS_KEY = env["SNS_AWS_ACCESS_KEY"]
-SNS_AWS_SECRET_KEY = env["SNS_AWS_SECRET_KEY"]
+FAST_API_KEY = os.environ["FAST_API_KEY"]
+SNS_AWS_ACCESS_KEY = os.environ["SNS_AWS_ACCESS_KEY"]
+SNS_AWS_SECRET_KEY = os.environ["SNS_AWS_SECRET_KEY"]
 
-S3_AWS_ACCESS_KEY_ID = env["S3_MEDIA_AWS_ACCESS_KEY_ID"]
-S3_AWS_SECRET_ACCESS_KEY = env["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
+S3_AWS_ACCESS_KEY_ID = os.environ["S3_MEDIA_AWS_ACCESS_KEY_ID"]
+S3_AWS_SECRET_ACCESS_KEY = os.environ["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
 
-AWS_S3_BUCKET_NAME = env["AWS_S3_BUCKET_NAME"]
-AWS_S3_ACL = env["AWS_S3_ACL"]
-AUTHORIZATION = env["AUTHORIZATION"]
+AWS_S3_BUCKET_NAME = os.environ["AWS_S3_BUCKET_NAME"]
+AWS_S3_ACL = os.environ["AWS_S3_ACL"]
+AUTHORIZATION = os.environ["XMPP_AUTHORIZATION"]
 DEFAULT_FROM_EMAIL = "support@aapoon.net"
 SUPPORT_EMAIL = "support@aapoon.net"
-XMPP_HOST = env["XMPP_HOST"]
+XMPP_HOST = os.environ["XMPP_HOST"]
 XMPP_PORT = "5280"
 XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
-API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
