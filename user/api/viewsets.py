@@ -31,6 +31,7 @@ from user.api.serializers import (
     FeedbackSerializer,
     UserRemoveSerializer,
     UserDetailsSerializer,
+    UserDetailsInputSerializer,
     NotificationSettingsSerializer,
 )
 from user.models import (
@@ -561,16 +562,37 @@ class InviteListView(APIView):
 
 
 class UserDetailsAPI(APIView):
-    permission_classes = [HasAPIKey]
-    serializer_class = UserDetailsSerializer
+    permission_classes = (HasAPIKey,)
     allowed_methods = ("POST",)
 
-    def get_serializer(self, *args, **kwargs):
-        return UserDetailsSerializer(*args, **kwargs)
-
     def post(self, request):
-        user_id = request.data["user_id"]
-        jid = request.data["jid"]
-        user = User.objects.filter(id=user_id, jid=jid)
-        serializer = self.get_serializer(user, many=True)
+        serializer = UserDetailsInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_id = serializer.data.get("user_id")
+        user_jid = serializer.data.get("user_jid")
+
+        if user_id:
+            user = self.get_user("id", user_id)
+        elif user_jid:
+            user = self.get_user("jid", user_jid)
+        else:
+            return Response(
+                {"error": "Input data error"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not user:
+            return Response(
+                {"error": "user not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = UserDetailsSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def get_user(self, key, value):
+        filters = {key: value}
+        try:
+            user = User.objects.get(**filters)
+        except User.DoesNotExist:
+            user = None
+        return user

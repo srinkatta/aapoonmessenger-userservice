@@ -375,6 +375,11 @@ class NotificationSettingsSerializer(serializers.Serializer):
     apns_token = serializers.CharField(required=False)
 
 
+class UserDetailsInputSerializer(serializers.Serializer):
+    user_id = serializers.CharField(required=False)
+    user_jid = serializers.CharField(required=False)
+
+
 class UserDetailsSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
