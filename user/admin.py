@@ -6,7 +6,6 @@ from django.utils.safestring import mark_safe
 from user.models import (
     User,
     UserLog,
-    UserFeedback,
     UserInvite,
     UserDevice,
     UserKycSetting,
@@ -19,7 +18,6 @@ from user.models import (
 )
 
 admin.site.register(UserLog)
-admin.site.register(UserFeedback)
 admin.site.register(UserInvite)
 admin.site.register(UserDevice)
 admin.site.register(UserKycSetting)

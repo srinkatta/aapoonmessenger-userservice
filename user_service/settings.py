@@ -69,7 +69,7 @@ ROOT_URLCONF = "user_service.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": ["/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -203,6 +203,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
+DEFAULT_FROM_EMAIL = "support@aapoon.net"
+SUPPORT_EMAIL = "support@aapoon.net"
+
 FAST_API_KEY = env["FAST_API_KEY"]
 SNS_AWS_ACCESS_KEY = env["SNS_AWS_ACCESS_KEY"]
 SNS_AWS_SECRET_KEY = env["SNS_AWS_SECRET_KEY"]
@@ -210,13 +213,13 @@ SNS_AWS_SECRET_KEY = env["SNS_AWS_SECRET_KEY"]
 S3_AWS_ACCESS_KEY_ID = env["S3_MEDIA_AWS_ACCESS_KEY_ID"]
 S3_AWS_SECRET_ACCESS_KEY = env["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
 
-AWS_S3_BUCKET_NAME = env["AWS_S3_BUCKET_NAME"]
 AWS_S3_ACL = env["AWS_S3_ACL"]
-AUTHORIZATION = env["AUTHORIZATION"]
-DEFAULT_FROM_EMAIL = "support@aapoon.net"
-SUPPORT_EMAIL = "support@aapoon.net"
+AWS_S3_BUCKET_NAME = env["AWS_S3_BUCKET_NAME"]
+
+XMPP_AUTHORIZATION = env["XMPP_AUTHORIZATION"]
 XMPP_HOST = env["XMPP_HOST"]
 XMPP_PORT = "5280"
 XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
+
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10

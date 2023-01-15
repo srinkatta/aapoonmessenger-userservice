@@ -2,7 +2,6 @@ import csv
 import re
 import os
 import logging
-from random import randint
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.http import Http404, HttpResponse
@@ -19,7 +18,6 @@ from user.api.serializers import (
     UserLoginSerializer,
     RegisterSerializer,
     UserLogSerializer,
-    UserFeedbackSerializer,
     UserInviteSerializer,
     UserDeviceSerializer,
     UserProfileSerializer,
@@ -37,7 +35,6 @@ from user.api.serializers import (
 )
 from user.models import (
     UserLog,
-    UserFeedback,
     UserInvite,
     UserDevice,
     UserProfile,
@@ -46,6 +43,7 @@ from user.models import (
     AppInfo,
     Languages,
     DeletedUser,
+    UserPhoneVerification,
 )
 from user.utils import (
     make_request,
@@ -54,7 +52,8 @@ from user.utils import (
     send_email_notification,
     feedback_mail,
 )
-from user.helpers import sms, hotp
+from user.helpers import sms
+from user.helpers.otp import generate_otp
 from user.user_delete import UserDelete
 from user_service import settings
 from rest_framework_api_key.permissions import HasAPIKey
@@ -72,8 +71,10 @@ class AuthUserRegistrationView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        print(serializer.data)
+        return Response(
+            {"Message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
+        )
 
     def perform_create(self, serializer):
         user = serializer.save(self.request)
@@ -103,18 +104,6 @@ class UserLogsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return UserLog.objects.filter(user=self.request.user)
-
-
-class UserFeedbackViewSet(viewsets.ModelViewSet):
-    """
-    Viewset to create, list, update and delete UserFeedback.
-    """
-
-    serializer_class = UserFeedbackSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get_queryset(self):
-        return UserFeedback.objects.filter(user=self.request.user)
 
 
 class UserInviteViewSet(viewsets.ModelViewSet):
@@ -254,18 +243,28 @@ class SendOTPView(APIView):
     def get_serializer(self, *args, **kwargs):
         return SendOTPSerializer(*args, **kwargs)
 
-    def send_sms_message(self, request, phone_number, otp, user, number):
+    def send_otp(self, phone_number, otp, user, number):
         if user.country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
             sms_client = sms.SMS(number, otp, user)
             sms_client.send_message()
+        user.verify_attempts = user.verify_attempts + 1
+        user.save()
 
-    def get(self, request, *args, **kwargs):
+    def get_phone_verification(self, country_code, phone_number, user_id):
+        phone_verification, created = UserPhoneVerification.objects.get_or_create(
+            country_code=country_code,
+            phone_number=phone_number,
+            user=user_id,
+        )
+        if created:
+            phone_verification.save()
 
-        user = request.user
-        if user.phone_attempts >= 3:
+    def max_phone_attempts(self, request):
+        user_phone_verify = request.user.phone_verification.filter().first()
+        if user_phone_verify.verify_attempts >= 3:
             phone_failure(self, request)
             return Response(
                 {
@@ -273,85 +272,63 @@ class SendOTPView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        rand_int = randint(0, 100)
-        if user.updated_phone_number:
-            phone = str(user.updated_country_code) + str(user.updated_phone_number)
-            updated_ph = user.updated_phone_number
-            otp = hotp.HOTP(phone, rand_int)
-            self.send_sms_message(request, updated_ph, otp, user, phone)
-            user.otp_requested = otp
-        else:
-            otp = hotp.HOTP(str(user.country_code) + str(user.phone_number), rand_int)
-            ph_number = user.phone_number
-            number = str(user.country_code) + str(user.phone_number)
-            self.send_sms_message(request, ph_number, otp, user, number)
-            user.otp_requested = otp
 
-        print(f"Generated Otp: {otp}")
-        user.phone_attempts = user.phone_attempts + 1
-        user.save()
-        return Response(
-            {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
-        )
+    def get(self, request):
+        user = request.user
+        user_phone_verify = request.user.phone_verification.get()
+        self.max_phone_attempts(request)
+        if user_phone_verify.phone_number:
+            phone = f"{user_phone_verify.country_code}{user_phone_verify.phone_number}"
+            phone_number = user_phone_verify.phone_number
+            otp = generate_otp()
+            self.send_otp(phone_number, otp, user_phone_verify, phone)
+            user.otp_requested = otp
+            user.save()
+            print(f"Generated Otp: {otp}")
+            return Response(
+                {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
+            )
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         user = request.user
         phone_number = request.data["phone_number"]
-        phone_number = phone_number.replace("-", r"")
-        phone_number = phone_number.replace("(", r"")
-        phone_number = phone_number.replace(")", r"")
-        number = request.data["country_code"] + phone_number
+        country_code = request.data["country_code"]
+
+        number = f"{country_code}{phone_number}"
         phone = User.objects.filter(
-            phone_number=phone_number, country_code=request.data["country_code"]
+            phone_number=phone_number, country_code=country_code
         )
 
         if len(phone) >= 1 and not user.phone_number == phone_number:
-            print("hello")
             return Response(
                 {"detail": "Mobile number already exists"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if user.login_attempts >= 3:
-            phone_failure(self, request)
+        user_id = User.objects.get(id=user.id)
+        self.get_phone_verification(country_code, phone_number, user_id)
 
-            return Response(
-                {
-                    "detail": "You have reached Max Phone Attempts for Phone Verification"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        user_phone_verify = request.user.phone_verification.filter().first()
+        self.max_phone_attempts(request)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         if phone_number.isdigit():
-            user.updated_phone_number = phone_number
-            user.updated_country_code = request.data["country_code"]
-            rand_int = randint(0, 100)
-
-            if "country_iso_code" in request.data:
-                user.country_iso_code = request.data["country_iso_code"]
-
-            if user.updated_phone_number:
-                otp = hotp.HOTP(str(number), rand_int)
-                updated_ph = user.updated_phone_number
-                self.send_sms_message(request, updated_ph, otp, user, number)
-                user.otp_requested = otp
-            else:
-                otp = hotp.HOTP(
-                    str(user.country_code) + str(user.phone_number), rand_int
-                )
-                phone_number = user.phone_number
-                self.send_sms_message(request, phone_number, otp, user, number)
-                user.otp_requested = otp
+            otp = generate_otp()
+            self.send_otp(phone_number, otp, user_phone_verify, number)
             print(f"Generated Otp: {otp}")
-            user.login_attempts = user.login_attempts + 1
+            user.otp_requested = otp
+            user_phone_verify.phone_number = phone_number
+            user_phone_verify.country_code = country_code
+            user_phone_verify.save()
             user.save()
             return Response(
                 {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
             )
         else:
-            error = "Special characters not allowed"
-            error_response = {"error": error}
-            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Special characters not allowed"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class VerifyPhoneView(APIView):
@@ -366,23 +343,23 @@ class VerifyPhoneView(APIView):
         return VerifyPhoneSerializer(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        user = request.user
         serializer = self.get_serializer(
             data=request.data, context={"request": request}
         )
-        serializer.is_valid(raise_exception=True)
-        user = request.user
+        serializer.phone_validate(request)
+
         user.phone_number_verified = True
-        user_ph = request.user.phone_verification.get()
-        user_ph.verify_attempts = 0
+        user_ph = request.user.phone_verification.filter().first()
+        user.phone_number = user_ph.phone_number
+        user.country_code = user_ph.country_code
         user_ph.wrong_attempts = 0
         user.save()
         user_ph.save()
 
         # Make call to websocket
 
-        phone_number = "{}{}".format(
-            user.updated_country_code, user.updated_phone_number
-        )
+        phone_number = "{}{}".format(user.country_code, user.phone_number)
         url = "{}{}".format(settings.XMPP_SERVER_URL, "api/register/")
         data = {
             "user": phone_number,
@@ -460,11 +437,11 @@ class FeedbackView(APIView):
     APIView to send feedback by Post request
     """
 
-    serializer_class = UserFeedbackSerializer
+    serializer_class = FeedbackSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer(self, *args, **kwargs):
-        return UserFeedbackSerializer(*args, **kwargs)
+        return FeedbackSerializer(*args, **kwargs)
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
