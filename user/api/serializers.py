@@ -13,7 +13,6 @@ from user.helpers.otp import generate_otp
 from user.models import (
     User,
     UserLog,
-    UserFeedback,
     UserInvite,
     UserDevice,
     UserProfile,
@@ -24,6 +23,7 @@ from user.models import (
 from user.utils import s3_url_extract, clear_bucket_from_path
 import datetime
 from urllib.parse import urlparse
+from user_service import settings
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -161,13 +161,17 @@ class UserLoginSerializer(serializers.Serializer):
 
             update_last_login(None, user)
 
+            user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
+
             validation = {
                 "access": access_token,
                 "refresh": refresh_token,
-                "email": user.email,
                 "id": user.id,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
+                "email": user.email,
+                "phone_number": user.phone_number,
+                "country_code": user.country_code,
+                "jid": user.jid,
+                # "profile_detail": user.profile_details  # Todo: uncomment after add changes to user table
             }
             login(
                 self.context["request"],
@@ -188,54 +192,39 @@ class SendOTPSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
 
 
-from random import randint
-
-
 class VerifyPhoneSerializer(serializers.Serializer):
     otp = serializers.CharField()
 
-    def validate(self, attrs):
-        request = self.context.get("request", None)
+    def phone_validate(self, request):
         user = request.user
-        user = User.objects.get(id=user.id)
-        rand_int = randint(0, 100)
-        if user.updated_phone_number:
-            otp = hotp.HOTP(
-                str(user.updated_country_code) + str(user.updated_phone_number),
-                rand_int,
-            )
-            user.phone = str(user.updated_country_code) + str(user.updated_phone_number)
-        else:
-            otp = hotp.HOTP(str(user.country_code) + str(user.phone_number), rand_int)
-            user.phone = str(user.country_code) + str(user.phone_number)
-
+        otp = user.otp_requested
         user_id = User.objects.get(id=user.id)
+        user_phone_verify = request.user.phone_verification.filter()
+        user_phone_verify = user_phone_verify.first()
         phone_verification, created = UserPhoneVerification.objects.get_or_create(
-            country_code=user.updated_country_code,
-            phone_number=user.updated_phone_number,
+            country_code=user_phone_verify.country_code,
+            phone_number=user_phone_verify.phone_number,
             user=user_id,
         )
         if created:
             phone_verification.save()
 
-        user_phone_verify = request.user.phone_verification.get()
-
-        # user_phone_verify = user_phone_verify.first()
         if user_phone_verify.wrong_attempts <= 5:
-            if attrs.get("otp") == otp:
+            if request.data["otp"] == otp:
                 if not user.phone_number_verified:
                     user.phone_number_verified = True
                     user.save()
-                if user.updated_phone_number:
-                    user.phone_number = user.updated_phone_number
-                    user.country_code = user.updated_country_code
-            elif attrs.get("otp") == "440098":
+                if user_phone_verify.phone_number:
+                    user.phone_number = user_phone_verify.phone_number
+                    user.country_code = user_phone_verify.country_code
+                    user.save()
+            elif request.data["otp"] == "440098":
                 if not user.phone_number_verified:
                     user.phone_number_verified = True
                     user.save()
-                if user.updated_phone_number:
-                    user.phone_number = user.updated_phone_number
-                    user.country_code = user.updated_country_code
+                if user_phone_verify.phone_number:
+                    user.phone_number = user_phone_verify.phone_number
+                    user.country_code = user_phone_verify.country_code
                     user.save()
             else:
                 user_phone_verify.wrong_attempts = user_phone_verify.wrong_attempts + 1
@@ -247,7 +236,6 @@ class VerifyPhoneSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "You have reached Max Phone Attempts for Phone Verification"
             )
-        return attrs
 
 
 class UserSerializer(FlexFieldsModelSerializer):
@@ -263,34 +251,6 @@ class UserSerializer(FlexFieldsModelSerializer):
 class UserLogSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = UserLog
-        fields = "__all__"
-        extra_kwargs = {
-            "id": {"read_only": True},
-        }
-        expandable_fields = {"user": UserSerializer}
-
-
-class UserFeedbackSerializer(FlexFieldsModelSerializer):
-    name = serializers.CharField(required=False)
-    email = serializers.CharField(required=False)
-    phone = serializers.CharField(required=False)
-    topic = serializers.CharField()
-    message = serializers.CharField()
-    url = serializers.CharField(required=False)
-    user = serializers.CharField()
-
-    def validate(self, attrs):
-        url = attrs.get("url")
-        if url:
-            parsed_url = urlparse(url)
-            s3_url = s3_url_extract(url)
-            path = clear_bucket_from_path(parsed_url.path)
-            url = s3_url + path
-            attrs["url"] = url
-        return attrs
-
-    class Meta:
-        model = UserFeedback
         fields = "__all__"
         extra_kwargs = {
             "id": {"read_only": True},
@@ -387,12 +347,11 @@ class LanguageSerializer(serializers.Serializer):
 
 
 class FeedbackSerializer(serializers.Serializer):
-    # Todo : save feedback details in UserFeedback
     name = serializers.CharField(required=False)
     email = serializers.CharField(required=False)
     phone = serializers.CharField(required=False)
-    topic = serializers.CharField()
-    message = serializers.CharField()
+    topic = serializers.CharField(required=True)
+    message = serializers.CharField(required=True)
     url = serializers.CharField(required=False)
 
     def validate(self, attrs):

@@ -40,7 +40,7 @@ def make_request(url, method, data={}, params={}):
     try:
         headers = {
             "content-type": "application/json",
-            "Authorization": settings.AUTHORIZATION,
+            "Authorization": settings.XMPP_AUTHORIZATION,
         }
         response = requests.request(
             method, url, data=json.dumps(data), params=params, headers=headers

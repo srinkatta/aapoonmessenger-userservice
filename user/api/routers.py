@@ -5,7 +5,6 @@ from user.api.viewsets import (
     AuthUserRegistrationView,
     AuthUserLoginView,
     UserLogsViewSet,
-    UserFeedbackViewSet,
     UserDeviceViewSet,
     UserInviteViewSet,
     UserProfileViewSet,
@@ -28,7 +27,6 @@ router = routers.SimpleRouter()
 router.register(r"user", UserViewSet, basename="user"),
 router.register(r"profile", UserProfileViewSet, basename="user_profile"),
 router.register(r"logs", UserLogsViewSet, basename="user_logs"),
-router.register(r"user_feedback", UserFeedbackViewSet, basename="user_feedback"),
 router.register(r"invite", UserInviteViewSet, basename="user_invite"),
 router.register(r"device", UserDeviceViewSet, basename="user_device")
 

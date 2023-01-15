@@ -22,8 +22,6 @@ class User(AbstractUser):
         max_length=10, choices=COUNTRY_CODE_CHOICES, null=True
     )
     phone_number = models.CharField(max_length=30, null=True)
-    updated_phone_number = models.CharField(max_length=30, null=True)
-    updated_country_code = models.CharField(max_length=30, null=True)
     phone_number_verified = models.BooleanField(
         verbose_name="Phone Verified", default=False
     )
@@ -77,22 +75,6 @@ class UserLog(BaseTimeStampedModel):
     class Meta:
         verbose_name = "UserLog"
         verbose_name_plural = "UserLogs"
-
-
-class UserFeedback(BaseTimeStampedModel):
-    feedback = models.CharField(max_length=100, null=True, blank=True)
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="feedback",
-    )
-
-    def __str__(self):
-        return f"{self.user}"
-
-    class Meta:
-        verbose_name = "UserFeedback"
-        verbose_name_plural = "UserFeedbacks"
 
 
 class UserInvite(BaseTimeStampedModel):
@@ -273,13 +255,13 @@ class UserProfile(BaseTimeStampedModel):
 
 
 class DeviceInfo(models.Model):
-    deviceId = models.CharField(max_length=300, null=True, blank=True)
+    device_id = models.CharField(max_length=300, null=True, blank=True)
     os = models.CharField(max_length=300, null=True, blank=True)
     os_version = models.CharField(max_length=300, null=True, blank=True)
     device_name = models.CharField(max_length=300, null=True, blank=True)
-    appVersion = models.CharField(max_length=300, null=True, blank=True)
-    appVersionCode = models.CharField(max_length=300, null=True, blank=True)
-    timeZone = models.CharField(max_length=300, null=True, blank=True)
+    app_version = models.CharField(max_length=300, null=True, blank=True)
+    app_version_code = models.CharField(max_length=300, null=True, blank=True)
+    time_zone = models.CharField(max_length=300, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(
         User,
