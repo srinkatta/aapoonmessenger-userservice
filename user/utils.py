@@ -1,3 +1,6 @@
+import re
+from datetime import datetime
+
 import requests
 import json
 from user_service import settings
@@ -131,3 +134,24 @@ def feedback_mail(request, data):
     # text_content = render_to_string('config/email/feedback.html',context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
     # send_mail(subject, context, from_email, [toemail])
+
+
+def calculate_age(dob):
+    dob = datetime.strptime(dob, "%Y-%m-%d")
+    today = datetime.today()
+    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    return age
+
+
+def check_special(value):
+    result = re.match("^[`@?^%*={}|\\?/]", value)
+    return bool(result)
+
+
+def is_english(value):
+    try:
+        value.encode(encoding="utf-8").decode("ascii")
+    except UnicodeDecodeError:
+        return False
+    else:
+        return True
