@@ -16,11 +16,11 @@ from user.models import (
     UserInvite,
     UserDevice,
     UserProfile,
-    UserPhoneVerification,
     DeviceInfo,
     AppInfo,
+    UserVerificationSetting,
 )
-from user.utils import s3_url_extract, clear_bucket_from_path
+from user.utils import s3_url_extract, clear_bucket_from_path, make_request
 import datetime
 from urllib.parse import urlparse
 from user_service import settings
@@ -37,6 +37,10 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     device_model = serializers.CharField(required=False)
     device_os_version = serializers.CharField(required=False)
+    user_type = serializers.CharField(required=False)
+    is_business = serializers.BooleanField(default=False)
+    invited_by = serializers.CharField(required=False)
+    hash_tag = serializers.CharField(required=False)
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
@@ -52,6 +56,12 @@ class RegisterSerializer(serializers.Serializer):
         return get_adapter().clean_password(password)
 
     def get_cleaned_data(self) -> dict:
+        is_business = self.validated_data.get("is_business")
+        if is_business:
+            user_type = "businessuser"
+        else:
+            user_type = "individualuser"
+
         return {
             "username": f"{self.validated_data.get('first_name', '')}-{generate_otp()}",
             "password": self.validated_data.get("password", ""),
@@ -60,33 +70,55 @@ class RegisterSerializer(serializers.Serializer):
             "phone_number": self.validated_data.get("phone_number", ""),
             "first_name": self.validated_data.get("first_name", ""),
             "last_name": self.validated_data.get("last_name", ""),
+            "hash_tag": self.validated_data.get("hash_tag", ""),
+            "user_type": user_type,
+            "is_business": is_business,
         }
 
     def save(self, request) -> User:
+        self.get_cleaned_data()[
+            "name"
+        ] = f"{self.get_cleaned_data()['first_name']} {self.get_cleaned_data()['last_name']}"
         country_code = self.get_cleaned_data()["country_code"]
         phone_number = self.get_cleaned_data()["phone_number"]
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
+
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
-        phone = f"{country_code}{phone_number}"
-        otp = generate_otp()
-        print(f"Generated otp: {otp}")
 
         if user.exists():
             user = user.first()
-            self.login_attempts_reset(user)
-            self.send_otp(phone_number, otp, user, phone)
-            self.save_user_device(user, device_model, device_os_version)
+            self.post_flow_actions(
+                user, country_code, phone_number, device_model, device_os_version
+            )
             return user
 
         user = User.objects.create(**self.get_cleaned_data())
 
         if request.data.get("password"):
             user.set_password(request.data["password"])
+        self.post_flow_actions(
+            user, country_code, phone_number, device_model, device_os_version
+        )
+
+        invited_by = request.data.get("invited_by", "")
+        if invited_by:
+            self.__invite_flow(user, invited_by)
+        return user
+
+    def __invite_flow(self, user, invited_by):
+        invited_by_user = User.objects.get(id=invited_by)
+        UserInvite.objects.get_or_create(invited_user=user, invited_by=invited_by_user)
+
+    def post_flow_actions(
+        self, user, country_code, phone_number, device_model, device_os_version
+    ):
+        otp = generate_otp()
+        print(f"Generated otp: {otp}")
+        phone = f"{country_code}{phone_number}"
         self.login_attempts_reset(user)
         self.send_otp(phone_number, otp, user, phone)
         self.save_user_device(user, device_model, device_os_version)
-        return user
 
     def send_otp(self, phone_number, otp, user, number):
         if user.country_code == "91":
@@ -180,11 +212,66 @@ class UserLoginSerializer(serializers.Serializer):
             )
             user.otp_requested = None
             user.phone_number_verified = True
-
             user.save()
+
+            # self.xmpp_check_account(user, access_token)
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")
+
+    def xmpp_check_account(self, user, access_token):
+        """
+        Make a Web Socket call, to check if the account exists at xmpp or not
+        """
+        phone_number = "{}{}".format(user.country_code, user.phone_number)
+        url = "{}{}".format(settings.XMPP_SERVER_URL, "api/check_account/")
+        data = {"user": phone_number, "host": settings.XMPP_HOST}
+        try:
+            response = make_request(url, "POST", data=data)
+            print("response", response)
+            self.xmpp_register_or_update_password(
+                response, phone_number, access_token, user
+            )
+        except Exception as e:
+            print("Error checking user at websocket server %s" % e)
+
+    def xmpp_register_or_update_password(
+        self, response, phone_number, access_token, user
+    ):
+        """
+        XMPP register or change password of user based on the `response` variable
+        """
+        if response.json() == 0:
+            # Change Password
+            url = "{}{}".format(settings.XMPP_SERVER_URL, "api/change_password/")
+            data = {
+                "user": phone_number,
+                "host": settings.XMPP_HOST,
+                "newpass": access_token,
+            }
+            try:
+                make_request(url, "POST", data=data)
+                user.id_xmpp_register = True
+                user.save()
+                print("Password changed successfully at websocket server")
+            except Exception as e:
+                print("Error in password change user at websocket server %s" % e)
+        elif response.json() == 1:
+            # create user
+            url = "{}{}".format(settings.XMPP_SERVER_URL, "api/register/")
+            data = {
+                "user": phone_number,
+                "host": settings.XMPP_HOST,
+                "password": access_token,
+            }
+            try:
+                resp = make_request(url, "POST", data=data)
+                print("reg response", resp)
+                user.id_xmpp_register = True
+                user.save()
+                print("User successfully registered at websocket server")
+            except Exception as e:
+                print("Error registering user at websocket server %s" % e)
 
 
 class SendOTPSerializer(serializers.Serializer):
@@ -201,13 +288,13 @@ class VerifyPhoneSerializer(serializers.Serializer):
         user_id = User.objects.get(id=user.id)
         user_phone_verify = request.user.phone_verification.filter()
         user_phone_verify = user_phone_verify.first()
-        phone_verification, created = UserPhoneVerification.objects.get_or_create(
+        verification, created = UserVerificationSetting.objects.get_or_create(
             country_code=user_phone_verify.country_code,
             phone_number=user_phone_verify.phone_number,
             user=user_id,
         )
         if created:
-            phone_verification.save()
+            verification.save()
 
         if user_phone_verify.wrong_attempts <= 5:
             if request.data["otp"] == otp:
@@ -265,7 +352,7 @@ class UserInviteSerializer(FlexFieldsModelSerializer):
         extra_kwargs = {
             "id": {"read_only": True},
         }
-        expandable_fields = {"user": UserSerializer}
+        expandable_fields = {"invited_by": UserSerializer}
 
 
 class UserDeviceSerializer(FlexFieldsModelSerializer):

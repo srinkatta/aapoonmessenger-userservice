@@ -17,6 +17,7 @@ from multiselectfield import MultiSelectField
 
 
 class User(AbstractUser):
+    name = models.CharField(max_length=100, null=True, blank=True)
     country_iso_code = models.CharField(max_length=255, null=True, blank=True)
     country_code = models.CharField(
         max_length=10, choices=COUNTRY_CODE_CHOICES, null=True
@@ -26,10 +27,7 @@ class User(AbstractUser):
         verbose_name="Phone Verified", default=False
     )
     user_type = models.CharField(max_length=15, null=True)
-    profile_pic = models.URLField(max_length=255, null=True, blank=True)
     second_last_login = models.DateTimeField(null=True, blank=True)
-    additional_last_login = models.DateTimeField(null=True, blank=True)
-    online_status = models.BooleanField(default=False)
     jid = models.CharField(max_length=255, null=True, blank=True)
     fcm_token = models.CharField(max_length=100, null=True, blank=True)
     apns_token = models.CharField(max_length=100, null=True, blank=True)
@@ -37,8 +35,13 @@ class User(AbstractUser):
     login_attempts = models.IntegerField(default=0)
     last_login_time = models.DateTimeField(null=True, blank=True)
     secondary_picture = models.TextField(null=True, blank=True)
-
     logo = models.TextField(null=True, blank=True)
+    date_joined = models.DateTimeField(null=True, blank=True)
+    is_business = models.BooleanField(verbose_name="Business User", default=False)
+    id_xmpp_register = models.BooleanField(
+        verbose_name="XMPP Registered", default=False
+    )
+    hash_tag = models.TextField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
@@ -47,12 +50,8 @@ class User(AbstractUser):
         return f"ID: {self.id}, Name: {self.first_name} {self.last_name}"
 
     class Meta:
-        verbose_name = "user"
-        verbose_name_plural = "users"
-
-    @property
-    def name(self):
-        return f"{self.first_name} {self.last_name}"
+        verbose_name = "User"
+        verbose_name_plural = "Users"
 
     @property
     def picture(self):
@@ -73,30 +72,31 @@ class UserLog(BaseTimeStampedModel):
         return f"{self.user}"
 
     class Meta:
-        verbose_name = "UserLog"
-        verbose_name_plural = "UserLogs"
+        verbose_name = "User Log"
+        verbose_name_plural = "User Logs"
 
 
 class UserInvite(BaseTimeStampedModel):
-    invite_token = models.CharField(max_length=100, null=True, blank=True)
-    invite_code = models.CharField(max_length=100, null=True, blank=True)
-    group_code = models.CharField(max_length=100, null=True, blank=True)
-    invited_email = models.CharField(max_length=100, null=True, blank=True)
-    invited_country_code = models.CharField(max_length=100, null=True, blank=True)
-    invited_phone_number = models.CharField(max_length=100, null=True, blank=True)
+    invited_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="invited_user",
+        null=True,
+        blank=True,
+    )
 
-    user = models.ForeignKey(
+    invited_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="invites",
     )
 
     def __str__(self):
-        return f"{self.user}"
+        return f"Invited By: {self.invited_by}, Invited User: {self.invited_user}"
 
     class Meta:
-        verbose_name = "UserInvite"
-        verbose_name_plural = "UserInvites"
+        verbose_name = "User Invite"
+        verbose_name_plural = "User Invites"
 
 
 class UserDevice(BaseTimeStampedModel):
@@ -112,11 +112,44 @@ class UserDevice(BaseTimeStampedModel):
         return f"{self.user}"
 
     class Meta:
-        verbose_name = "UserDevice"
-        verbose_name_plural = "UserDevices"
+        verbose_name = "User Device"
+        verbose_name_plural = "User Devices"
 
 
-class UserPhoneVerification(BaseTimeStampedModel):
+class UserVerificationSetting(BaseTimeStampedModel):
+    KYC_STATUS_CHOICES = (
+        (1, "Auto Verified"),
+        (2, "Holding Photo Id"),
+        (3, "Holding Photo Id and Set Profile Pic"),
+        (4, "Manually Verified"),
+        (5, "Manually Verified and Set Profile Pic"),
+        (6, "Max Attempts Reached"),
+        (7, "Not Matched"),
+        (8, "Not Recognised"),
+        (9, "Not Verified"),
+        (10, "Recently Attempted"),
+        (11, "Set the Profile Pic"),
+        (12, "Unable to Recognize"),
+    )
+
+    # kyc settings
+    kyc_status = models.IntegerField(choices=KYC_STATUS_CHOICES, default=9)
+    photo_id = models.CharField(max_length=100)
+    kyc_done = models.BooleanField(default=False)
+    id_laminated = models.BooleanField(default=False)
+    id_matched = models.BooleanField(default=False)
+    scan_attempts = models.BooleanField(default=False)
+    id_match_attempts = models.IntegerField(default=0)
+    manual_verify = models.BooleanField(default=False)
+    selfie = models.BooleanField(default=False)
+    scanned = models.BooleanField(default=False)
+    attachment = models.TextField(null=True, blank=True)
+
+    # account
+    account_details = models.BooleanField(default=False)
+    profile_details = models.BooleanField(default=False)
+
+    # phone verification
     country_code = models.CharField(
         max_length=10,
         choices=COUNTRY_CODE_CHOICES,
@@ -136,58 +169,15 @@ class UserPhoneVerification(BaseTimeStampedModel):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="phone_verification",
+        related_name="settings",
     )
-
-    def __str__(self):
-        return f"{self.user}"
 
     class Meta:
-        verbose_name = "UserPhoneVerification"
-        verbose_name_plural = "UserPhoneVerifications"
-
-
-class UserKycSetting(BaseTimeStampedModel):
-    KYC_STATUS_CHOICES = (
-        (1, "Auto Verified"),
-        (2, "Holding Photo Id"),
-        (3, "Holding Photo Id and Set Profile Pic"),
-        (4, "Manually Verified"),
-        (5, "Manually Verified and Set Profile Pic"),
-        (6, "Max Attempts Reached"),
-        (7, "Not Matched"),
-        (8, "Not Recognised"),
-        (9, "Not Verified"),
-        (10, "Recently Attempted"),
-        (11, "Set the Profile Pic"),
-        (12, "Unable to Recognize"),
-    )
-    status = models.IntegerField(choices=KYC_STATUS_CHOICES, default=9)
-    photo_id = models.CharField(max_length=100)
-    completed = models.BooleanField(default=False)
-    id_laminated = models.BooleanField(default=False)
-    id_matched = models.BooleanField(default=False)
-    scan_attempts = models.BooleanField(default=False)
-    id_xmpp_register = models.BooleanField(default=False)
-    id_match_attempts = models.IntegerField(default=0)
-    manual_verify = models.BooleanField(default=False)
-    selfie = models.BooleanField(default=False)
-    picture = models.BooleanField(default=False)
-    scanned = models.BooleanField(default=False)
-    attachment = models.TextField(null=True, blank=True)
-
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="kyc",
-    )
+        verbose_name = "User Verification Setting"
+        verbose_name_plural = "User Verification Settings"
 
     def __str__(self):
-        return f"{self.user}"
-
-    class Meta:
-        verbose_name = "UserKycSetting"
-        verbose_name_plural = "UserKycSettings"
+        return f"{self.user} Verfication Settings"
 
 
 class UserProfile(BaseTimeStampedModel):
@@ -250,11 +240,11 @@ class UserProfile(BaseTimeStampedModel):
         return f"{self.user} Profile"
 
     class Meta:
-        verbose_name = "UserProfile"
-        verbose_name_plural = "UserProfiles"
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
 
 
-class DeviceInfo(models.Model):
+class DeviceInfo(BaseTimeStampedModel):
     device_id = models.CharField(max_length=300, null=True, blank=True)
     os = models.CharField(max_length=300, null=True, blank=True)
     os_version = models.CharField(max_length=300, null=True, blank=True)
@@ -275,8 +265,8 @@ class DeviceInfo(models.Model):
         return self.device_name
 
     class Meta:
-        verbose_name = "DeviceInfo"
-        verbose_name_plural = "DeviceInfos"
+        verbose_name = "Device Info"
+        verbose_name_plural = "Devices Info"
 
 
 class AppInfo(models.Model):
@@ -289,8 +279,8 @@ class AppInfo(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = "AppInfo"
-        verbose_name_plural = "AppInfos"
+        verbose_name = "App Info"
+        verbose_name_plural = "Apps Info"
 
 
 class Languages(models.Model):
@@ -303,6 +293,10 @@ class Languages(models.Model):
     def __str__(self):
         return self.language
 
+    class Meta:
+        verbose_name = "Language"
+        verbose_name_plural = "Languages"
+
 
 class DeletedUser(BaseTimeStampedModel):
     is_deleted = models.BooleanField(default=False)
@@ -313,3 +307,6 @@ class DeletedUser(BaseTimeStampedModel):
         blank=True,
         related_name="deleted_object",
     )
+
+    def __str__(self):
+        return f"{self.user}, Deleted: {self.is_deleted}"

@@ -8,9 +8,8 @@ from user.models import (
     UserLog,
     UserInvite,
     UserDevice,
-    UserKycSetting,
+    UserVerificationSetting,
     UserProfile,
-    UserPhoneVerification,
     DeviceInfo,
     AppInfo,
     Languages,
@@ -20,9 +19,8 @@ from user.models import (
 admin.site.register(UserLog)
 admin.site.register(UserInvite)
 admin.site.register(UserDevice)
-admin.site.register(UserKycSetting)
+admin.site.register(UserVerificationSetting)
 admin.site.register(UserProfile)
-admin.site.register(UserPhoneVerification)
 admin.site.register(DeviceInfo)
 admin.site.register(AppInfo)
 admin.site.register(Languages)

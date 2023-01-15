@@ -73,12 +73,12 @@ urlpatterns = [
     ),
     path(
         "kyc_upload/",
-        kyc_viewsets.kycuploadviewset,
+        kyc_viewsets.KYCUploadViewSet.as_view({"get": "list"}),
         name="kyc_upload",
     ),
     path(
         "feedback_upload/",
-        kyc_viewsets.feedbackuploadviewset,
+        kyc_viewsets.FeedbackUploadViewSet.as_view({"get": "list"}),
         name="feedback_upload",
     ),
     path("device_info/", DeviceInfoView.as_view(), name="device_info"),

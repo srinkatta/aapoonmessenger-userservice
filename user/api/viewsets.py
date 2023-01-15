@@ -44,7 +44,7 @@ from user.models import (
     AppInfo,
     Languages,
     DeletedUser,
-    UserPhoneVerification,
+    UserVerificationSetting,
 )
 from user.utils import (
     make_request,
@@ -72,7 +72,6 @@ class AuthUserRegistrationView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        print(serializer.data)
         return Response(
             {"Message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
         )
@@ -116,10 +115,10 @@ class UserInviteViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return UserInvite.objects.filter(user=self.request.user)
+        return UserInvite.objects.filter(invited_by=self.request.user)
 
     def get_object(self):
-        return get_object_or_404(UserInvite.objects.all(), user=self.request.user)
+        return get_object_or_404(UserInvite.objects.all(), invited_by=self.request.user)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -255,13 +254,13 @@ class SendOTPView(APIView):
         user.save()
 
     def get_phone_verification(self, country_code, phone_number, user_id):
-        phone_verification, created = UserPhoneVerification.objects.get_or_create(
+        verification, created = UserVerificationSetting.objects.get_or_create(
             country_code=country_code,
             phone_number=phone_number,
             user=user_id,
         )
         if created:
-            phone_verification.save()
+            verification.save()
 
     def max_phone_attempts(self, request):
         user_phone_verify = request.user.phone_verification.filter().first()
@@ -470,6 +469,7 @@ class UserDeleteView(APIView):
             else:
                 phone = str(user.updated_country_code) + str(user.updated_phone_number)
                 send_sms_message(message, user, phone)
+                self.xmpp_unregister(user)  # TODO: Cross check
         except SMTPAuthenticationError:
             return Response(
                 data={"data": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
@@ -482,6 +482,18 @@ class UserDeleteView(APIView):
         return Response(
             data={"data": "User added to be deleted list."}, status=status.HTTP_200_OK
         )
+
+    def xmpp_unregister(self, user):
+        phone_number = "{}{}".format(
+            user.first().country_code, user.first().phone_number
+        )
+        endpoint = "{}{}".format(settings.XMPP_SERVER_URL, "api/unregister/")
+        data = {"user": phone_number, "host": settings.XMPP_HOST}
+        try:
+            make_request(endpoint, "POST", data=data)
+            print("User successfully unregistered at websocket server")
+        except Exception as e:
+            print("Error unregistering user at websocket server %s" % e)
 
 
 class UserDeleteRevokeView(APIView):
