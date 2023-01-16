@@ -16,12 +16,19 @@ from user.models import (
     UserInvite,
     UserDevice,
     UserProfile,
-    UserPhoneVerification,
     DeviceInfo,
     AppInfo,
+    UserVerificationSetting,
 )
-from user.utils import s3_url_extract, clear_bucket_from_path
-import datetime
+from user.utils import (
+    s3_url_extract,
+    clear_bucket_from_path,
+    make_request,
+    calculate_age,
+    check_special,
+    is_english,
+)
+from datetime import datetime
 from urllib.parse import urlparse
 from user_service import settings
 
@@ -37,6 +44,10 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     device_model = serializers.CharField(required=False)
     device_os_version = serializers.CharField(required=False)
+    user_type = serializers.CharField(required=False)
+    is_business = serializers.BooleanField(default=False)
+    invited_by = serializers.CharField(required=False)
+    hash_tag = serializers.CharField(required=False)
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
@@ -52,6 +63,12 @@ class RegisterSerializer(serializers.Serializer):
         return get_adapter().clean_password(password)
 
     def get_cleaned_data(self) -> dict:
+        is_business = self.validated_data.get("is_business")
+        if is_business:
+            user_type = "businessuser"
+        else:
+            user_type = "individualuser"
+
         return {
             "username": f"{self.validated_data.get('first_name', '')}-{generate_otp()}",
             "password": self.validated_data.get("password", ""),
@@ -60,33 +77,55 @@ class RegisterSerializer(serializers.Serializer):
             "phone_number": self.validated_data.get("phone_number", ""),
             "first_name": self.validated_data.get("first_name", ""),
             "last_name": self.validated_data.get("last_name", ""),
+            "hash_tag": self.validated_data.get("hash_tag", ""),
+            "user_type": user_type,
+            "is_business": is_business,
         }
 
     def save(self, request) -> User:
+        self.get_cleaned_data()[
+            "name"
+        ] = f"{self.get_cleaned_data()['first_name']} {self.get_cleaned_data()['last_name']}"
         country_code = self.get_cleaned_data()["country_code"]
         phone_number = self.get_cleaned_data()["phone_number"]
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
+
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
-        phone = f"{country_code}{phone_number}"
-        otp = generate_otp()
-        print(f"Generated otp: {otp}")
 
         if user.exists():
             user = user.first()
-            self.login_attempts_reset(user)
-            self.send_otp(phone_number, otp, user, phone)
-            self.save_user_device(user, device_model, device_os_version)
+            self.post_flow_actions(
+                user, country_code, phone_number, device_model, device_os_version
+            )
             return user
 
         user = User.objects.create(**self.get_cleaned_data())
 
         if request.data.get("password"):
             user.set_password(request.data["password"])
+        self.post_flow_actions(
+            user, country_code, phone_number, device_model, device_os_version
+        )
+
+        invited_by = request.data.get("invited_by", "")
+        if invited_by:
+            self.__invite_flow(user, invited_by)
+        return user
+
+    def __invite_flow(self, user, invited_by):
+        invited_by_user = User.objects.get(id=invited_by)
+        UserInvite.objects.get_or_create(invited_user=user, invited_by=invited_by_user)
+
+    def post_flow_actions(
+        self, user, country_code, phone_number, device_model, device_os_version
+    ):
+        otp = generate_otp()
+        print(f"Generated otp: {otp}")
+        phone = f"{country_code}{phone_number}"
         self.login_attempts_reset(user)
         self.send_otp(phone_number, otp, user, phone)
         self.save_user_device(user, device_model, device_os_version)
-        return user
 
     def send_otp(self, phone_number, otp, user, number):
         if user.country_code == "91":
@@ -97,7 +136,7 @@ class RegisterSerializer(serializers.Serializer):
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
-        user.last_login_time = datetime.datetime.now()
+        user.last_login_time = datetime.now()
         user.save()
 
     def max_attempts(self, user):
@@ -114,9 +153,9 @@ class RegisterSerializer(serializers.Serializer):
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
             datetime_format = "%Y-%m-%d %H:%M:%S.%f"
-            diff = datetime.datetime.strptime(
-                str(datetime.datetime.now()), datetime_format
-            ) - datetime.datetime.strptime(str(updated_date), datetime_format)
+            diff = datetime.strptime(
+                str(datetime.now()), datetime_format
+            ) - datetime.strptime(str(updated_date), datetime_format)
             hours, remainder = divmod(diff.seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
             if minutes >= 15:
@@ -159,6 +198,7 @@ class UserLoginSerializer(serializers.Serializer):
             refresh_token = str(refresh)
             access_token = str(refresh.access_token)
 
+            user.second_last_login = user.last_login
             update_last_login(None, user)
 
             user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
@@ -180,11 +220,66 @@ class UserLoginSerializer(serializers.Serializer):
             )
             user.otp_requested = None
             user.phone_number_verified = True
-
             user.save()
+
+            self.xmpp_check_account(user, access_token)
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")
+
+    def xmpp_check_account(self, user, access_token):
+        """
+        Make a Web Socket call, to check if the account exists at xmpp or not
+        """
+        phone_number = "{}{}".format(user.country_code, user.phone_number)
+        url = "{}{}".format(settings.XMPP_SERVER_URL, "api/check_account/")
+        data = {"user": phone_number, "host": settings.XMPP_HOST}
+        try:
+            response = make_request(url, "POST", data=data)
+            print("response", response)
+            self.xmpp_register_or_update_password(
+                response, phone_number, access_token, user
+            )
+        except Exception as e:
+            print("Error checking user at websocket server %s" % e)
+
+    def xmpp_register_or_update_password(
+        self, response, phone_number, access_token, user
+    ):
+        """
+        XMPP register or change password of user based on the `response` variable
+        """
+        if response.json() == 0:
+            # Change Password
+            url = "{}{}".format(settings.XMPP_SERVER_URL, "api/change_password/")
+            data = {
+                "user": phone_number,
+                "host": settings.XMPP_HOST,
+                "newpass": access_token,
+            }
+            try:
+                make_request(url, "POST", data=data)
+                user.id_xmpp_register = True
+                user.save()
+                print("Password changed successfully at websocket server")
+            except Exception as e:
+                print("Error in password change user at websocket server %s" % e)
+        elif response.json() == 1:
+            # create user
+            url = "{}{}".format(settings.XMPP_SERVER_URL, "api/register/")
+            data = {
+                "user": phone_number,
+                "host": settings.XMPP_HOST,
+                "password": access_token,
+            }
+            try:
+                resp = make_request(url, "POST", data=data)
+                print("reg response", resp)
+                user.id_xmpp_register = True
+                user.save()
+                print("User successfully registered at websocket server")
+            except Exception as e:
+                print("Error registering user at websocket server %s" % e)
 
 
 class SendOTPSerializer(serializers.Serializer):
@@ -201,13 +296,13 @@ class VerifyPhoneSerializer(serializers.Serializer):
         user_id = User.objects.get(id=user.id)
         user_phone_verify = request.user.phone_verification.filter()
         user_phone_verify = user_phone_verify.first()
-        phone_verification, created = UserPhoneVerification.objects.get_or_create(
+        verification, created = UserVerificationSetting.objects.get_or_create(
             country_code=user_phone_verify.country_code,
             phone_number=user_phone_verify.phone_number,
             user=user_id,
         )
         if created:
-            phone_verification.save()
+            verification.save()
 
         if user_phone_verify.wrong_attempts <= 5:
             if request.data["otp"] == otp:
@@ -265,7 +360,7 @@ class UserInviteSerializer(FlexFieldsModelSerializer):
         extra_kwargs = {
             "id": {"read_only": True},
         }
-        expandable_fields = {"user": UserSerializer}
+        expandable_fields = {"invited_by": UserSerializer}
 
 
 class UserDeviceSerializer(FlexFieldsModelSerializer):
@@ -279,7 +374,15 @@ class UserDeviceSerializer(FlexFieldsModelSerializer):
 
 
 class UserProfileInputSerializer(FlexFieldsModelSerializer):
-    photo_id = serializers.CharField(required=True, allow_null=True, allow_blank=True)
+    ACTION_CHOICES = (("account", "account"), ("profile", "profile"))
+
+    action = serializers.ChoiceField(required=True, choices=ACTION_CHOICES)
+    name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    email = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    country_iso_code = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
+    photo_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
@@ -296,18 +399,106 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
     def validate(self, attrs):
         request = self.context["request"]
         attrs = super().validate(attrs)
-        if not attrs["photo_id"]:
-            raise ValidationError("Photo id can't be blank")
-        user_kyc_setting = request.user.profile.filter()
-        user_kyc_setting = user_kyc_setting.first()
-        user_kyc_setting.photo_id = attrs["photo_id"]
-        user_kyc_setting.save()
-        del attrs["photo_id"]
+        action = attrs["action"]
+        if action == "account":
+            self.__validate_account_details(request, attrs)
+
+        if action == "profile":
+            self.__validate_profile_details(attrs)
+
         return attrs
+
+    def __validate_account_details(self, request, attrs):
+        # Name Validate & Update
+        self.name_validate(request, attrs)
+
+        # validating and updating Photo Id
+        photo_id = attrs.get("photo_id")
+        self.__photo_id_validate(request, photo_id)
+
+        # PostCode Validation
+        if attrs.get("postcode") and len(attrs.get("postcode")) > 10:
+            raise ValidationError("Postal code can't be more than 10 digits.")
+
+        # DOB Validate & Update
+        self.dob_validate(attrs)
+
+        # Email Validate & Update
+        if attrs.get("email"):
+            self.email_validate(request, attrs)
+
+        return attrs
+
+    def __validate_profile_details(self, attrs):
+        skillset = attrs.get("skillset")
+        profession = attrs.get("profession")
+        experience = attrs.get("experience")
+
+        if (
+            check_special(skillset)
+            or check_special(profession)
+            or check_special(experience)
+            or not is_english(skillset)
+            or not is_english(profession)
+            or not is_english(experience)
+        ):
+            """Validation: Checking following fields contains only english characters"""
+            raise ValidationError("Only English Characters are supported.")
+
+    def email_validate(self, request, attrs):
+        if (
+            User.objects.filter(email=attrs.get("email"))
+            .exclude(id=request.user.id)
+            .exists()
+        ):
+            raise ValidationError(
+                "A User is already registered with this e-mail address."
+            )
+        else:
+            request.user.email = attrs.get("email")
+            request.user.save()
+
+    def __photo_id_validate(self, request, photo_id):
+        if photo_id and photo_id != "":
+            if (
+                UserVerificationSetting.objects.filter(photo_id=photo_id)
+                .exclude(user=request.user.id)
+                .exclude(photo_id="0")
+                .exists()
+            ):
+                raise ValidationError("Photo id already exists")
+            else:
+                user_settings = request.user.settings.filter()
+                user_settings = user_settings.first()
+                user_settings.photo_id = photo_id
+                user_settings.save()
+                return False
+        if not photo_id:
+            raise ValidationError("Photo id can't be blank")
+
+    def dob_validate(self, attrs):
+        dob = attrs.get("date_of_birth")
+        if not dob == "":
+            attrs["date_of_birth"] = None
+        elif dob:
+            if len(dob) > 4 and calculate_age(dob) < 13:
+                return attrs
+            else:
+                raise ValidationError("User must be 13 years old.")
+        return attrs
+
+    def name_validate(self, request, attrs):
+        name = attrs.get("name").strip()
+        request.user.first_name = name[0]
+        request.user.last_name = name[-1] if not name[0] == name[-1] else ""
+        request.user.save()
 
 
 class UserProfileSerializer(FlexFieldsModelSerializer):
+    name = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
     photo_id = serializers.SerializerMethodField()
+    country_iso_code = serializers.SerializerMethodField()
     sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
@@ -322,7 +513,18 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
         expandable_fields = {"user": UserSerializer}
 
     def get_photo_id(self, instance):
-        return "354"
+        user_settings = instance.user.settings.filter().first()
+        return user_settings.photo_id
+
+    def get_name(self, instance):
+        name = f"{instance.user.first_name} {instance.user.last_name}"
+        return name
+
+    def get_email(self, instance):
+        return instance.user.email
+
+    def get_country_iso_code(self, instance):
+        return instance.user.country_iso_code
 
 
 class DeviceInfoSerializer(serializers.ModelSerializer):

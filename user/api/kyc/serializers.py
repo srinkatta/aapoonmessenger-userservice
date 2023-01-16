@@ -20,7 +20,7 @@ MESSAGES = {
 
 
 def failure_attempt_check(self, verification, user):
-    user_kyc_setting = user.kyc.get()
+    user_kyc_setting = user.settings.get()
     logs = user.logs.get().kyc_logs
     attempts = re.findall(r"<b>Target Image: https://", logs) if logs else ""
 
@@ -76,7 +76,7 @@ def distance_finder(user, matches, string, log_message, field_name=None):
                     ("%s - %s" % (string, match)),
                     "Matched with String",
                 )
-                return True
+                match_result = True
     add_log_entries(user, log_message)
     return match_result
 
@@ -316,7 +316,7 @@ class BaseKYCSerializer(serializers.Serializer):
         return verification
 
     def id_text_match(self, user, log_message, verification):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification["is_verified"] = False
         verification["face_id_detected"] = False
         verification["id_number_matched"] = True
@@ -331,7 +331,7 @@ class BaseKYCSerializer(serializers.Serializer):
         return verification
 
     def id_text_not_match(self, user, log_message, verification, matches):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification["is_verified"] = False
         verification["face_id_detected"] = False
         verification["id_number_matched"] = False
@@ -355,7 +355,7 @@ class BaseKYCSerializer(serializers.Serializer):
         return verification
 
     def max_attempts_notification(self, user, verification, matches):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification["code"] = 3
         verification["back"] = True
         user_kyc_setting.attachment = self.data["source_key"]
@@ -454,7 +454,7 @@ class BaseKYCSerializer(serializers.Serializer):
         return verification
 
     def facial_compare_failed(self, user, log_message, verification, logs):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification["pictures_match"] = False
         if logs:
             attempts = re.findall(r"<b>Target Image: https://", logs)
@@ -480,7 +480,7 @@ class BaseKYCSerializer(serializers.Serializer):
         return verification
 
     def facial_compare_success(self, user, log_message, verification):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification["is_verified"] = True
         if "query" not in self.instance:
             log_message = info_message(user, log_message, "Verification is successFull")
@@ -652,7 +652,7 @@ class SelfieSerializer(BaseKYCSerializer):
     url = serializers.CharField(required=True)
 
     def selfie(self, user):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,
@@ -670,7 +670,7 @@ class PhotoIDSerializer(BaseKYCSerializer):
     source_key = serializers.CharField(required=True)
 
     def photo_id_verification(self, user):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,
@@ -781,7 +781,7 @@ class ProfileSerializer(BaseKYCSerializer):
     target_key = serializers.CharField(required=True)
 
     def profile(self, user):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,
@@ -805,7 +805,7 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
     source_key_back_side = serializers.CharField(required=False)
 
     def compare_faces(self, user):
-        user_kyc_setting = user.kyc.get()
+        user_kyc_setting = user.settings.get()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,

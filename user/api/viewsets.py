@@ -44,7 +44,7 @@ from user.models import (
     AppInfo,
     Languages,
     DeletedUser,
-    UserPhoneVerification,
+    UserVerificationSetting,
 )
 from user.utils import (
     make_request,
@@ -59,7 +59,6 @@ from user.user_delete import UserDelete
 from user_service import settings
 from rest_framework_api_key.permissions import HasAPIKey
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +71,6 @@ class AuthUserRegistrationView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        print(serializer.data)
         return Response(
             {"Message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
         )
@@ -116,10 +114,10 @@ class UserInviteViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return UserInvite.objects.filter(user=self.request.user)
+        return UserInvite.objects.filter(invited_by=self.request.user)
 
     def get_object(self):
-        return get_object_or_404(UserInvite.objects.all(), user=self.request.user)
+        return get_object_or_404(UserInvite.objects.all(), invited_by=self.request.user)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -173,6 +171,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = (permissions.IsAuthenticated,)
+    http_method_names = ("get", "put", "patch")
 
     def get_serializer_class(self):
         if self.request.method in ["POST", "PUT"]:
@@ -200,6 +199,63 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
+        if not str(request.user.id) == pk:
+            return Response(
+                {"error": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
+            )
+        instance = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        action = serializer.validated_data["action"]
+        if action == "account":
+            self.update_account_details(instance, serializer.validated_data)
+        if action == "profile":
+            self.update_profile_details(instance, serializer.validated_data)
+        response = UserProfileSerializer(instance)
+        return Response(response.data)
+
+    def update_account_details(self, instance, data):
+        instance.date_of_birth = data.get("date_of_birth")
+        instance.gender = data.get("gender")
+        instance.address = data.get("address")
+        instance.city = data.get("city")
+        instance.state = data.get("state")
+        instance.postcode = data.get("postcode")
+        instance.company = data.get("company")
+        instance.role = data.get("role")
+        if data.get("country_iso_code"):
+            instance.user.country_iso_code = data.get("country_iso_code")
+            instance.user.save()
+
+        user_settings = instance.user.settings.get()
+        if not user_settings.account_details and data.get("name"):
+            user_settings.account_details = True
+        instance.save()
+
+        return instance
+
+    def update_profile_details(self, instance, data):
+        instance.skillset = data.get("skillset")
+        instance.experience = data.get("experience")
+        instance.profession = data.get("profession")
+        instance.education = data.get("education")
+        instance.income = data.get("income")
+        instance.relationship_status = data.get("relationship_status")
+        instance.sports = data.get("sports")
+        instance.interests = data.get("interests")
+        instance.about_me = data.get("about_me")
+        instance.political_interests = data.get("political_interests")
+        instance.iam_looking_for = data.get("iam_looking_for")
+
+        user_settings = instance.user.settings.get()
+        if not user_settings.account_details and data.get("name"):
+            user_settings.profile_details = True
+            user_settings.save()
+
+        instance.save()
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -255,13 +311,13 @@ class SendOTPView(APIView):
         user.save()
 
     def get_phone_verification(self, country_code, phone_number, user_id):
-        phone_verification, created = UserPhoneVerification.objects.get_or_create(
+        verification, created = UserVerificationSetting.objects.get_or_create(
             country_code=country_code,
             phone_number=phone_number,
             user=user_id,
         )
         if created:
-            phone_verification.save()
+            verification.save()
 
     def max_phone_attempts(self, request):
         user_phone_verify = request.user.phone_verification.filter().first()
@@ -470,6 +526,7 @@ class UserDeleteView(APIView):
             else:
                 phone = str(user.updated_country_code) + str(user.updated_phone_number)
                 send_sms_message(message, user, phone)
+                self.xmpp_unregister(user)  # TODO: Cross check
         except SMTPAuthenticationError:
             return Response(
                 data={"data": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
@@ -482,6 +539,18 @@ class UserDeleteView(APIView):
         return Response(
             data={"data": "User added to be deleted list."}, status=status.HTTP_200_OK
         )
+
+    def xmpp_unregister(self, user):
+        phone_number = "{}{}".format(
+            user.first().country_code, user.first().phone_number
+        )
+        endpoint = "{}{}".format(settings.XMPP_SERVER_URL, "api/unregister/")
+        data = {"user": phone_number, "host": settings.XMPP_HOST}
+        try:
+            make_request(endpoint, "POST", data=data)
+            print("User successfully unregistered at websocket server")
+        except Exception as e:
+            print("Error unregistering user at websocket server %s" % e)
 
 
 class UserDeleteRevokeView(APIView):

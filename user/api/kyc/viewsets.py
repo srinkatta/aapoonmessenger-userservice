@@ -1,18 +1,18 @@
-from urllib.parse import urlparse
 import uuid
+from urllib.parse import urlparse
 
-from rest_framework import permissions, status
+from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
+from user.api.kyc.s3uploadserializer import S3UploadPolicySerializer
 from user.api.kyc.serializers import (
     SelfieSerializer,
     PhotoIDSerializer,
     ProfileSerializer,
     CompareFacesV2Serializer,
 )
-from user.api.kyc.s3uploadserializer import S3UploadPolicySerializer
 from user.utils import s3_url_extract, clear_bucket_from_path
 
 
@@ -39,13 +39,12 @@ class SelfieViewSet(BaseViewSet):
         )
         serializer.is_valid(raise_exception=True)
         url = serializer.data.get("url")
-        link = self.cloudfront_cdn(url)
         serializer.data["url"] = self.cloudfront_cdn(url)
 
         response = serializer.selfie(request.user)
 
         if response.get("is_verified"):
-            user_kyc_settings = request.user.kyc.get()
+            user_kyc_settings = request.user.settings.get()
             user_kyc_settings.selfie = True
             user_kyc_settings.picture = (
                 request.data.get("picture") if request.data.get("picture") else False
@@ -135,9 +134,9 @@ class ComparefacesViewSet(BaseViewSet):
         response = serializer.compare_faces(request.user)
 
         if response.get("is_verified"):
-            user_kyc_setting = request.user.kyc.get()
-            user_kyc_setting.completed = True
-            user_kyc_setting.status = 1
+            user_kyc_setting = request.user.settings.get()
+            user_kyc_setting.kyc_done = True
+            user_kyc_setting.kyc_status = 1
             user_kyc_setting.save()
             request.user.logo = self.cloudfront_cdn(link)
             request.user.save()
@@ -162,7 +161,3 @@ class FeedbackUploadViewSet(GenericViewSet):
         key = "feedback/%s/${filename}" % str(uuid.uuid1())
         serializer = self.serializer_class(key=key, content_type="image/png/jpeg/jpg")
         return Response(serializer.to_native())
-
-
-kycuploadviewset = KYCUploadViewSet.as_view({"get": "list"})
-feedbackuploadviewset = FeedbackUploadViewSet.as_view({"get": "list"})
