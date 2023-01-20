@@ -52,6 +52,7 @@ from user.utils import (
     send_sms_message,
     send_email_notification,
     feedback_mail,
+    user_kyc_status,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
@@ -60,6 +61,10 @@ from user_service import settings
 from rest_framework_api_key.permissions import HasAPIKey
 
 logger = logging.getLogger(__name__)
+
+ERROR_MESSAGE = (
+    "Sorry, We are  facing an issue currently. Thanks for noticing . We fix it soon."
+)
 
 
 class AuthUserRegistrationView(APIView):
@@ -91,6 +96,139 @@ class AuthUserLoginView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+
+class SendOTPView(APIView):
+    """
+    API View to send otp to user phone number by using POST and GET Method.
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+    allowed_methods = ("POST", "GET")
+
+    def get_serializer(self, *args, **kwargs):
+        return SendOTPSerializer(*args, **kwargs)
+
+    def send_otp(self, phone_number, otp, user, number):
+        if user.country_code == "91":
+            fast_sms = sms.FAST_SMS(phone_number, otp, user)
+            fast_sms.send_message()
+        else:
+            sms_client = sms.SMS(number, otp, user)
+            sms_client.send_message()
+        user.verify_attempts = user.verify_attempts + 1
+        user.save()
+
+    def max_phone_attempts(self, request):
+        user_settings = request.user.settings.filter().first()
+        if user_settings.verify_attempts >= 3:
+            phone_failure(self, request)
+            return Response(
+                {
+                    "detail": "You have reached Max Phone Attempts for Phone Verification"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def get(self, request):
+        user = request.user
+        user_settings = request.user.settings.filter().first()
+        self.max_phone_attempts(request)
+        if user_settings.phone_number:
+            phone = f"{user_settings.country_code}{user_settings.phone_number}"
+            phone_number = user_settings.phone_number
+            otp = generate_otp()
+            self.send_otp(phone_number, otp, user_settings, phone)
+            user.otp_requested = otp
+            user.save()
+            print(f"Generated Otp: {otp}")
+            return Response(
+                {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
+            )
+
+    def post(self, request):
+        user = request.user
+        phone_number = request.data["phone_number"]
+        country_code = request.data["country_code"]
+
+        number = f"{country_code}{phone_number}"
+        phone = User.objects.filter(
+            phone_number=phone_number, country_code=country_code
+        )
+
+        if len(phone) >= 1 and not user.phone_number == phone_number:
+            return Response(
+                {"detail": "Mobile number already exists"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_settings = request.user.settings.filter().first()
+        self.max_phone_attempts(request)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if phone_number.isdigit():
+            otp = generate_otp()
+            self.send_otp(phone_number, otp, user_settings, number)
+            print(f"Generated Otp: {otp}")
+            user.otp_requested = otp
+            user_settings.phone_number = phone_number
+            user_settings.country_code = country_code
+            user_settings.save()
+            user.save()
+            return Response(
+                {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"error": "Special characters not allowed"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class VerifyPhoneView(APIView):
+    """
+    API View to verify otp sent to user phone number by POST request.
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+    allowed_methods = ("POST",)
+
+    def get_serializer(self, *args, **kwargs):
+        return VerifyPhoneSerializer(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        serializer = self.get_serializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.phone_validate(request)
+
+        user.phone_number_verified = True
+        user_settings = request.user.settings.filter().first()
+        user.phone_number = user_settings.phone_number
+        user.country_code = user_settings.country_code
+        user_settings.wrong_attempts = 0
+        user.save()
+        user_settings.save()
+
+        # Make call to websocket
+
+        phone_number = "{}{}".format(user.country_code, user.phone_number)
+        url = "{}{}".format(settings.XMPP_SERVER_URL, "api/register/")
+        data = {
+            "user": phone_number,
+            "host": settings.XMPP_HOST,
+            "password": "{}@{}".format(phone_number, settings.XMPP_HOST),
+        }
+        try:
+            make_request(url, "POST", data=data)
+            logger.info("User successfully registered at websocket server")
+        except Exception as e:
+            logger.debug("Error registering user at websocket server %s" % e)
+        return Response(
+            {"detail": "Phone Number successfully verified"}, status=status.HTTP_200_OK
+        )
 
 
 class UserLogsViewSet(viewsets.ModelViewSet):
@@ -289,150 +427,6 @@ class PushNotificationSettings(APIView):
         return Response({"Data": "Push Notification Settings Updated."}, status=200)
 
 
-class SendOTPView(APIView):
-    """
-    API View to send otp to user phone number by using POST and GET Method.
-    """
-
-    permission_classes = (permissions.IsAuthenticated,)
-    allowed_methods = ("POST", "GET")
-
-    def get_serializer(self, *args, **kwargs):
-        return SendOTPSerializer(*args, **kwargs)
-
-    def send_otp(self, phone_number, otp, user, number):
-        if user.country_code == "91":
-            fast_sms = sms.FAST_SMS(phone_number, otp, user)
-            fast_sms.send_message()
-        else:
-            sms_client = sms.SMS(number, otp, user)
-            sms_client.send_message()
-        user.verify_attempts = user.verify_attempts + 1
-        user.save()
-
-    def get_phone_verification(self, country_code, phone_number, user_id):
-        verification, created = UserVerificationSetting.objects.get_or_create(
-            country_code=country_code,
-            phone_number=phone_number,
-            user=user_id,
-        )
-        if created:
-            verification.save()
-
-    def max_phone_attempts(self, request):
-        user_phone_verify = request.user.phone_verification.filter().first()
-        if user_phone_verify.verify_attempts >= 3:
-            phone_failure(self, request)
-            return Response(
-                {
-                    "detail": "You have reached Max Phone Attempts for Phone Verification"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-    def get(self, request):
-        user = request.user
-        user_phone_verify = request.user.phone_verification.get()
-        self.max_phone_attempts(request)
-        if user_phone_verify.phone_number:
-            phone = f"{user_phone_verify.country_code}{user_phone_verify.phone_number}"
-            phone_number = user_phone_verify.phone_number
-            otp = generate_otp()
-            self.send_otp(phone_number, otp, user_phone_verify, phone)
-            user.otp_requested = otp
-            user.save()
-            print(f"Generated Otp: {otp}")
-            return Response(
-                {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
-            )
-
-    def post(self, request):
-        user = request.user
-        phone_number = request.data["phone_number"]
-        country_code = request.data["country_code"]
-
-        number = f"{country_code}{phone_number}"
-        phone = User.objects.filter(
-            phone_number=phone_number, country_code=country_code
-        )
-
-        if len(phone) >= 1 and not user.phone_number == phone_number:
-            return Response(
-                {"detail": "Mobile number already exists"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        user_id = User.objects.get(id=user.id)
-        self.get_phone_verification(country_code, phone_number, user_id)
-
-        user_phone_verify = request.user.phone_verification.filter().first()
-        self.max_phone_attempts(request)
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        if phone_number.isdigit():
-            otp = generate_otp()
-            self.send_otp(phone_number, otp, user_phone_verify, number)
-            print(f"Generated Otp: {otp}")
-            user.otp_requested = otp
-            user_phone_verify.phone_number = phone_number
-            user_phone_verify.country_code = country_code
-            user_phone_verify.save()
-            user.save()
-            return Response(
-                {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
-            )
-        else:
-            return Response(
-                {"error": "Special characters not allowed"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-
-class VerifyPhoneView(APIView):
-    """
-    API View to verify otp sent to user phone number by POST request.
-    """
-
-    permission_classes = (permissions.IsAuthenticated,)
-    allowed_methods = ("POST",)
-
-    def get_serializer(self, *args, **kwargs):
-        return VerifyPhoneSerializer(*args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        user = request.user
-        serializer = self.get_serializer(
-            data=request.data, context={"request": request}
-        )
-        serializer.phone_validate(request)
-
-        user.phone_number_verified = True
-        user_ph = request.user.phone_verification.filter().first()
-        user.phone_number = user_ph.phone_number
-        user.country_code = user_ph.country_code
-        user_ph.wrong_attempts = 0
-        user.save()
-        user_ph.save()
-
-        # Make call to websocket
-
-        phone_number = "{}{}".format(user.country_code, user.phone_number)
-        url = "{}{}".format(settings.XMPP_SERVER_URL, "api/register/")
-        data = {
-            "user": phone_number,
-            "host": settings.XMPP_HOST,
-            "password": "{}@{}".format(phone_number, settings.XMPP_HOST),
-        }
-        try:
-            make_request(url, "POST", data=data)
-            logger.info("User successfully registered at websocket server")
-        except Exception as e:
-            logger.debug("Error registering user at websocket server %s" % e)
-        return Response(
-            {"detail": "Phone Number successfully verified"}, status=status.HTTP_200_OK
-        )
-
-
 class DeviceInfoView(APIView):
     """
     API View to maintain App versioning
@@ -515,7 +509,14 @@ class UserDeleteView(APIView):
 
     def post(self, request, *args, **kwargs):
         user = request.data["user_id"]
-        UserDelete().save_delete_record(user)
+        try:
+            UserDelete().save_delete_record(user)
+        except Exception as error:
+            return Response(
+                {"details": ERROR_MESSAGE, "message": str(error), "status_code": 500},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         try:
             user = User.objects.get(id=user)
             message = "Your request for aapoon account deletion has been performed successfully."
@@ -578,40 +579,18 @@ class InviteListView(APIView):
         try:
             user = request.user
 
-            invites = UserInvite.objects.filter(user=user)
+            invites = UserInvite.objects.filter(invited_user=user)
 
             with open(str(user.id) + ".csv", "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(["Name", "Phone Number", "Status"])
                 for invitee in invites:
-                    invitees = User.objects.filter(
-                        phone_number=invitee.invited_phone_number,
-                        country_code=invitee.invited_country_code,
-                    )
+                    invitee = invitee.invited_by
+                    name = f"{invitee.first_name}{invitee.last_name}"
 
-                    invitees = invitees[0]
-                    name = invitees.name
-                    phone = str(invitees.country_code) + str(invitees.phone_number)
-                    status = False
-                    try:
-                        logs = invitees.logs.get().kyc_logs
-                        attempts = re.findall(r"<b>Target Image: https://", logs)
-                    except:
-                        pass
-                    kyc_done = invitees.kyc.get().completed
-                    if logs and len(attempts) >= 2:
-                        if (
-                            invitees.phone_number_verified
-                            and len(attempts) >= 2
-                            and not kyc_done
-                        ):
-                            status = "pending"
-                    elif kyc_done:
-                        status = "Fully Verified"
-                    elif invitees.phone_number_verified:
-                        status = "Basic Verified"
-                    elif invitees.phone_number_verified:
-                        status = "Phone  Verified"
+                    phone = str(invitee.country_code) + str(invitee.phone_number)
+
+                    user_kyc_status(invitee)
                     writer.writerow([name, phone, status])
             file_path = "/tmp/" + str(user.id) + ".csv"
             if os.path.exists(file_path):

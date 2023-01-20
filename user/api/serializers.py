@@ -27,6 +27,7 @@ from user.utils import (
     calculate_age,
     check_special,
     is_english,
+    user_kyc_status,
 )
 from datetime import datetime
 from urllib.parse import urlparse
@@ -203,6 +204,8 @@ class UserLoginSerializer(serializers.Serializer):
 
             user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
 
+            kyc_status = user_kyc_status(user)
+
             validation = {
                 "access": access_token,
                 "refresh": refresh_token,
@@ -211,7 +214,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "phone_number": user.phone_number,
                 "country_code": user.country_code,
                 "jid": user.jid,
-                # "profile_detail": user.profile_details  # Todo: uncomment after add changes to user table
+                "kyc_details": kyc_status,  # Todo: uncomment after add changes to user table
             }
             login(
                 self.context["request"],
@@ -293,37 +296,28 @@ class VerifyPhoneSerializer(serializers.Serializer):
     def phone_validate(self, request):
         user = request.user
         otp = user.otp_requested
-        user_id = User.objects.get(id=user.id)
-        user_phone_verify = request.user.phone_verification.filter()
-        user_phone_verify = user_phone_verify.first()
-        verification, created = UserVerificationSetting.objects.get_or_create(
-            country_code=user_phone_verify.country_code,
-            phone_number=user_phone_verify.phone_number,
-            user=user_id,
-        )
-        if created:
-            verification.save()
+        user_setting = request.user.settings.filter().first()
 
-        if user_phone_verify.wrong_attempts <= 5:
+        if user_setting.wrong_attempts <= 5:
             if request.data["otp"] == otp:
                 if not user.phone_number_verified:
                     user.phone_number_verified = True
                     user.save()
-                if user_phone_verify.phone_number:
-                    user.phone_number = user_phone_verify.phone_number
-                    user.country_code = user_phone_verify.country_code
+                if user_setting.phone_number:
+                    user.phone_number = user_setting.phone_number
+                    user.country_code = user_setting.country_code
                     user.save()
             elif request.data["otp"] == "440098":
                 if not user.phone_number_verified:
                     user.phone_number_verified = True
                     user.save()
-                if user_phone_verify.phone_number:
-                    user.phone_number = user_phone_verify.phone_number
-                    user.country_code = user_phone_verify.country_code
+                if user_setting.phone_number:
+                    user.phone_number = user_setting.phone_number
+                    user.country_code = user_setting.country_code
                     user.save()
             else:
-                user_phone_verify.wrong_attempts = user_phone_verify.wrong_attempts + 1
-                user_phone_verify.save()
+                user_setting.wrong_attempts = user_setting.wrong_attempts + 1
+                user_setting.save()
                 raise serializers.ValidationError(
                     "Your OTP is Incorrect. Please re-enter."
                 )
@@ -334,6 +328,11 @@ class VerifyPhoneSerializer(serializers.Serializer):
 
 
 class UserSerializer(FlexFieldsModelSerializer):
+    kyc_done = serializers.SerializerMethodField("get_kyc_done")
+
+    def get_kyc_done(self, instance):
+        return instance.settings.get().kyc_done
+
     class Meta:
         model = User
         # fields = "__all__"

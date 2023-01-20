@@ -155,3 +155,25 @@ def is_english(value):
         return False
     else:
         return True
+
+
+def user_kyc_status(user):
+    status = False
+    try:
+        logs = user.logs.get().kyc_logs
+        attempts = re.findall(r"<b>Target Image: https://", logs)
+    except:
+        pass
+    user_kyc_settings = user.settings.filter().first()
+    kyc_done = user_kyc_settings.kyc_done
+    if logs and len(attempts) >= 2:
+        if user.phone_number_verified and len(attempts) >= 2 and not kyc_done:
+            status = "pending"
+    elif kyc_done:
+        status = "Fully Verified"
+    elif user.phone_number_verified:
+        status = "Basic Verified"
+    elif user.phone_number_verified:
+        status = "Phone  Verified"
+
+    return status

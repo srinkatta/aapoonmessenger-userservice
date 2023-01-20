@@ -44,7 +44,7 @@ class SelfieViewSet(BaseViewSet):
         response = serializer.selfie(request.user)
 
         if response.get("is_verified"):
-            user_kyc_settings = request.user.settings.get()
+            user_kyc_settings = request.user.settings.filter().first()
             user_kyc_settings.selfie = True
             user_kyc_settings.picture = (
                 request.data.get("picture") if request.data.get("picture") else False
@@ -134,7 +134,7 @@ class ComparefacesViewSet(BaseViewSet):
         response = serializer.compare_faces(request.user)
 
         if response.get("is_verified"):
-            user_kyc_setting = request.user.settings.get()
+            user_kyc_setting = request.user.settings.filter().first()
             user_kyc_setting.kyc_done = True
             user_kyc_setting.kyc_status = 1
             user_kyc_setting.save()

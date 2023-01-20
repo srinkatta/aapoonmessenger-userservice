@@ -20,7 +20,7 @@ MESSAGES = {
 
 
 def failure_attempt_check(self, verification, user):
-    user_kyc_setting = user.settings.get()
+    user_kyc_setting = user.settings.filter().first()
     logs = user.logs.get().kyc_logs
     attempts = re.findall(r"<b>Target Image: https://", logs) if logs else ""
 
@@ -652,7 +652,7 @@ class SelfieSerializer(BaseKYCSerializer):
     url = serializers.CharField(required=True)
 
     def selfie(self, user):
-        user_kyc_setting = user.settings.get()
+        user_kyc_setting = user.settings.filter().first()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,
@@ -670,7 +670,7 @@ class PhotoIDSerializer(BaseKYCSerializer):
     source_key = serializers.CharField(required=True)
 
     def photo_id_verification(self, user):
-        user_kyc_setting = user.settings.get()
+        user_kyc_setting = user.settings.filter().first()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,
@@ -715,10 +715,10 @@ class PhotoIDSerializer(BaseKYCSerializer):
                 user, log_message, verification, exception
             )
             return verification
-        verifyAadhar = self.aadharverify(user, log_message)
+        verify_aadhar = self.aadharverify(user, log_message)
         if source_recognitionResult and source_faceid_response:
             # aadhar not valid
-            if user.country_code == "91" and not verifyAadhar:
+            if user.country_code == "91" and not verify_aadhar:
                 verification["exception"] = "Uploaded Aadhar is not Valid"
                 verification["is_verified"] = False
                 verification["face_id_detected"] = False
@@ -781,7 +781,7 @@ class ProfileSerializer(BaseKYCSerializer):
     target_key = serializers.CharField(required=True)
 
     def profile(self, user):
-        user_kyc_setting = user.settings.get()
+        user_kyc_setting = user.settings.filter().first()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,
@@ -805,7 +805,7 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
     source_key_back_side = serializers.CharField(required=False)
 
     def compare_faces(self, user):
-        user_kyc_setting = user.settings.get()
+        user_kyc_setting = user.settings.filter().first()
         verification = {
             "id_number_matched": user_kyc_setting.id_matched,
             "is_verified": False,
