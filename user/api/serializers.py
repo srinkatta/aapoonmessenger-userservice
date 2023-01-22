@@ -7,7 +7,12 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from user.choices import SPORTS_CHOICES, INTEREST_CHOICES, COUNTRY_CODE_CHOICES
+from user.choices import (
+    SPORTS_CHOICES,
+    INTEREST_CHOICES,
+    COUNTRY_CODE_CHOICES,
+    SECTORS_TYPE_CHOICES,
+)
 from user.helpers import sms, hotp
 from user.helpers.otp import generate_otp
 from user.models import (
@@ -28,6 +33,7 @@ from user.utils import (
     check_special,
     is_english,
     user_kyc_status,
+    get_dob,
 )
 from datetime import datetime
 from urllib.parse import urlparse
@@ -180,6 +186,7 @@ class UserLoginSerializer(serializers.Serializer):
     otp = serializers.CharField(required=True)
 
     def validate(self, data):
+
         country_code = data["country_code"]
         phone_number = data["phone_number"]
         otp = data["otp"]
@@ -204,7 +211,16 @@ class UserLoginSerializer(serializers.Serializer):
 
             user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
 
-            kyc_status = user_kyc_status(user)
+            login(
+                self.context["request"],
+                user,
+                backend="django.contrib.auth.backends.ModelBackend",
+            )
+            user.otp_requested = None
+            user.phone_number_verified = True
+            user.save()
+
+            user_status = user_kyc_status(user)
 
             validation = {
                 "access": access_token,
@@ -214,16 +230,8 @@ class UserLoginSerializer(serializers.Serializer):
                 "phone_number": user.phone_number,
                 "country_code": user.country_code,
                 "jid": user.jid,
-                "kyc_details": kyc_status,  # Todo: uncomment after add changes to user table
+                "user_profile": user_status,
             }
-            login(
-                self.context["request"],
-                user,
-                backend="django.contrib.auth.backends.ModelBackend",
-            )
-            user.otp_requested = None
-            user.phone_number_verified = True
-            user.save()
 
             self.xmpp_check_account(user, access_token)
             return validation
@@ -386,6 +394,10 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
     )
+    date_of_birth = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
+    sector = serializers.ChoiceField(choices=SECTORS_TYPE_CHOICES, required=False)
 
     class Meta:
         model = UserProfile
@@ -408,6 +420,7 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         return attrs
 
     def __validate_account_details(self, request, attrs):
+
         # Name Validate & Update
         self.name_validate(request, attrs)
 
@@ -477,11 +490,13 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
 
     def dob_validate(self, attrs):
         dob = attrs.get("date_of_birth")
-        if not dob == "":
+        if dob == "":
             attrs["date_of_birth"] = None
         elif dob:
-            if len(dob) > 4 and calculate_age(dob) < 13:
-                return attrs
+            if len(dob) > 4:
+                attrs["date_of_birth"] = get_dob(dob)
+                if calculate_age(dob) < 13:
+                    return attrs, True
             else:
                 raise ValidationError("User must be 13 years old.")
         return attrs
