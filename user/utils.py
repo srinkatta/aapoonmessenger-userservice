@@ -13,7 +13,7 @@ except Exception as e:
 import logging
 from requests.exceptions import HTTPError
 from user.helpers import sms
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.template import loader
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
@@ -100,9 +100,9 @@ def phone_failure(self, request):
         "module": "Phone Verification",
     }
 
-    # text_content = render_to_string('config/email/kyc_failed_user.html', context)
+    text_content = render_to_string("config/email/kyc_failed_user.html", context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    # send_mail(subject, context, from_email, toemail)
+    send_mail(subject, text_content, from_email, toemail)
 
 
 def feedback_mail(request, data):
@@ -131,9 +131,10 @@ def feedback_mail(request, data):
         "topic": topic,
         "url": url,
     }
-    # text_content = render_to_string('config/email/feedback.html',context)
+
+    text_content = render_to_string("config/email/feedback.html", context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    # send_mail(subject, context, from_email, [toemail])
+    send_mail(subject, text_content, from_email, [toemail])
 
 
 def calculate_age(dob):
@@ -168,12 +169,166 @@ def user_kyc_status(user):
     kyc_done = user_kyc_settings.kyc_done
     if logs and len(attempts) >= 2:
         if user.phone_number_verified and len(attempts) >= 2 and not kyc_done:
-            status = "pending"
+            status = "Pending"
     elif kyc_done:
         status = "Fully Verified"
     elif user.phone_number_verified:
         status = "Basic Verified"
     elif user.phone_number_verified:
-        status = "Phone  Verified"
+        status = "Phone Verified"
 
     return status
+
+
+def get_month(dob):
+    if "Jan" in dob:
+        return "Jan"
+    elif "Feb" in dob:
+        return "Feb"
+    elif "Mar" in dob:
+        return "Mar"
+    elif "Apr" in dob:
+        return "Apr"
+    elif "May" in dob:
+        return "May"
+    elif "Jun" in dob:
+        return "Jun"
+    elif "Jul" in dob:
+        return "Jul"
+    elif "Aug" in dob:
+        return "Aug"
+    elif "Sep" in dob:
+        return "Sep"
+    elif "Oct" in dob:
+        return "Oct"
+    elif "Nov" in dob:
+        return "Nov"
+    elif "Dec" in dob:
+        return "Dec"
+    else:
+        pass
+
+
+def month_checker(month):
+    import calendar
+
+    months = dict((v, k) for k, v in enumerate(calendar.month_abbr))
+    return months[month]
+
+
+def get_dob(dateofbirth):
+    # check date of birth
+
+    months = [
+        "Jan",
+        "Jun",
+        "Feb",
+        "Apr",
+        "Nov",
+        "Oct",
+        "Mar",
+        "Sep",
+        "Jul",
+        "Aug",
+        "May",
+        "Dec",
+    ]
+    try:
+        month = get_month(dateofbirth)
+        if any(x in month for x in months):
+            numeric_month = month_checker(month)
+            dateofbirth = dateofbirth.replace(month, str(numeric_month))
+            try:
+                date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime(
+                    "%Y-%m-%d"
+                )
+            except:
+                try:
+                    date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
+                        "%Y-%m-%d"
+                    )
+                except:
+                    try:
+                        date_of_birth = datetime.strptime(
+                            dateofbirth, "%d%m%Y"
+                        ).strftime("%Y-%m-%d")
+                    except:
+                        try:
+                            date_of_birth = datetime.strptime(
+                                dateofbirth, "%m%d%Y"
+                            ).strftime("%Y-%m-%d")
+                        except:
+                            try:
+                                date_of_birth = datetime.strptime(
+                                    dateofbirth, "%d %m %Y"
+                                ).strftime("%Y-%m-%d")
+                            except:
+                                try:
+                                    date_of_birth = datetime.strptime(
+                                        dateofbirth, "%Y %m %d"
+                                    ).strftime("%Y-%m-%d")
+                                except:
+                                    try:
+                                        date_of_birth = datetime.strptime(
+                                            dateofbirth, "%Y/%m/%d"
+                                        ).strftime("%Y-%m-%d")
+                                    except:
+                                        try:
+                                            date_of_birth = datetime.strptime(
+                                                dateofbirth, "%m/%d/%Y"
+                                            ).strftime("%Y-%m-%d")
+                                        except:
+                                            date_of_birth = datetime.strptime(
+                                                dateofbirth, "%d/%m/%Y"
+                                            ).strftime("%Y-%m-%d")
+
+    except:
+        try:
+            date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime(
+                "%Y-%m-%d"
+            )
+        except:
+            try:
+                date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
+                    "%Y-%m-%d"
+                )
+            except:
+                try:
+                    date_of_birth = datetime.strptime(dateofbirth, "%d%m%Y").strftime(
+                        "%Y-%m-%d"
+                    )
+                except:
+                    try:
+                        date_of_birth = datetime.strptime(
+                            dateofbirth, "%m%d%Y"
+                        ).strftime("%Y-%m-%d")
+                    except:
+                        try:
+                            date_of_birth = datetime.strptime(
+                                dateofbirth, "%d %m %Y"
+                            ).strftime("%Y-%m-%d")
+                        except:
+                            try:
+                                date_of_birth = datetime.strptime(
+                                    dateofbirth, "%Y %m %d"
+                                ).strftime("%Y-%m-%d")
+                            except:
+                                try:
+                                    date_of_birth = datetime.strptime(
+                                        dateofbirth, "%Y/%m/%d"
+                                    ).strftime("%Y-%m-%d")
+                                except:
+                                    try:
+                                        date_of_birth = datetime.strptime(
+                                            dateofbirth, "%m/%d/%Y"
+                                        ).strftime("%Y-%m-%d")
+                                    except:
+                                        try:
+                                            date_of_birth = datetime.strptime(
+                                                dateofbirth, "%Y%m%d"
+                                            ).strftime("%Y-%m-%d")
+                                        except:
+                                            date_of_birth = datetime.strptime(
+                                                dateofbirth, "%d/%m/%Y"
+                                            ).strftime("%Y-%m-%d")
+    return date_of_birth

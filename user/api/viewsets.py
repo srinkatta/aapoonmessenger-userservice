@@ -73,6 +73,7 @@ class AuthUserRegistrationView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -91,6 +92,7 @@ class AuthUserLoginView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+
         serializer = self.serializer_class(
             data=request.data, context={"request": request}
         )
@@ -359,11 +361,13 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance.date_of_birth = data.get("date_of_birth")
         instance.gender = data.get("gender")
         instance.address = data.get("address")
+        instance.address1 = data.get("address1")
         instance.city = data.get("city")
         instance.state = data.get("state")
         instance.postcode = data.get("postcode")
         instance.company = data.get("company")
         instance.role = data.get("role")
+        instance.sector = data.get("sector")
         if data.get("country_iso_code"):
             instance.user.country_iso_code = data.get("country_iso_code")
             instance.user.save()
@@ -579,20 +583,20 @@ class InviteListView(APIView):
         try:
             user = request.user
 
-            invites = UserInvite.objects.filter(invited_user=user)
+            invites = UserInvite.objects.filter(invited_by=user)
 
             with open(str(user.id) + ".csv", "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(["Name", "Phone Number", "Status"])
                 for invitee in invites:
-                    invitee = invitee.invited_by
+                    invitee = invitee.invited_user
                     name = f"{invitee.first_name}{invitee.last_name}"
 
                     phone = str(invitee.country_code) + str(invitee.phone_number)
 
-                    user_kyc_status(invitee)
+                    status = user_kyc_status(invitee)
                     writer.writerow([name, phone, status])
-            file_path = "/tmp/" + str(user.id) + ".csv"
+            file_path = str(user.id) + ".csv"
             if os.path.exists(file_path):
                 with open(file_path, "rb") as fh:
                     response = HttpResponse(

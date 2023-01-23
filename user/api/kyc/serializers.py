@@ -38,15 +38,15 @@ def failure_attempt_check(self, verification, user):
         verification["manual_verify"] = True
         subject = "KYC Failure Max Attempts Reached"
         from_email = settings.DEFAULT_FROM_EMAIL
-        toemail = ["santosh@aapoon.com"]
+        to_email = ["santosh@aapoon.com"]
         context = {
             "name": user.name,
             "email": user.phone_number,
             "module": "Social Proof",
         }
-        # text_content = render_to_string("config/email/kyc_failed_user.html", context)
+        text_content = render_to_string("config/email/kyc_failed_user.html", context)
         charset.add_charset("utf-8", charset.SHORTEST, None, "utf-8")
-        # send_mail(subject, text_content, from_email, toemail)
+        send_mail(subject, text_content, from_email, to_email)
     return verification
 
 
@@ -370,9 +370,9 @@ class BaseKYCSerializer(serializers.Serializer):
             "id_number": user_kyc_setting.photo_id,
             "text_extracted": matches,
         }
-        # text_content = render_to_string("config/email/id_failed_user.html", context)
-        # charset.add_charset("utf-8", charset.SHORTEST, None, "utf-8")
-        # send_mail(subject, text_content, from_email, toemail)
+        text_content = render_to_string("config/email/id_failed_user.html", context)
+        charset.add_charset("utf-8", charset.SHORTEST, None, "utf-8")
+        send_mail(subject, text_content, from_email, toemail)
 
     def target_image_validation(
         self,
