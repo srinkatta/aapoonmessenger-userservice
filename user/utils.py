@@ -67,13 +67,12 @@ def send_email_notification(user, template, subject):
 
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
 
-    html_message = loader.render_to_string(
-        template,
-        {
-            "name": user.name,
-        },
-    )
-    text_content = "Content"
+    context = {
+        "name": user.name,
+    }
+
+    text_content = render_to_string(template, context)
+
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
     send_mail(
         subject,
@@ -81,8 +80,7 @@ def send_email_notification(user, template, subject):
         from_email,
         [
             toemail,
-        ],
-        html_message=html_message,
+        ]
     )
 
 
@@ -95,7 +93,7 @@ def phone_failure(user, subject):
         "module": "Phone Verification",
     }
 
-    text_content = render_to_string("config/email/kyc_failed_user.html", context)
+    text_content = render_to_string("config/email/max_attempts_otp.html", context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
     send_mail(subject, text_content, from_email, to_email)
 

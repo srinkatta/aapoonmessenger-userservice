@@ -244,7 +244,7 @@ class UserLogsViewSet(viewsets.ModelViewSet):
         return UserLog.objects.filter(user=self.request.user)
 
     def get_object(self):
-        return get_object_or_404(UserLog.objects.all(), user=self.request.user)
+        return UserLog.objects.filter(user=self.request.user).first()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -274,7 +274,7 @@ class UserInviteViewSet(viewsets.ModelViewSet):
         return UserInvite.objects.filter(invited_by=self.request.user)
 
     def get_object(self):
-        return get_object_or_404(UserInvite.objects.all(), invited_by=self.request.user)
+        return UserInvite.objects.filter(invited_by=self.request.user).first()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
