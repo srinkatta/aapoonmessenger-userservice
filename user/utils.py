@@ -70,7 +70,7 @@ def send_email_notification(user, template, subject):
     html_message = loader.render_to_string(
         template,
         {
-            "first_name": user.first_name,
+            "name": user.name,
         },
     )
     text_content = "Content"
@@ -86,23 +86,18 @@ def send_email_notification(user, template, subject):
     )
 
 
-def phone_failure(self, request):
-    subject = _("Max Attempts Reached on updated Phone Verification")
+def phone_failure(user, subject):
 
     from_email = settings.DEFAULT_FROM_EMAIL
-    toemail = ["santosh@aapoon.net"]
-    user = request.user
-    name = f"{user.first_name} {user.last_name}"
+    to_email = ["support@aapoon.net"]
     context = {
-        "name": name,
-        "email": user.email,
         "phone_number": user.phone_number,
         "module": "Phone Verification",
     }
 
     text_content = render_to_string("config/email/kyc_failed_user.html", context)
     Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    send_mail(subject, text_content, from_email, toemail)
+    send_mail(subject, text_content, from_email, to_email)
 
 
 def feedback_mail(request, data):
@@ -161,8 +156,10 @@ def is_english(value):
 def user_kyc_status(user):
     status = False
     try:
-        logs = user.logs.get().kyc_logs
-        attempts = re.findall(r"<b>Target Image: https://", logs)
+        logs = user.logs.filter().first()
+        logs = logs.kyc_logs
+        if logs:
+            attempts = re.findall(r"<b>Target Image: https://", logs)
     except:
         pass
     user_kyc_settings = user.settings.filter().first()

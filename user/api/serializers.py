@@ -2,6 +2,7 @@ from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
+from django.utils.translation import gettext_lazy as _
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -34,6 +35,7 @@ from user.utils import (
     is_english,
     user_kyc_status,
     get_dob,
+    phone_failure,
 )
 from datetime import datetime
 from urllib.parse import urlparse
@@ -41,10 +43,7 @@ from user_service import settings
 
 
 class RegisterSerializer(serializers.Serializer):
-    first_name = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True
-    )
-    last_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
     country_code = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
@@ -77,22 +76,19 @@ class RegisterSerializer(serializers.Serializer):
             user_type = "individualuser"
 
         return {
-            "username": f"{self.validated_data.get('first_name', '')}-{generate_otp()}",
+            "username": f"{self.validated_data.get('name', '')}-{generate_otp()}",
             "password": self.validated_data.get("password", ""),
             "email": self.validated_data.get("email", ""),
             "country_code": self.validated_data.get("country_code", ""),
             "phone_number": self.validated_data.get("phone_number", ""),
-            "first_name": self.validated_data.get("first_name", ""),
-            "last_name": self.validated_data.get("last_name", ""),
+            "name": self.validated_data.get("name", ""),
             "hash_tag": self.validated_data.get("hash_tag", ""),
             "user_type": user_type,
             "is_business": is_business,
         }
 
     def save(self, request) -> User:
-        self.get_cleaned_data()[
-            "name"
-        ] = f"{self.get_cleaned_data()['first_name']} {self.get_cleaned_data()['last_name']}"
+        name = self.get_cleaned_data()["name"]
         country_code = self.get_cleaned_data()["country_code"]
         phone_number = self.get_cleaned_data()["phone_number"]
         device_model = request.data.get("device_model", "")
@@ -152,6 +148,8 @@ class RegisterSerializer(serializers.Serializer):
             user.login_attempts = 0
             user.save()
         if user.login_attempts >= 3:
+            subject = _('Max Attempts Reached on Phone Verification')
+            phone_failure(user, subject)
             msg = "You reached maximum attempts to login. Please try again after 10 minutes."
             raise serializers.ValidationError({"message": msg})
 
@@ -207,6 +205,10 @@ class UserLoginSerializer(serializers.Serializer):
             access_token = str(refresh.access_token)
 
             user.second_last_login = user.last_login
+            if user.second_last_login:
+                epoch = user.second_last_login.replace(tzinfo=None)
+                second_last = str(epoch.timestamp())
+                second_last_login = second_last
             update_last_login(None, user)
 
             user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
@@ -222,6 +224,9 @@ class UserLoginSerializer(serializers.Serializer):
 
             user_status = user_kyc_status(user)
 
+            if not user.second_last_login:
+                second_last_login = 0
+
             validation = {
                 "access": access_token,
                 "refresh": refresh_token,
@@ -229,6 +234,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "country_code": user.country_code,
+                "second_last_login": second_last_login,
                 "jid": user.jid,
                 "user_profile": user_status,
             }
@@ -424,6 +430,8 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         # Name Validate & Update
         self.name_validate(request, attrs)
 
+
+
         # validating and updating Photo Id
         photo_id = attrs.get("photo_id")
         self.__photo_id_validate(request, photo_id)
@@ -502,9 +510,8 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         return attrs
 
     def name_validate(self, request, attrs):
-        name = attrs.get("name").strip()
-        request.user.first_name = name[0]
-        request.user.last_name = name[-1] if not name[0] == name[-1] else ""
+        name = attrs.get("name")
+        request.user.name = name
         request.user.save()
 
 
@@ -531,7 +538,7 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
         return user_settings.photo_id
 
     def get_name(self, instance):
-        name = f"{instance.user.first_name} {instance.user.last_name}"
+        name = instance.user.name
         return name
 
     def get_email(self, instance):

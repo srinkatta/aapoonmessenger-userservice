@@ -3,6 +3,7 @@ import re
 import os
 import logging
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
 from django.http import Http404, HttpResponse
 from smtplib import SMTPAuthenticationError
@@ -13,6 +14,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.exceptions import ValidationError
 
 from user.api.serializers import (
     UserLoginSerializer,
@@ -124,13 +126,10 @@ class SendOTPView(APIView):
     def max_phone_attempts(self, request):
         user_settings = request.user.settings.filter().first()
         if user_settings.verify_attempts >= 3:
-            phone_failure(self, request)
-            return Response(
-                {
-                    "detail": "You have reached Max Phone Attempts for Phone Verification"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            subject = _("Max Attempts Reached on updated Phone Verification")
+            phone_failure(request.user, subject)
+            msg = {"detail": "You have reached Max Phone Attempts for Phone Verification"}
+            raise ValidationError(msg)
 
     def get(self, request):
         user = request.user
@@ -243,6 +242,24 @@ class UserLogsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return UserLog.objects.filter(user=self.request.user)
+
+    def get_object(self):
+        return get_object_or_404(UserLog.objects.all(), user=self.request.user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
+    def retrieve(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
+        if not str(request.user.id) == pk:
+            return Response(
+                {"error": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
+            )
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class UserInviteViewSet(viewsets.ModelViewSet):
@@ -358,6 +375,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return Response(response.data)
 
     def update_account_details(self, instance, data):
+        instance.name = data.get("name")
         instance.date_of_birth = data.get("date_of_birth")
         instance.gender = data.get("gender")
         instance.address = data.get("address")
@@ -368,11 +386,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance.company = data.get("company")
         instance.role = data.get("role")
         instance.sector = data.get("sector")
+        instance.team_size = data.get("team_size")
         if data.get("country_iso_code"):
             instance.user.country_iso_code = data.get("country_iso_code")
             instance.user.save()
 
-        user_settings = instance.user.settings.get()
+        user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
             user_settings.account_details = True
         instance.save()
@@ -391,8 +410,10 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance.about_me = data.get("about_me")
         instance.political_interests = data.get("political_interests")
         instance.iam_looking_for = data.get("iam_looking_for")
+        instance.name = data.get("name")
+        instance.chat_theme = data.get("chat_theme")
 
-        user_settings = instance.user.settings.get()
+        user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
             user_settings.profile_details = True
             user_settings.save()
@@ -526,8 +547,8 @@ class UserDeleteView(APIView):
             message = "Your request for aapoon account deletion has been performed successfully."
             if user.email:
                 subject = "Account Closure Request"
-                # template = "account/email/account_closure.html"
-                # send_email_notification(user, template, subject)
+                template = "config/email/account_closure.html"
+                send_email_notification(user, template, subject)
             else:
                 phone = str(user.updated_country_code) + str(user.updated_phone_number)
                 send_sms_message(message, user, phone)
@@ -590,8 +611,7 @@ class InviteListView(APIView):
                 writer.writerow(["Name", "Phone Number", "Status"])
                 for invitee in invites:
                     invitee = invitee.invited_user
-                    name = f"{invitee.first_name}{invitee.last_name}"
-
+                    name = invitee.name
                     phone = str(invitee.country_code) + str(invitee.phone_number)
 
                     status = user_kyc_status(invitee)
