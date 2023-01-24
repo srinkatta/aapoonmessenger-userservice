@@ -43,7 +43,7 @@ class UserDelete:
         message = "You're account has been delete successfully."
         if self.user.email:
             subject = "Account Deletion successful"
-            template = "account/account_deleted.html"
+            template = "config/email/account_deleted.html"
             send_email_notification(self.user, template, subject)
         else:
             phone = str(self.user.updated_country_code) + str(
