@@ -634,7 +634,7 @@ class InviteListView(APIView):
 
 
 class UserDetailsAPI(APIView):
-    permission_classes = (HasAPIKey,)
+    permission_classes = [HasAPIKey | permissions.AllowAny]
     allowed_methods = ("POST",)
 
     def post(self, request):
