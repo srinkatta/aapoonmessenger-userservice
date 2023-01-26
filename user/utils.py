@@ -80,7 +80,7 @@ def send_email_notification(user, template, subject):
         from_email,
         [
             toemail,
-        ]
+        ],
     )
 
 
