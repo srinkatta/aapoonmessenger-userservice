@@ -35,6 +35,7 @@ from user.api.serializers import (
     UserDetailsSerializer,
     UserDetailsInputSerializer,
     NotificationSettingsSerializer,
+    UserPhoneDetailsInputSerializer,
 )
 from user.models import (
     UserLog,
@@ -128,7 +129,9 @@ class SendOTPView(APIView):
         if user_settings.verify_attempts >= 3:
             subject = _("Max Attempts Reached on updated Phone Verification")
             phone_failure(request.user, subject)
-            msg = {"detail": "You have reached Max Phone Attempts for Phone Verification"}
+            msg = {
+                "detail": "You have reached Max Phone Attempts for Phone Verification"
+            }
             raise ValidationError(msg)
 
     def get(self, request):
@@ -663,6 +666,46 @@ class UserDetailsAPI(APIView):
 
     def get_user(self, key, value):
         filters = {key: value}
+        try:
+            user = User.objects.get(**filters)
+        except User.DoesNotExist:
+            user = None
+        return user
+
+
+class UserDetailsPhoneAPI(APIView):
+    permission_classes = [HasAPIKey | permissions.AllowAny]
+    allowed_methods = ("POST",)
+
+    def post(self, request):
+        serializer = UserPhoneDetailsInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        phone_number = serializer.data.get("phone_number")
+
+        if phone_number:
+            user = self.get_user(phone_number=phone_number)
+        else:
+            return Response(
+                {"error": "Input data error"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not user:
+            return Response(
+                {"error": "user not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = UserDetailsSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def get_user(self, phone_number):
+        import phonenumbers
+
+        phone = phonenumbers.parse(f"+{phone_number}", None)
+        filters = {
+            "country_code": phone.country_code,
+            "phone_number": phone.national_number,
+        }
         try:
             user = User.objects.get(**filters)
         except User.DoesNotExist:

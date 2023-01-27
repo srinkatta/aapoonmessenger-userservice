@@ -148,7 +148,7 @@ class RegisterSerializer(serializers.Serializer):
             user.login_attempts = 0
             user.save()
         if user.login_attempts >= 3:
-            subject = _('Max Attempts Reached on Phone Verification')
+            subject = _("Max Attempts Reached on Phone Verification")
             phone_failure(user, subject)
             msg = "You reached maximum attempts to login. Please try again after 10 minutes."
             raise serializers.ValidationError({"message": msg})
@@ -430,8 +430,6 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         # Name Validate & Update
         self.name_validate(request, attrs)
 
-
-
         # validating and updating Photo Id
         photo_id = attrs.get("photo_id")
         self.__photo_id_validate(request, photo_id)
@@ -601,6 +599,10 @@ class NotificationSettingsSerializer(serializers.Serializer):
 class UserDetailsInputSerializer(serializers.Serializer):
     user_id = serializers.CharField(required=False)
     user_jid = serializers.CharField(required=False)
+
+
+class UserPhoneDetailsInputSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(required=False)
 
 
 class UserDetailsSerializer(serializers.Serializer):

@@ -19,6 +19,7 @@ from user.api.viewsets import (
     UserDeleteRevokeView,
     InviteListView,
     UserDetailsAPI,
+    UserDetailsPhoneAPI,
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
@@ -90,4 +91,7 @@ urlpatterns = [
     path("feedback/", FeedbackView.as_view(), name="feedback"),
     path("invite_list/", InviteListView.as_view(), name="get_invite_list"),
     path("user_details/", UserDetailsAPI.as_view(), name="user_details"),
+    path(
+        "user_details/phone/", UserDetailsPhoneAPI.as_view(), name="user_details_phone"
+    ),
 ]
