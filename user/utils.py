@@ -1,22 +1,22 @@
 import re
-from datetime import datetime
-
 import requests
 import json
-from user_service import settings
+from datetime import datetime
+import logging
+from requests.exceptions import HTTPError
 
 try:
     from email import Charset
 except Exception as e:
     from email import charset as Charset
 
-import logging
-from requests.exceptions import HTTPError
-from user.helpers import sms
-from django.core.mail import EmailMultiAlternatives, send_mail
-from django.template import loader
+from django.core.mail import send_mail
+from django.utils.html import strip_tags
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
+
+from user.helpers import sms
+from user_service import settings
 
 
 def s3_url_extract(url):
@@ -63,25 +63,14 @@ def send_sms_message(message, user, number):
 def send_email_notification(user, template, subject):
     subject = _(f"{subject}")
     from_email = "support@aapoon.net"
-    toemail = f"{user.email}"
-
-    Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
+    to_email = f"{user.email}"
 
     context = {
         "name": user.name,
     }
-
-    text_content = render_to_string(template, context)
-
-    Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    send_mail(
-        subject,
-        text_content,
-        from_email,
-        [
-            toemail,
-        ]
-    )
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
 
 
 def phone_failure(user, subject):
