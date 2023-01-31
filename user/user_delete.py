@@ -1,6 +1,7 @@
 from django.db import connections
 from user.api.viewsets import send_email_notification, send_sms_message
 from user.models import User, DeviceInfo, DeletedUser, UserProfile
+
 try:
     from email import Charset
 except ImportError:
@@ -50,7 +51,6 @@ class UserDelete:
                 self.user.updated_phone_number
             )
             send_sms_message(message, self.user, phone)
-
 
     def delete_user_from_xmpp(self, username):
         query = "DELETE FROM users WHERE username=" + "'" + username + "'" + ";"

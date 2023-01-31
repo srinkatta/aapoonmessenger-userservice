@@ -21,9 +21,8 @@ def HOTP(K, C, digits=6, digestmod=hashlib.sha1):
     returns the OATH integer code with {digits} length
     """
     C_bytes = struct.pack(b"!Q", C)
-    K_bytes = bytes(K, encoding='utf-8')
-    hmac_digest = hmac.new(key=K_bytes, msg=C_bytes,
-                           digestmod=digestmod).hexdigest()
+    K_bytes = bytes(K, encoding="utf-8")
+    hmac_digest = hmac.new(key=K_bytes, msg=C_bytes, digestmod=digestmod).hexdigest()
     return Truncate(hmac_digest)[-digits:]
 
 
@@ -48,5 +47,5 @@ def Truncate(hmac_digest):
     http://tools.ietf.org/html/rfc4226#section-5.3
     """
     offset = int(hmac_digest[-1], 16)
-    binary = int(hmac_digest[(offset * 2):((offset * 2) + 8)], 16) & 0x7fffffff
+    binary = int(hmac_digest[(offset * 2) : ((offset * 2) + 8)], 16) & 0x7FFFFFFF
     return str(binary)

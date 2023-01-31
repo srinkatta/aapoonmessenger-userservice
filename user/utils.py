@@ -73,6 +73,7 @@ def send_email_notification(user, template, subject):
     send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
 
 
+
 def phone_failure(user, subject):
 
     from_email = settings.DEFAULT_FROM_EMAIL
