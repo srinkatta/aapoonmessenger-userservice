@@ -398,6 +398,9 @@ SECTORS_TYPE_CHOICES = (
     ("Construction", "Construction"),
     ("Education", "Education"),
     ("Political", "Political"),
+    ("Manufacturing", "Manufacturing"),
+    ("Service", "Service"),
+    ("Other", "Other"),
 )
 
 MALE = "MALE"
