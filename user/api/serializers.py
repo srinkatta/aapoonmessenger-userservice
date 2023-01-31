@@ -431,8 +431,9 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         self.name_validate(request, attrs)
 
         # validating and updating Photo Id
-        photo_id = attrs.get("photo_id")
-        self.__photo_id_validate(request, photo_id)
+        photo_id = attrs.get("photo_id") if attrs.get("photo_id") else 0
+        if photo_id and photo_id != "":
+            self.__photo_id_validate(request, photo_id)
 
         # PostCode Validation
         if attrs.get("postcode") and len(attrs.get("postcode")) > 10:
@@ -477,22 +478,19 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
             request.user.save()
 
     def __photo_id_validate(self, request, photo_id):
-        if photo_id and photo_id != "":
-            if (
-                UserVerificationSetting.objects.filter(photo_id=photo_id)
-                .exclude(user=request.user.id)
-                .exclude(photo_id="0")
-                .exists()
-            ):
-                raise ValidationError("Photo id already exists")
-            else:
-                user_settings = request.user.settings.filter()
-                user_settings = user_settings.first()
-                user_settings.photo_id = photo_id
-                user_settings.save()
-                return False
-        if not photo_id:
-            raise ValidationError("Photo id can't be blank")
+        if (
+            UserVerificationSetting.objects.filter(photo_id=photo_id)
+            .exclude(user=request.user.id)
+            .exclude(photo_id="0")
+            .exists()
+        ):
+            raise ValidationError("Photo id already exists")
+        else:
+            user_settings = request.user.settings.filter()
+            user_settings = user_settings.first()
+            user_settings.photo_id = photo_id
+            user_settings.save()
+            return False
 
     def dob_validate(self, attrs):
         dob = attrs.get("date_of_birth")
@@ -501,7 +499,7 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         elif dob:
             if len(dob) > 4:
                 attrs["date_of_birth"] = get_dob(dob)
-                if calculate_age(dob) < 13:
+                if calculate_age(attrs.get("date_of_birth")) < 13:
                     return attrs, True
             else:
                 raise ValidationError("User must be 13 years old.")
