@@ -1,5 +1,6 @@
 from rest_framework import routers
 from django.urls import path, include
+from django.contrib import admin
 from rest_framework_simplejwt import views as jwt_views
 from user.api.viewsets import (
     AuthUserRegistrationView,
@@ -32,6 +33,7 @@ router.register(r"invite", UserInviteViewSet, basename="user_invite"),
 router.register(r"device", UserDeviceViewSet, basename="user_device")
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path(r"", include(router.urls)),
     path(
         "auth/token/obtain/",
