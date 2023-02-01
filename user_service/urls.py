@@ -11,7 +11,6 @@ from drf_spectacular.views import (
 from user_service.router_urls import router_urlpatterns
 
 urlpatterns = [
-    path("users/admin/", admin.site.urls),
     path("api/users/", include(router_urlpatterns)),
     path("/api-auth/users/", include("rest_framework.urls")),
     path("accounts/users/", include("allauth.urls")),
