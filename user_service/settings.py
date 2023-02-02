@@ -63,6 +63,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "user_service.urls"
 
+CSRF_TRUSTED_ORIGINS = ["https://dev.aapoon.com"]
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
