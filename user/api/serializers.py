@@ -37,7 +37,7 @@ from user.utils import (
     get_dob,
     phone_failure,
 )
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
@@ -139,7 +139,7 @@ class RegisterSerializer(serializers.Serializer):
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
-        user.last_login_time = datetime.now()
+        user.last_login_time = str(datetime.now(tz=timezone.utc))
         user.save()
 
     def max_attempts(self, user):
