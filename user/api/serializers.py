@@ -1,3 +1,5 @@
+import uuid
+
 from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
 from django.contrib.auth import login
@@ -211,7 +213,7 @@ class UserLoginSerializer(serializers.Serializer):
                 second_last_login = second_last
             update_last_login(None, user)
 
-            user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
+            user.jid = user.jid if user.jid else uuid.uuid4().hex
 
             login(
                 self.context["request"],

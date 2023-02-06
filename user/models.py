@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -28,7 +30,7 @@ class User(AbstractUser):
     )
     user_type = models.CharField(max_length=15, null=True)
     second_last_login = models.DateTimeField(null=True, blank=True)
-    jid = models.CharField(max_length=255, null=True, blank=True)
+    jid = models.CharField(max_length=255, default=uuid.uuid4().hex)
     fcm_token = models.CharField(max_length=100, null=True, blank=True)
     apns_token = models.CharField(max_length=100, null=True, blank=True)
     otp_requested = models.CharField(max_length=100, null=True, blank=True)
