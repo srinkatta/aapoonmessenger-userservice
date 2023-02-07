@@ -213,7 +213,8 @@ class UserLoginSerializer(serializers.Serializer):
                 second_last_login = second_last
             update_last_login(None, user)
 
-            user.jid = user.jid if user.jid else uuid.uuid4().hex
+            if not settings.XMPP_HOST in user.jid:
+                user.jid = f"{user.jid}@{settings.XMPP_HOST}"
 
             login(
                 self.context["request"],
@@ -345,9 +346,13 @@ class VerifyPhoneSerializer(serializers.Serializer):
 
 class UserSerializer(FlexFieldsModelSerializer):
     kyc_done = serializers.SerializerMethodField("get_kyc_done")
+    manual_verify = serializers.SerializerMethodField()
 
     def get_kyc_done(self, instance):
         return instance.settings.get().kyc_done
+
+    def get_manual_verify(self, instance):
+        return instance.settings.get().manual_verify
 
     class Meta:
         model = User
