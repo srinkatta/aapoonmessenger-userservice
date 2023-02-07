@@ -1,3 +1,5 @@
+import uuid
+
 from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
 from django.contrib.auth import login
@@ -37,7 +39,7 @@ from user.utils import (
     get_dob,
     phone_failure,
 )
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
@@ -139,7 +141,7 @@ class RegisterSerializer(serializers.Serializer):
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
-        user.last_login_time = datetime.now()
+        user.last_login_time = str(datetime.now(tz=timezone.utc))
         user.save()
 
     def max_attempts(self, user):
@@ -211,7 +213,9 @@ class UserLoginSerializer(serializers.Serializer):
                 second_last_login = second_last
             update_last_login(None, user)
 
-            user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
+            if not user.jid:
+                uuid_jid = uuid.uuid4().hex + "@" + settings.XMPP_HOST
+                user.jid = uuid_jid
 
             login(
                 self.context["request"],
@@ -343,9 +347,13 @@ class VerifyPhoneSerializer(serializers.Serializer):
 
 class UserSerializer(FlexFieldsModelSerializer):
     kyc_done = serializers.SerializerMethodField("get_kyc_done")
+    manual_verify = serializers.SerializerMethodField()
 
     def get_kyc_done(self, instance):
         return instance.settings.get().kyc_done
+
+    def get_manual_verify(self, instance):
+        return instance.settings.get().manual_verify
 
     class Meta:
         model = User
@@ -520,6 +528,7 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
     )
+    invited_by = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -528,6 +537,10 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
             "id": {"read_only": True},
         }
         expandable_fields = {"user": UserSerializer}
+
+    def get_invited_by(self, instance):
+        invite = UserInvite.objects.filter(invited_user=instance.user)
+        return invite[0].invited_by.id
 
     def get_photo_id(self, instance):
         user_settings = instance.user.settings.filter().first()

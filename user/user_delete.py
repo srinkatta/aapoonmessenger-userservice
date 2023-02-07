@@ -1,3 +1,5 @@
+import logging
+
 from django.db import connections
 from user.api.viewsets import send_email_notification, send_sms_message
 from user.models import User, DeviceInfo, DeletedUser, UserProfile
@@ -61,8 +63,8 @@ class UserDelete:
             with connections["xmpp_database"].cursor() as cursor:
                 cursor.execute(query)
                 cursor.fetchall()
-        except Exception as e:
-            pass
+        except Exception as err:
+            logging.debug("Exception while executing query: %s", err)
 
     def delete_user_related_object(self):
 

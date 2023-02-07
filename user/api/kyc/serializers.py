@@ -523,7 +523,7 @@ class BaseKYCSerializer(serializers.Serializer):
         faceid_response = face_response.json()
         faceId = None
 
-        if len(faceid_response) > 0:
+        if faceid_response:
             if "error" in faceid_response:
                 log_message = error_message(
                     user, log_message, "face id is not detected for %s" % image_type
@@ -689,6 +689,40 @@ class PhotoIDSerializer(BaseKYCSerializer):
 
         source_recognitionResult = recognitionResult
 
+        verification = self.check_photo_id_validation(
+            user,
+            log_message,
+            text_response,
+            user_kyc_setting,
+            verification,
+            source_face_id,
+            source_faceid_response,
+            recognitionResult,
+        )
+        verification = self.check_aadhar_verification(
+            user,
+            log_message,
+            text_response,
+            user_kyc_setting,
+            verification,
+            source_face_id,
+            source_faceid_response,
+            source_recognitionResult,
+        )
+
+        return verification
+
+    def check_photo_id_validation(
+        self,
+        user,
+        log_message,
+        text_response,
+        user_kyc_setting,
+        verification,
+        source_face_id,
+        source_faceid_response,
+        recognitionResult,
+    ):
         if isinstance(text_response, dict):
             verification = self.invalid_image_error_check(
                 user, log_message, text_response, verification
@@ -715,6 +749,20 @@ class PhotoIDSerializer(BaseKYCSerializer):
                 user, log_message, verification, exception
             )
             return verification
+
+        return verification
+
+    def check_aadhar_verification(
+        self,
+        user,
+        log_message,
+        text_response,
+        user_kyc_setting,
+        verification,
+        source_face_id,
+        source_faceid_response,
+        source_recognitionResult,
+    ):
         verify_aadhar = self.aadharverify(user, log_message)
         if source_recognitionResult and source_faceid_response:
             # aadhar not valid
@@ -752,7 +800,28 @@ class PhotoIDSerializer(BaseKYCSerializer):
             add_log_entries(user, log_message)
             user_kyc_setting.save()
             return verification
+        self.check_text_response_match(
+            user,
+            log_message,
+            text_response,
+            verification,
+            source_face_id,
+            source_recognitionResult,
+            user_kyc_setting,
+        )
 
+        return verification
+
+    def check_text_response_match(
+        self,
+        user,
+        log_message,
+        text_response,
+        verification,
+        source_face_id,
+        source_recognitionResult,
+        user_kyc_setting,
+    ):
         if text_response:
             verification = self.invalid_image_validation(
                 user, log_message, text_response, verification
@@ -811,7 +880,6 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
             "is_verified": False,
         }
         log_message = self.get_logs(user)
-        logs = user.logs.get().kyc_logs
         verification = self.gif_validation(
             "source_key", user, log_message, verification
         )
@@ -820,6 +888,36 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
         )
         text_response, recognitionResult = self.source_key_ocr(user, log_message)
 
+        self.compare_verification_step_1(
+            user,
+            log_message,
+            verification,
+            text_response,
+            source_face_id,
+            source_faceid_response,
+            recognitionResult,
+        )
+
+        self.compare_verification_step_2(
+            user,
+            log_message,
+            verification,
+            source_face_id,
+            source_faceid_response,
+            text_response,
+        )
+        return verification
+
+    def compare_verification_step_1(
+        self,
+        user,
+        log_message,
+        verification,
+        text_response,
+        source_face_id,
+        source_faceid_response,
+        recognitionResult,
+    ):
         if isinstance(text_response, dict):
             verification = self.invalid_image_error_check(
                 user, log_message, text_response, verification
@@ -857,6 +955,16 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
             verification = self.empty_face(user, log_message, verification)
             return verification
 
+    def compare_verification_step_2(
+        self,
+        user,
+        log_message,
+        verification,
+        source_face_id,
+        source_faceid_response,
+        text_response,
+    ):
+        logs = user.logs.get().kyc_logs
         target_face_id = None
         target_faceid_response = None
 

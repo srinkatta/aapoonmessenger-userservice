@@ -73,7 +73,6 @@ def send_email_notification(user, template, subject):
     send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
 
 
-
 def phone_failure(user, subject):
 
     from_email = settings.DEFAULT_FROM_EMAIL
@@ -148,8 +147,8 @@ def user_kyc_status(user):
         logs = logs.kyc_logs
         if logs:
             attempts = re.findall(r"<b>Target Image: https://", logs)
-    except:
-        pass
+    except Exception as err:
+        logging.debug("User kyc logs not found: %s", err)
     user_kyc_settings = user.settings.filter().first()
     kyc_done = user_kyc_settings.kyc_done
     if logs and len(attempts) >= 2:
@@ -223,97 +222,104 @@ def get_dob(dateofbirth):
         if any(x in month for x in months):
             numeric_month = month_checker(month)
             dateofbirth = dateofbirth.replace(month, str(numeric_month))
-            try:
-                date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime(
-                    "%Y-%m-%d"
-                )
-            except:
-                try:
-                    date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
-                        "%Y-%m-%d"
-                    )
-                except:
-                    try:
-                        date_of_birth = datetime.strptime(
-                            dateofbirth, "%d%m%Y"
-                        ).strftime("%Y-%m-%d")
-                    except:
-                        try:
-                            date_of_birth = datetime.strptime(
-                                dateofbirth, "%m%d%Y"
-                            ).strftime("%Y-%m-%d")
-                        except:
-                            try:
-                                date_of_birth = datetime.strptime(
-                                    dateofbirth, "%d %m %Y"
-                                ).strftime("%Y-%m-%d")
-                            except:
-                                try:
-                                    date_of_birth = datetime.strptime(
-                                        dateofbirth, "%Y %m %d"
-                                    ).strftime("%Y-%m-%d")
-                                except:
-                                    try:
-                                        date_of_birth = datetime.strptime(
-                                            dateofbirth, "%Y/%m/%d"
-                                        ).strftime("%Y-%m-%d")
-                                    except:
-                                        try:
-                                            date_of_birth = datetime.strptime(
-                                                dateofbirth, "%m/%d/%Y"
-                                            ).strftime("%Y-%m-%d")
-                                        except:
-                                            date_of_birth = datetime.strptime(
-                                                dateofbirth, "%d/%m/%Y"
-                                            ).strftime("%Y-%m-%d")
+            date_of_birth = dob_format_check_1(dateofbirth)
 
     except:
+        date_of_birth = dob_format_check_2(dateofbirth)
+
+    return date_of_birth
+
+
+def dob_format_check_1(dateofbirth):
+    try:
+        date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime("%Y-%m-%d")
+    except:
         try:
-            date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime(
+            date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
                 "%Y-%m-%d"
             )
         except:
             try:
-                date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
+                date_of_birth = datetime.strptime(dateofbirth, "%d%m%Y").strftime(
                     "%Y-%m-%d"
                 )
             except:
                 try:
-                    date_of_birth = datetime.strptime(dateofbirth, "%d%m%Y").strftime(
+                    date_of_birth = datetime.strptime(dateofbirth, "%m%d%Y").strftime(
                         "%Y-%m-%d"
                     )
                 except:
                     try:
                         date_of_birth = datetime.strptime(
-                            dateofbirth, "%m%d%Y"
+                            dateofbirth, "%d %m %Y"
                         ).strftime("%Y-%m-%d")
                     except:
                         try:
                             date_of_birth = datetime.strptime(
-                                dateofbirth, "%d %m %Y"
+                                dateofbirth, "%Y %m %d"
                             ).strftime("%Y-%m-%d")
                         except:
                             try:
                                 date_of_birth = datetime.strptime(
-                                    dateofbirth, "%Y %m %d"
+                                    dateofbirth, "%Y/%m/%d"
                                 ).strftime("%Y-%m-%d")
                             except:
                                 try:
                                     date_of_birth = datetime.strptime(
-                                        dateofbirth, "%Y/%m/%d"
+                                        dateofbirth, "%m/%d/%Y"
+                                    ).strftime("%Y-%m-%d")
+                                except:
+                                    date_of_birth = datetime.strptime(
+                                        dateofbirth, "%d/%m/%Y"
+                                    ).strftime("%Y-%m-%d")
+    return date_of_birth
+
+
+def dob_format_check_2(dateofbirth):
+    try:
+        date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime("%Y-%m-%d")
+    except:
+        try:
+            date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
+                "%Y-%m-%d"
+            )
+        except:
+            try:
+                date_of_birth = datetime.strptime(dateofbirth, "%d%m%Y").strftime(
+                    "%Y-%m-%d"
+                )
+            except:
+                try:
+                    date_of_birth = datetime.strptime(dateofbirth, "%m%d%Y").strftime(
+                        "%Y-%m-%d"
+                    )
+                except:
+                    try:
+                        date_of_birth = datetime.strptime(
+                            dateofbirth, "%d %m %Y"
+                        ).strftime("%Y-%m-%d")
+                    except:
+                        try:
+                            date_of_birth = datetime.strptime(
+                                dateofbirth, "%Y %m %d"
+                            ).strftime("%Y-%m-%d")
+                        except:
+                            try:
+                                date_of_birth = datetime.strptime(
+                                    dateofbirth, "%Y/%m/%d"
+                                ).strftime("%Y-%m-%d")
+                            except:
+                                try:
+                                    date_of_birth = datetime.strptime(
+                                        dateofbirth, "%m/%d/%Y"
                                     ).strftime("%Y-%m-%d")
                                 except:
                                     try:
                                         date_of_birth = datetime.strptime(
-                                            dateofbirth, "%m/%d/%Y"
+                                            dateofbirth, "%Y%m%d"
                                         ).strftime("%Y-%m-%d")
                                     except:
-                                        try:
-                                            date_of_birth = datetime.strptime(
-                                                dateofbirth, "%Y%m%d"
-                                            ).strftime("%Y-%m-%d")
-                                        except:
-                                            date_of_birth = datetime.strptime(
-                                                dateofbirth, "%d/%m/%Y"
-                                            ).strftime("%Y-%m-%d")
+                                        date_of_birth = datetime.strptime(
+                                            dateofbirth, "%d/%m/%Y"
+                                        ).strftime("%Y-%m-%d")
     return date_of_birth

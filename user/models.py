@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -208,6 +210,7 @@ class UserProfile(BaseTimeStampedModel):
         max_choices=100,
         max_length=100,
     )
+    about_me = models.TextField(blank=True, null=True)
     skillset = models.CharField(max_length=250, null=True, blank=True)
     experience = models.CharField(max_length=250, null=True, blank=True)
     profession = models.CharField(max_length=55, null=True, blank=True)
