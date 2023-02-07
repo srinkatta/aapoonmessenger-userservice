@@ -148,7 +148,7 @@ class KYCUploadViewSet(GenericViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def list(self, request):
-        key = "kyc/%s/${filename}" % str(uuid.uuid1())
+        key = "%s/kyc/${filename}" % request.user.jid
         serializer = self.serializer_class(key=key, content_type="image/png/jpeg/jpg")
         return Response(serializer.to_native())
 
@@ -158,6 +158,6 @@ class FeedbackUploadViewSet(GenericViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def list(self, request):
-        key = "feedback/%s/${filename}" % str(uuid.uuid1())
+        key = "%s/feedback/${filename}" % request.user.jid
         serializer = self.serializer_class(key=key, content_type="image/png/jpeg/jpg")
         return Response(serializer.to_native())

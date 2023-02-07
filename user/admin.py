@@ -36,6 +36,7 @@ class UserAdmin(admin.ModelAdmin):
         "date_joined",
         "phone_number",
         "phone_number_verified",
+        "jid",
     )
     list_display_links = ["id", "first_name", "last_name"]
     list_per_page = 50
