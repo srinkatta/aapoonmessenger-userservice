@@ -528,6 +528,7 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
     )
+    invited_by = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -536,6 +537,10 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
             "id": {"read_only": True},
         }
         expandable_fields = {"user": UserSerializer}
+
+    def get_invited_by(self, instance):
+        invite = UserInvite.objects.filter(invited_user=instance.user)
+        return invite[0].invited_by.id
 
     def get_photo_id(self, instance):
         user_settings = instance.user.settings.filter().first()
