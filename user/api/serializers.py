@@ -215,12 +215,7 @@ class UserLoginSerializer(serializers.Serializer):
 
             if not user.jid:
                 uuid_jid = uuid.uuid4().hex + "@" + settings.XMPP_HOST
-                user_jid = User.objects.filter(jid=uuid_jid)
-                if user_jid:
-                    uuid_jid = uuid.uuid4().hex + "@" + settings.XMPP_HOST
-                    user.jid = uuid_jid
-                if not user_jid:
-                    user.jid = uuid_jid
+                user.jid = uuid_jid
 
             login(
                 self.context["request"],
