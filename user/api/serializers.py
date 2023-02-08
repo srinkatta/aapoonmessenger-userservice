@@ -412,6 +412,9 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         required=False, allow_null=True, allow_blank=True
     )
     sector = serializers.ChoiceField(choices=SECTORS_TYPE_CHOICES, required=False)
+    invited_by = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
 
     class Meta:
         model = UserProfile
@@ -438,6 +441,8 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         # Name Validate & Update
         self.name_validate(request, attrs)
 
+        self.invited_by_validate(request, attrs)
+
         # validating and updating Photo Id
         photo_id = attrs.get("photo_id") if attrs.get("photo_id") else 0
         if photo_id and photo_id != "":
@@ -455,6 +460,17 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
             self.email_validate(request, attrs)
 
         return attrs
+
+    def invited_by_validate(self, request, attrs):
+        invited_by = attrs.get("invited_by", "")
+        if invited_by:
+            invited_by_user = User.objects.filter(id=invited_by)
+            if not invited_by_user:
+                raise ValidationError("No user found with given invited_by")
+            else:
+                UserInvite.objects.get_or_create(
+                    invited_user=request.user, invited_by=invited_by_user[0]
+                )
 
     def __validate_profile_details(self, attrs):
         skillset = attrs.get("skillset")
