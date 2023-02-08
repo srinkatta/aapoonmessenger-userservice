@@ -540,7 +540,8 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
 
     def get_invited_by(self, instance):
         invite = UserInvite.objects.filter(invited_user=instance.user)
-        return invite[0].invited_by.id
+        if invite:
+            return invite[0].invited_by.id
 
     def get_photo_id(self, instance):
         user_settings = instance.user.settings.filter().first()
