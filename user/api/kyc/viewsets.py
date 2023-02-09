@@ -70,7 +70,7 @@ class PhotoIDVerifyViewSet(BaseViewSet):
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        serializer.data["source_key"] = self.cloudfront_cdn(request.data["source_key"])
+        request.data["source_key"] = self.cloudfront_cdn(request.data["source_key"])
 
         serializer = self.serializer_class(request.data)
         response = serializer.photo_id_verification(request.user)
@@ -121,8 +121,9 @@ class ComparefacesViewSet(BaseViewSet):
         serializer.is_valid(raise_exception=True)
 
         link = self.cloudfront_cdn(request.data.get("target_key"))
-        serializer.data["source_key"] = self.cloudfront_cdn(request.data["source_key"])
-        serializer.data["target_key"] = self.cloudfront_cdn(request.data["target_key"])
+        request.data["source_key"] = self.cloudfront_cdn(request.data["source_key"])
+        request.data["target_key"] = self.cloudfront_cdn(request.data["target_key"])
+
         request.data["source_key_back_side"] = (
             self.cloudfront_cdn(request.data["source_key_back_side"])
             if "source_key_back_side" in request.data
