@@ -38,8 +38,8 @@ class SelfieViewSet(BaseViewSet):
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        url = serializer.data.get("url")
-        serializer.data["url"] = self.cloudfront_cdn(url)
+        url = serializer.data.get("url", "")
+        request.data["url"] = self.cloudfront_cdn(url) if request.data["url"] else ""
 
         response = serializer.selfie(request.user)
 
@@ -50,7 +50,7 @@ class SelfieViewSet(BaseViewSet):
                 request.data.get("picture") if request.data.get("picture") else False
             )
 
-            request.user.secondary_picture = self.cloudfront_cdn(url)
+            request.user.secondary_picture = request.data["url"]
             user_kyc_settings.save()
             request.user.save()
 
@@ -92,15 +92,17 @@ class ProfileUpdateViewSet(BaseViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
-        target_key = serializer.data.get("target_key")
-        link = self.cloudfront_cdn(target_key)
-        serializer.data["target_key"] = self.cloudfront_cdn(target_key)
+        target_key = serializer.data.get("target_key", "")
+
+        request.data["target_key"] = (
+            self.cloudfront_cdn(target_key) if target_key else ""
+        )
 
         serializer = self.serializer_class(request.data)
         response = serializer.profile(request.user)
 
         if response.get("is_verified"):
-            request.user.secondary_picture = self.cloudfront_cdn(link)
+            request.user.secondary_picture = request.data["target_key"]
             request.user.save()
 
         return Response(response)

@@ -649,7 +649,7 @@ class BaseKYCSerializer(serializers.Serializer):
 
 
 class SelfieSerializer(BaseKYCSerializer):
-    url = serializers.CharField(required=True)
+    url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def selfie(self, user):
         user_kyc_setting = user.settings.filter().first()
@@ -847,7 +847,9 @@ class PhotoIDSerializer(BaseKYCSerializer):
 
 
 class ProfileSerializer(BaseKYCSerializer):
-    target_key = serializers.CharField(required=True)
+    target_key = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
 
     def profile(self, user):
         user_kyc_setting = user.settings.filter().first()

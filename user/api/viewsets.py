@@ -63,6 +63,9 @@ from user.user_delete import UserDelete
 from user_service import settings
 from rest_framework_api_key.permissions import HasAPIKey
 
+from allauth.account.adapter import get_adapter
+from allauth.utils import email_address_exists
+
 logger = logging.getLogger(__name__)
 
 ERROR_MESSAGE = (
@@ -78,6 +81,16 @@ class AuthUserRegistrationView(APIView):
     def post(self, request):
 
         serializer = self.serializer_class(data=request.data)
+        if request.data.get("email"):
+            email = get_adapter().clean_email(request.data.get("email"))
+            if email:
+                if email and email_address_exists(email):
+                    return Response(
+                        {
+                            "Detail": "A user is already registered with this e-mail address."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(
@@ -95,6 +108,23 @@ class AuthUserLoginView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+        country_code = request.data["country_code"]
+        phone_number = request.data["phone_number"]
+
+        user = User.objects.filter(country_code=country_code, phone_number=phone_number)
+
+        if not user:
+            return Response(
+                {"Details": "Invalid login credentials"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        otp = request.data["otp"]
+        user = user.first()
+        if otp and otp != user.otp_requested:
+            return Response(
+                {"Details": "Wrong OTP"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         serializer = self.serializer_class(
             data=request.data, context={"request": request}
