@@ -38,7 +38,6 @@ class User(AbstractUser):
     last_login_time = models.DateTimeField(null=True, blank=True)
     secondary_picture = models.TextField(null=True, blank=True)
     logo = models.TextField(null=True, blank=True)
-    date_joined = models.DateTimeField(null=True, blank=True)
     is_business = models.BooleanField(verbose_name="Business User", default=False)
     id_xmpp_register = models.BooleanField(
         verbose_name="XMPP Registered", default=False

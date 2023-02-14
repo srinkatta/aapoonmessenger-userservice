@@ -30,26 +30,26 @@ admin.site.register(DeletedUser)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "first_name",
-        "last_name",
+        "name",
         "email",
         "date_joined",
+        "country_code",
         "phone_number",
         "phone_number_verified",
-        "jid",
+        "user_type",
     )
-    list_display_links = ["id", "first_name", "last_name"]
+    list_display_links = ["id", "name"]
     list_per_page = 50
     line_numbering = 0
     readonly_fields = ["logo", "source_image", "kyc_logs_history"]
-    search_fields = ("first_name", "last_name", "email", "" "phone_number")
+    search_fields = ("name", "email", "" "phone_number")
     exclude = ("groups", "user_permissions")
     fieldsets = (
         (
             "KYC Info",
             {
                 "fields": (
-                    ("first_name", "last_name", "email"),
+                    ("name", "email"),
                     ("country_code", "phone_number", "phone_number_verified"),
                 )
             },
@@ -78,7 +78,7 @@ class UserAdmin(admin.ModelAdmin):
     )
 
     def name(self, instance):
-        return f"{instance.first_name} {instance.last_name}"
+        return f"{instance.name}"
 
     def kyc_logs(self, user):
         return user.logs.get().kyc_logs

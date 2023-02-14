@@ -583,26 +583,26 @@ class UserDeleteView(APIView):
                 template = "config/email/account_closure.html"
                 send_email_notification(user, template, subject)
             else:
-                phone = str(user.updated_country_code) + str(user.updated_phone_number)
+                phone = str(user.country_code) + str(user.phone_number)
                 send_sms_message(message, user, phone)
                 self.xmpp_unregister(user)  # TODO: Cross check
         except SMTPAuthenticationError:
             return Response(
-                data={"data": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
+                data={"Details": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
             )
         except User.DoesNotExist:
             return Response(
-                data={"data": "User doesn't exist."}, status=status.HTTP_400_BAD_REQUEST
+                data={"Details": "User doesn't exist."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(
-            data={"data": "User added to be deleted list."}, status=status.HTTP_200_OK
+            data={"Message": "User added to be deleted list."},
+            status=status.HTTP_200_OK,
         )
 
     def xmpp_unregister(self, user):
-        phone_number = "{}{}".format(
-            user.first().country_code, user.first().phone_number
-        )
+        phone_number = "{}{}".format(user.country_code, user.phone_number)
         endpoint = "{}{}".format(settings.XMPP_SERVER_URL, "api/unregister/")
         data = {"user": phone_number, "host": settings.XMPP_HOST}
         try:
