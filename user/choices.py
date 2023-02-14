@@ -271,8 +271,8 @@ INCOME_CHOICES = (
 )
 
 EDUCATION_CHOICES = (
-    ("No High School", "No High School"),
-    ("High School", "High School"),
+    ("NO HIGH SCHOOL", "No High School"),
+    ("HIGH SCHOOL", "High School"),
     ("DIPLOMA", "Diploma"),
     ("BACHELORS", "Bachelors"),
     ("MASTERS", "Masters"),
