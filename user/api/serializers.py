@@ -13,8 +13,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from user.choices import (
     SPORTS_CHOICES,
     INTEREST_CHOICES,
-    COUNTRY_CODE_CHOICES,
     SECTORS_TYPE_CHOICES,
+    EDUCATION_CHOICES,
 )
 from user.helpers import sms, hotp
 from user.helpers.otp import generate_otp
@@ -64,7 +64,6 @@ class RegisterSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     "A user is already registered with this e-mail address."
                 )
-
         return email
 
     def validate_password(self, password):
@@ -408,6 +407,9 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
     )
+    education = serializers.MultipleChoiceField(
+        choices=EDUCATION_CHOICES, required=False
+    )
     date_of_birth = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
@@ -415,6 +417,7 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
     invited_by = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
+    is_business = serializers.BooleanField(default=False)
 
     class Meta:
         model = UserProfile
@@ -440,6 +443,8 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
 
         # Name Validate & Update
         self.name_validate(request, attrs)
+
+        self.is_business_validate(request, attrs)
 
         self.invited_by_validate(request, attrs)
 
@@ -534,6 +539,14 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         request.user.name = name
         request.user.save()
 
+    def is_business_validate(self, request, attrs):
+        user = User.objects.filter(id=request.user.id)
+        if user:
+            is_business = (
+                attrs.get("is_business") if attrs.get("is_business") else False
+            )
+            user.update(is_business=is_business)
+
 
 class UserProfileSerializer(FlexFieldsModelSerializer):
     name = serializers.SerializerMethodField()
@@ -544,7 +557,11 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     interests = serializers.MultipleChoiceField(
         choices=INTEREST_CHOICES, required=False
     )
+    education = serializers.MultipleChoiceField(
+        choices=EDUCATION_CHOICES, required=False
+    )
     invited_by = serializers.SerializerMethodField()
+    is_business = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -562,6 +579,10 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     def get_photo_id(self, instance):
         user_settings = instance.user.settings.filter().first()
         return user_settings.photo_id
+
+    def get_is_business(self, instance):
+        user = User.objects.filter(id=instance.user.id)
+        return user[0].is_business
 
     def get_name(self, instance):
         name = instance.user.name
