@@ -196,7 +196,7 @@ class UserProfile(BaseTimeStampedModel):
         max_length=200, choices=MARITAL_STATUS_CHOICES, null=True, blank=True
     )
     interests = MultiSelectField(
-        max_length=150,
+        max_length=1024,
         max_choices=150,
         choices=INTEREST_CHOICES,
         null=True,
