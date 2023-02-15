@@ -873,7 +873,7 @@ class ProfileSerializer(BaseKYCSerializer):
 class CompareFacesV2Serializer(BaseKYCSerializer):
     source_key = serializers.CharField(required=True)
     target_key = serializers.CharField(required=True)
-    source_key_back_side = serializers.CharField(required=False)
+    source_key_back_side = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def compare_faces(self, user):
         user_kyc_setting = user.settings.filter().first()
