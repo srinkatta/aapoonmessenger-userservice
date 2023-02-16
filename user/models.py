@@ -48,7 +48,7 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        return f"ID: {self.id}, Name: {self.first_name} {self.last_name}"
+        return f"ID: {self.id}, Name: {self.name}"
 
     class Meta:
         verbose_name = "User"
@@ -178,7 +178,7 @@ class UserVerificationSetting(BaseTimeStampedModel):
         verbose_name_plural = "User Verification Settings"
 
     def __str__(self):
-        return f"{self.user} Verification Settings"
+        return f"{self.user} Verification Settings, Phone: {self.user.phone_number}, Kyc Verified: {self.kyc_done}"
 
 
 class UserProfile(BaseTimeStampedModel):
