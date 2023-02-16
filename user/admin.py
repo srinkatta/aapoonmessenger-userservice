@@ -93,22 +93,10 @@ class UsertypeFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == "individualuser":
-            with connections["default"].cursor() as db_cursor:
-                query = """SELECT id FROM user_user WHERE is_business=False AND user_type='individualuser'"""
-                db_cursor.execute(query)
-                table_rows = db_cursor.fetchall()
-                df = pd.DataFrame(table_rows)
-                values = df[0].tolist()
-                return queryset.filter(pk__in=values)
+            return queryset.filter(user_type="individualuser", is_business=False)
+
         elif self.value() == "businessuser":
-            with connections["default"].cursor() as db_cursor:
-                query = """SELECT id FROM user_user WHERE is_business=True AND user_type='businessuser'"""
-                db_cursor.execute(query)
-                table_rows = db_cursor.fetchall()
-                df = pd.DataFrame(table_rows)
-                values = df[0].tolist()
-                return queryset.filter(pk__in=values)
-        return queryset
+            return queryset.filter(user_type="businessuser", is_business=True)
 
 
 class LastWeekMonthLastLoginFilter(admin.SimpleListFilter):
