@@ -712,9 +712,10 @@ class UserDetailsPhoneAPI(APIView):
         serializer.is_valid(raise_exception=True)
 
         phone_number = serializer.data.get("phone_number")
+        country_code = serializer.data.get("country_code")
 
         if phone_number:
-            user = self.get_user(phone_number=phone_number)
+            user = self.get_user(country_code=country_code, phone_number=phone_number)
         else:
             return Response(
                 {"error": "Input data error"}, status=status.HTTP_403_FORBIDDEN
@@ -728,13 +729,11 @@ class UserDetailsPhoneAPI(APIView):
         serializer = UserDetailsSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get_user(self, phone_number):
-        import phonenumbers
+    def get_user(self, phone_number, country_code):
 
-        phone = phonenumbers.parse(f"+{phone_number}", None)
         filters = {
-            "country_code": phone.country_code,
-            "phone_number": phone.national_number,
+            "country_code": country_code,
+            "phone_number": phone_number,
         }
         try:
             user = User.objects.get(**filters)
