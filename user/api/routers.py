@@ -94,6 +94,6 @@ urlpatterns = [
     path("invite_list/", InviteListView.as_view(), name="get_invite_list"),
     path("user_details/", UserDetailsAPI.as_view(), name="user_details"),
     path(
-        "user_details/phone/", UserDetailsPhoneAPI.as_view(), name="user_details_phone"
+        "user_details_phone/", UserDetailsPhoneAPI.as_view(), name="user_details_phone"
     ),
 ]
