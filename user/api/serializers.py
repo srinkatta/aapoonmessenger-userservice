@@ -652,6 +652,7 @@ class UserDetailsInputSerializer(serializers.Serializer):
 
 class UserPhoneDetailsInputSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=False)
+    country_code = serializers.CharField(required=False)
 
 
 class UserDetailsSerializer(serializers.Serializer):
