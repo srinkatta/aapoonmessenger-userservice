@@ -15,6 +15,7 @@ from user.choices import (
     INTEREST_CHOICES,
     SECTORS_TYPE_CHOICES,
     EDUCATION_CHOICES,
+    COUNTRY_CODE_CHOICES,
 )
 from user.helpers import sms, hotp
 from user.helpers.otp import generate_otp
@@ -38,6 +39,7 @@ from user.utils import (
     user_kyc_status,
     get_dob,
     phone_failure,
+    get_data_from_choices,
 )
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -141,6 +143,8 @@ class RegisterSerializer(serializers.Serializer):
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
         user.last_login_time = str(datetime.now(tz=timezone.utc))
+        country = get_data_from_choices(user.country_code, COUNTRY_CODE_CHOICES)
+        user.country_iso_code = country
         user.save()
 
     def max_attempts(self, user):
