@@ -663,3 +663,5 @@ class UserDetailsSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False)
     jid = serializers.CharField(required=False)
+    fcm_token = serializers.CharField(required=False)
+    apns_token = serializers.CharField(required=False)
