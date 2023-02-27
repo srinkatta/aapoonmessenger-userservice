@@ -16,6 +16,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
 from user.helpers import sms
+from user.choices import COUNTRIES_CHOICES
 from user_service import settings
 
 
@@ -323,3 +324,31 @@ def dob_format_check_2(dateofbirth):
                                             dateofbirth, "%d/%m/%Y"
                                         ).strftime("%Y-%m-%d")
     return date_of_birth
+
+
+def get_key_from_choices(data, CHOICES):
+    match = ""
+    data = data[:-1]
+
+    for value in CHOICES:
+        if data == value[1]:
+            match += value[0]
+    return match
+
+
+def get_data_from_choices(key, CHOICES):
+    country = ""
+    match = ""
+
+    for value in CHOICES:
+        if key == value[0]:
+            match += value[1]
+            for s in match:
+                if s == "(":
+                    break
+                else:
+                    country += s
+
+    country_index = get_key_from_choices(country, COUNTRIES_CHOICES)
+
+    return country_index

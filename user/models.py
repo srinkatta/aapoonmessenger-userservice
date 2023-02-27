@@ -178,7 +178,7 @@ class UserVerificationSetting(BaseTimeStampedModel):
         verbose_name_plural = "User Verification Settings"
 
     def __str__(self):
-        return f"{self.user} Verification Settings, Phone: {self.user.phone_number}, Kyc Verified: {self.kyc_done}"
+        return f"{self.user}"
 
 
 class UserProfile(BaseTimeStampedModel):
@@ -309,6 +309,3 @@ class DeletedUser(BaseTimeStampedModel):
         blank=True,
         related_name="deleted_object",
     )
-
-    def __str__(self):
-        return f"{self.user}, Deleted: {self.is_deleted}"
