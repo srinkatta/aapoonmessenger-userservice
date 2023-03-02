@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
@@ -265,7 +266,7 @@ class UserLoginSerializer(serializers.Serializer):
                 response, phone_number, access_token, user
             )
         except Exception as e:
-            print("Error checking user at websocket server %s" % e)
+            logging.exception("Error checking user at websocket server %s" % e)
 
     def xmpp_register_or_update_password(
         self, response, phone_number, access_token, user
@@ -301,9 +302,9 @@ class UserLoginSerializer(serializers.Serializer):
                 print("reg response", resp)
                 user.id_xmpp_register = True
                 user.save()
-                print("User successfully registered at websocket server")
+                logging.info("User successfully registered at websocket server")
             except Exception as e:
-                print("Error registering user at websocket server %s" % e)
+                logging.exception("Error registering user at websocket server %s" % e)
 
 
 class SendOTPSerializer(serializers.Serializer):

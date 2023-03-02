@@ -31,8 +31,6 @@ from user.models import (
     DeletedUser,
 )
 
-admin.site.register(UserLog)
-admin.site.register(UserInvite)
 admin.site.register(UserDevice)
 admin.site.register(UserProfile)
 admin.site.register(DeviceInfo)
@@ -91,9 +89,15 @@ class UsertypeFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == "Individual User":
-            return queryset.filter(user_type="individualuser", is_business=False, phone_number_verified=True)
+            return queryset.filter(
+                user_type="individualuser",
+                is_business=False,
+                phone_number_verified=True,
+            )
         elif self.value() == "Business User":
-            return queryset.filter(user_type="businessuser", is_business=True, phone_number_verified=True)
+            return queryset.filter(
+                user_type="businessuser", is_business=True, phone_number_verified=True
+            )
 
 
 class LastWeekMonthLastLoginFilter(admin.SimpleListFilter):
@@ -109,11 +113,42 @@ class LastWeekMonthLastLoginFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == "last_week":
             last_week_date = timezone.now().date() - timedelta(days=7)
-            return queryset.filter(last_login__gte=last_week_date)
+            return queryset.filter(
+                last_login__gte=last_week_date, phone_number_verified=True
+            )
         elif self.value() == "last_month":
             last_month_date = timezone.now().date() - timedelta(days=30)
-            return queryset.filter(last_login__gte=last_month_date)
+            return queryset.filter(
+                last_login__gte=last_month_date, phone_number_verified=True
+            )
         return queryset
+
+
+class UserKycFilter(admin.SimpleListFilter):
+    title = "Kyc Verified"
+    parameter_name = "kyc"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("Yes", "Yes"),
+            ("No", "No"),
+        )
+
+    def queryset(self, request, queryset):
+        users = UserVerificationSetting.objects.all()
+        kyc_verified_users = [
+            user.user.id
+            for user in users
+            if user.kyc_done is True
+            if user.user.phone_number_verified is True
+        ]
+        basic_users = [user.user.id for user in users if user.kyc_done is False]
+        if self.value() == "Yes":
+            return queryset.filter(id__in=kyc_verified_users)
+        if self.value() == "No":
+            return queryset.filter(id__in=basic_users)
+        else:
+            return queryset
 
 
 class KycDoneFilter(admin.SimpleListFilter):
@@ -131,42 +166,6 @@ class KycDoneFilter(admin.SimpleListFilter):
             return queryset.filter(kyc_done=True)
         elif self.value() == "No":
             return queryset.filter(kyc_done=False)
-
-
-class KycVerifiedFilter(admin.SimpleListFilter):
-    title = "Kyc Verified"
-    parameter_name = "kyc_done"
-
-    def lookups(self, request, model_admin):
-        return (
-            ("Yes", "Yes"),
-            ("No", "No"),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value() == "Yes":
-            with connections["default"].cursor() as db_cursor:
-                query = """SELECT user.id FROM user_user user 
-                JOIN user_userverificationsetting settings 
-                ON user.id=settings.user_id 
-                WHERE settings.kyc_done=true"""
-                db_cursor.execute(query)
-                table_rows = db_cursor.fetchall()
-                df = pd.DataFrame(table_rows)
-                values = df[0].tolist()
-                return queryset.filter(pk__in=values)
-        elif self.value() == "No":
-            with connections["default"].cursor() as db_cursor:
-                query = """SELECT user.id FROM user_user user
-                 JOIN user_userverificationsetting settings 
-                 ON user.id=settings.user_id 
-                 WHERE settings.kyc_done=false"""
-                db_cursor.execute(query)
-                table_rows = db_cursor.fetchall()
-                df = pd.DataFrame(table_rows)
-                values = df[0].tolist()
-                return queryset.filter(pk__in=values)
-        return queryset
 
 
 def source_images(kyc_logs):
@@ -224,7 +223,7 @@ class UserAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         ("date_joined", DateRangeFilter),
         ("country_iso_code", DropdownFilter),
         "phone_number_verified",
-        KycVerifiedFilter,
+        UserKycFilter,
         LastWeekMonthLastLoginFilter,
         UsertypeFilter,
     )
@@ -385,3 +384,37 @@ class UserVerificationSettingAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserVerificationSetting, UserVerificationSettingAdmin)
+
+
+class UserLogsAdmin(admin.ModelAdmin):
+    search_fields = ("user__id", "user__phone_number")
+    list_display = (
+        "user_id",
+        "name",
+        "phone",
+    )
+
+    fieldsets = (
+        (
+            "User log",
+            {
+                "fields": (
+                    "s3_logs",
+                    "kyc_logs",
+                    "user",
+                )
+            },
+        ),
+    )
+
+    def user_id(self, instance):
+        return instance.user.id
+
+    def name(self, instance):
+        return instance.user.name
+
+    def phone(self, instance):
+        return instance.user.phone_number
+
+
+admin.site.register(UserLog, UserLogsAdmin)
