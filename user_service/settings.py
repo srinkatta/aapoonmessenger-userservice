@@ -106,6 +106,14 @@ DATABASES = {
         "PASSWORD": os.environ["DB_PASSWORD"],
         "HOST": os.environ["DB_HOST"],
         "PORT": os.environ["DB_PORT"],
+    },
+    "xmpp_database": {
+        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "NAME": "ejabberd",
+        "USER": "postgres",
+        "PASSWORD": os.environ["XMPP_DB_PASSWORD"],
+        "HOST": os.environ["XMPP_DB_HOST"],
+        "PORT": "5432",
     }
 }
 
@@ -215,6 +223,8 @@ SPECTACULAR_SETTINGS = {
 
 DEFAULT_FROM_EMAIL = "support@aapoon.net"
 SUPPORT_EMAIL = "support@aapoon.net"
+
+FCM_API_KEY = os.environ["FCM_API_KEY"]
 
 FAST_API_KEY = os.environ["FAST_API_KEY"]
 SNS_AWS_ACCESS_KEY = os.environ["SNS_AWS_ACCESS_KEY"]

@@ -21,6 +21,13 @@ from user.api.viewsets import (
     InviteListView,
     UserDetailsAPI,
     UserDetailsPhoneAPI,
+    UserCheckAPIView,
+)
+from user.api.direct_messages.viewsets import (
+    NotifyRedirectDmViewSet,
+    MuteMessageView,
+    XMPPMonthlyChatViewSet,
+    XMPPDeleteDMViewSet,
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
@@ -96,4 +103,14 @@ urlpatterns = [
     path(
         "user_details_phone/", UserDetailsPhoneAPI.as_view(), name="user_details_phone"
     ),
+    path("user_friends_check/", UserCheckAPIView.as_view(), name="user_friends_check"),
+    # Direct message urls
+    path("notify_dm/", NotifyRedirectDmViewSet.as_view(), name="notify_redirect_dm"),
+    path("mute_messages/", MuteMessageView.as_view(), name="mute_messages"),
+    path(
+        r"xmpp_monthly_chat/",
+        XMPPMonthlyChatViewSet.as_view({"get": "list"}),
+        name="xmpp_chat",
+    ),
+    path(r"delete_chat/", XMPPDeleteDMViewSet.as_view(), name="delete_chat"),
 ]
