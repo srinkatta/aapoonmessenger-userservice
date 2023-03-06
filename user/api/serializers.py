@@ -668,5 +668,24 @@ class UserDetailsSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False)
     jid = serializers.CharField(required=False)
-    fcm_token = serializers.CharField(required=False)
-    apns_token = serializers.CharField(required=False)
+
+
+class aapoonContactSyncSerializer(serializers.Serializer):
+    """
+    Serializer class to validate country code and phone number
+    """
+
+    contactName = serializers.CharField(
+        required=False, help_text="This will contain contact name"
+    )
+    contactPhoneNumber = serializers.CharField(
+        required=True, help_text="This will contain country_code+number"
+    )
+
+
+class UserCheckSerializer(serializers.Serializer):
+    """
+    Serializer class to validate contacts being synced through aapoon contacts
+    """
+
+    contacts = aapoonContactSyncSerializer(many=True)

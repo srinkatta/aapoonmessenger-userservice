@@ -309,3 +309,14 @@ class DeletedUser(BaseTimeStampedModel):
         blank=True,
         related_name="deleted_object",
     )
+
+
+class MuteCoversation(models.Model):
+    """
+    Mute Conversation Model
+    """
+
+    sender_id = models.CharField(max_length=200)
+    recipient_id = models.CharField(max_length=200)
+    mute = models.BooleanField(default=False)
+    mute_time = models.BigIntegerField(default=0)

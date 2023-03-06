@@ -1,5 +1,4 @@
 import csv
-import re
 import os
 import logging
 from django.utils.decorators import method_decorator
@@ -36,6 +35,7 @@ from user.api.serializers import (
     UserDetailsInputSerializer,
     NotificationSettingsSerializer,
     UserPhoneDetailsInputSerializer,
+    UserCheckSerializer,
 )
 from user.models import (
     UserLog,
@@ -47,7 +47,6 @@ from user.models import (
     AppInfo,
     Languages,
     DeletedUser,
-    UserVerificationSetting,
 )
 from user.utils import (
     make_request,
@@ -740,3 +739,45 @@ class UserDetailsPhoneAPI(APIView):
         except User.DoesNotExist:
             user = None
         return user
+
+
+class UserCheckAPIView(APIView):
+    permission_classes = (HasAPIKey,)
+    allowed_methods = ("POST",)
+    serializer_class = UserCheckSerializer
+
+    def post(self, request):
+        response = []
+        serializer = UserCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        for contact in serializer.data["contacts"]:
+            result = {"aapoonUser": False}
+            import phonenumbers
+
+            phone_number = phonenumbers.parse(f"+{contact['contactPhoneNumber']}")
+            user = User.objects.filter(
+                country_code=phone_number.country_code,
+                phone_number=phone_number.national_number,
+            )
+            if user:
+                user = user.first()
+                result["aapoonUser"] = True
+                result["contactaapoonName"] = user.name
+                result["contactaapoonprofilepicture"] = (
+                    user.secondary_picture if user else ""
+                )
+                result["contactaapoonJID"] = user.jid if user else ""
+                result["contactFcmToken"] = user.fcm_token
+                result["contactaapoonUserID"] = user.id
+                user_settings = user.settings.filter().first()
+                if user_settings.kyc_done:
+                    result["contactaapoonUserProfileStatus"] = "completed"
+                else:
+                    result["contactaapoonUserProfileStatus"] = "basic"
+            else:
+                result["aapoonUser"] = False
+            result["contactName"] = contact["contactName"]
+            result["contactPhoneNumber"] = contact["contactPhoneNumber"]
+            response.append(result)
+
+        return Response(data=response, status=status.HTTP_200_OK)
