@@ -62,9 +62,7 @@ def notify_dm(
                             actual_content = xml[start_index:end_index]
                             updated_content = actual_content.replace("&quot;", '"')
                             xml = xml.replace(actual_content, updated_content)
-                import pdb
 
-                pdb.set_trace()
                 name = from_user.name
                 data_message = {
                     "notification": {

@@ -14,6 +14,8 @@ from django.core.mail import send_mail
 from django.utils.html import strip_tags
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
+from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from user.helpers import sms
 from user.choices import COUNTRIES_CHOICES
@@ -352,3 +354,8 @@ def get_data_from_choices(key, CHOICES):
     country_index = get_key_from_choices(country, COUNTRIES_CHOICES)
 
     return country_index
+
+
+class CustomPagination(PageNumberPagination):
+    def get_paginated_response(self, data):
+        return Response({"results": data})

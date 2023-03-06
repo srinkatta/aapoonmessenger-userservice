@@ -1,12 +1,12 @@
 import time
 import logging
+import phonenumbers
 
 from django.db import connections
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status, viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 
 from user.api.direct_messages.serializers import (
@@ -18,6 +18,7 @@ from user.models import (
     User,
     MuteCoversation,
 )
+from user.utils import CustomPagination
 from user.helpers import notification
 from user_service import settings
 
@@ -41,7 +42,6 @@ class NotifyRedirectDmViewSet(APIView):
 
         if "vhost" in request.data:
             if request.data["vhost"] == settings.XMPP_HOST:
-                import phonenumbers
 
                 to_phone = phonenumbers.parse(f"+{to}", None)
                 to_user = User.objects.get(
@@ -146,12 +146,8 @@ class ArchiveChat(object):
             setattr(self, field, kwargs.get(field, None))
 
 
-class CustomPagination(PageNumberPagination):
-    def get_paginated_response(self, data):
-        return Response({"results": data})
-
-
 class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
+    permission_classes = [IsAuthenticated]
     serializer_class = ArchiveChatSerializer
     http_method_names = ["get"]
 
