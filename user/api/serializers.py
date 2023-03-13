@@ -217,9 +217,9 @@ class UserLoginSerializer(serializers.Serializer):
                 second_last_login = second_last
             update_last_login(None, user)
 
-            if not user.jid:
-                uuid_jid = uuid.uuid4().hex + "@" + settings.XMPP_HOST
-                user.jid = uuid_jid
+            user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
+
+            user.uuid = user.uuid if user.uuid else uuid.uuid4().hex
 
             login(
                 self.context["request"],
