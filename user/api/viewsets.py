@@ -1,6 +1,7 @@
 import csv
 import os
 import logging
+import phonenumbers
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
@@ -752,7 +753,6 @@ class UserCheckAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         for contact in serializer.data["contacts"]:
             result = {"aapoonUser": False}
-            import phonenumbers
 
             phone_number = phonenumbers.parse(f"+{contact['contactPhoneNumber']}")
             user = User.objects.filter(

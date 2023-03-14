@@ -668,6 +668,7 @@ class UserDetailsSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False)
     jid = serializers.CharField(required=False)
+    unique_id = serializers.CharField(required=False)
 
 
 class aapoonContactSyncSerializer(serializers.Serializer):
