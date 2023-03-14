@@ -219,7 +219,7 @@ class UserLoginSerializer(serializers.Serializer):
 
             user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
 
-            user.uuid = user.uuid if user.uuid else uuid.uuid4().hex
+            user.unique_id = user.unique_id if user.unique_id else uuid.uuid4().hex
 
             login(
                 self.context["request"],
