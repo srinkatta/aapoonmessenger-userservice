@@ -42,6 +42,7 @@ class User(AbstractUser):
     id_xmpp_register = models.BooleanField(
         verbose_name="XMPP Registered", default=False
     )
+    unique_id = models.CharField(max_length=255, default=uuid.uuid4().hex)
     hash_tag = models.TextField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
