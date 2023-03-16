@@ -8,6 +8,7 @@ from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_api_key.permissions import HasAPIKey
 
 from user.api.direct_messages.serializers import (
     NotifyRedirectDmSerializer,
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 class NotifyRedirectDmViewSet(APIView):
     http_method_names = ["post"]
     serializer_class = NotifyRedirectDmSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = [HasAPIKey | AllowAny]
 
     def post(self, request):
         """

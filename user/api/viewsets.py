@@ -743,7 +743,7 @@ class UserDetailsPhoneAPI(APIView):
 
 
 class UserCheckAPIView(APIView):
-    permission_classes = (HasAPIKey,)
+    permission_classes = [HasAPIKey | permissions.AllowAny]
     allowed_methods = ("POST",)
     serializer_class = UserCheckSerializer
 
