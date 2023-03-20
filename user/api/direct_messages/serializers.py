@@ -28,3 +28,12 @@ class ArchiveChatSerializer(serializers.Serializer):
     xml = serializers.CharField(max_length=256)
     username = serializers.CharField(max_length=256)
     user_pic = serializers.URLField(max_length=256)
+
+
+class UserChatDeleteSerializer(serializers.Serializer):
+    sender = serializers.CharField(
+        required=True, help_text="Expecting country_code+phone_number of user"
+    )
+    recipient = serializers.CharField(
+        required=True, help_text="Expecting jid of the other user."
+    )

@@ -14,6 +14,7 @@ from user.api.direct_messages.serializers import (
     NotifyRedirectDmSerializer,
     MuteMessageSerializer,
     ArchiveChatSerializer,
+    UserChatDeleteSerializer,
 )
 from user.models import (
     User,
@@ -22,6 +23,7 @@ from user.models import (
 from user.utils import CustomPagination
 from user.helpers import notification
 from user_service import settings
+from user.user_delete import UserDelete
 
 logger = logging.getLogger(__name__)
 
@@ -186,8 +188,7 @@ class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
     def fetch_archive_chat(self, archive_data):
         archive_chat = []
         for archive in archive_data:
-            # ToDo : test
-            user = User.objects.filter(id=archive[-1])
+            user = User.objects.filter(jid=archive[-1])
             username = None
             user_pic = None
             timestamp = self.xml_timestamp_value(archive[1])
@@ -287,3 +288,17 @@ class XMPPDeleteDMViewSet(APIView):
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserChatDeleteView(APIView):
+    permission_classes = (IsAuthenticated,)
+    allowed_methods = ("POST",)
+    serializer_class = UserChatDeleteSerializer
+
+    def post(self, request):
+        username = request.data["sender"]
+        jid = request.data["recipient"]
+        UserDelete().delete_chat(username, jid)
+        return Response(
+            data={"data": "User chat deleted successfully."}, status=status.HTTP_200_OK
+        )

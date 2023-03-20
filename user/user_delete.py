@@ -58,6 +58,13 @@ class UserDelete:
         query = "DELETE FROM users WHERE username=" + "'" + username + "'" + ";"
         return self.execute_query(query)
 
+    def delete_chat(self, username, jid):
+        query = (
+            f"DELETE FROM archive WHERE username='{username}' AND bare_peer='{jid}';"
+        )
+        print(query)
+        return self.execute_query(query)
+
     def execute_query(self, query):
         try:
             with connections["xmpp_database"].cursor() as cursor:

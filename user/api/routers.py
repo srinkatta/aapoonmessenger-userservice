@@ -27,7 +27,7 @@ from user.api.direct_messages.viewsets import (
     NotifyRedirectDmViewSet,
     MuteMessageView,
     XMPPMonthlyChatViewSet,
-    XMPPDeleteDMViewSet,
+    UserChatDeleteView,
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
@@ -112,5 +112,5 @@ urlpatterns = [
         XMPPMonthlyChatViewSet.as_view({"get": "list"}),
         name="xmpp_chat",
     ),
-    path(r"delete_chat/", XMPPDeleteDMViewSet.as_view(), name="delete_chat"),
+    path(r"user_chat_delete/", UserChatDeleteView.as_view(), name="user_chat_delete"),
 ]
