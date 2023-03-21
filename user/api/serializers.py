@@ -662,8 +662,7 @@ class UserPhoneDetailsInputSerializer(serializers.Serializer):
 
 class UserDetailsSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
-    first_name = serializers.CharField(required=False)
-    last_name = serializers.CharField(required=False)
+    name = serializers.CharField(required=False)
     email = serializers.CharField(required=False)
     country_code = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False)

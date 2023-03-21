@@ -585,7 +585,6 @@ class UserDeleteView(APIView):
             else:
                 phone = str(user.country_code) + str(user.phone_number)
                 send_sms_message(message, user, phone)
-                self.xmpp_unregister(user)  # TODO: Cross check
         except SMTPAuthenticationError:
             return Response(
                 data={"Details": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
