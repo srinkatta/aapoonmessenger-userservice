@@ -27,7 +27,9 @@ def notify_dm(
             a = xml.find("<Bubble>") + len("<Bubble>")
             b = xml.find("</Bubble>")
             c = xml[a:b]
-            if body and "-" not in c:
+            delay = re.findall("(<delay.*?>)(.*?)(<\\/delay>)", xml)
+
+            if body and "-" not in c and not delay:
                 try:
                     message = message_value_dict[c]
                 except BaseException:
