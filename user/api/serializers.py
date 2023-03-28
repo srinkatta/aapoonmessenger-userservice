@@ -1,5 +1,7 @@
 import uuid
 import logging
+import phonenumbers
+from phonenumbers.phonenumberutil import region_code_for_number
 
 from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
@@ -45,6 +47,9 @@ from user.utils import (
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
+
+available_country_code = ['91', '1', '971', '966']
+available_countries_iso = ['CA', 'US', 'IN', 'AE', 'SA']
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -99,6 +104,14 @@ class RegisterSerializer(serializers.Serializer):
         device_os_version = request.data.get("device_os_version", "")
 
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
+
+        phone = f"{country_code}{phone_number}"
+        phone_number = phonenumbers.parse("+" + phone)
+        country = region_code_for_number(phone_number)
+
+        if country_code not in available_country_code or country not in available_countries_iso:
+            raise ValidationError({"message": "Thank you for your interest in aapoon. We contact you as soon as aapoon "
+                               "is available in your country."})
 
         if user.exists():
             user = user.first()
