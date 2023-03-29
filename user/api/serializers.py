@@ -48,8 +48,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
-available_country_code = ['91', '1', '971', '966']
-available_countries_iso = ['CA', 'US', 'IN', 'AE', 'SA']
+available_country_code = ["91", "1", "971", "966"]
+available_countries_iso = ["CA", "US", "IN", "AE", "SA"]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -106,12 +106,19 @@ class RegisterSerializer(serializers.Serializer):
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
 
         phone = f"{country_code}{phone_number}"
-        phone_number = phonenumbers.parse("+" + phone)
-        country = region_code_for_number(phone_number)
+        phone_parse = phonenumbers.parse("+" + phone)
+        country = region_code_for_number(phone_parse)
 
-        if country_code not in available_country_code or country not in available_countries_iso:
-            raise ValidationError({"message": "Thank you for your interest in aapoon. We contact you as soon as aapoon "
-                               "is available in your country."})
+        if (
+            country_code not in available_country_code
+            or country not in available_countries_iso
+        ):
+            raise ValidationError(
+                {
+                    "message": "Thank you for your interest in aapoon. We contact you as soon as aapoon "
+                    "is available in your country."
+                }
+            )
 
         if user.exists():
             user = user.first()
