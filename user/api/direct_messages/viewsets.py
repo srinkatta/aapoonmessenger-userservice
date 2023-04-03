@@ -143,7 +143,8 @@ class MuteMessageView(APIView):
 class ArchiveChat(object):
     def __init__(self, **kwargs):
         for field in ("id", "bare_peer", "timestamp", "xml", "username", "user_pic"):
-            setattr(self, field, kwargs.get(field, None))
+            if field in kwargs:
+                setattr(self, field, kwargs.get(field))
 
 
 class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
