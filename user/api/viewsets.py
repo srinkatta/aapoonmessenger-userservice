@@ -757,9 +757,8 @@ class UserCheckAPIView(APIView):
             user = User.objects.filter(
                 country_code=phone_number.country_code,
                 phone_number=phone_number.national_number,
-            )
-            if user:
-                user = user.first()
+            ).first()
+            if user and user.phone_number_verified:
                 result["aapoonUser"] = True
                 result["contactaapoonName"] = user.name
                 result["contactaapoonprofilepicture"] = (
