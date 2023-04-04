@@ -688,6 +688,11 @@ class UserDetailsSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=False)
     jid = serializers.CharField(required=False)
     unique_id = serializers.CharField(required=False)
+    profile_pic = serializers.SerializerMethodField()
+    user_type = serializers.CharField(required=False)
+
+    def get_profile_pic(self, obj):
+        return obj.secondary_picture
 
 
 class aapoonContactSyncSerializer(serializers.Serializer):
