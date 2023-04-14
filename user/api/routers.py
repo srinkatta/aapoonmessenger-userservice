@@ -18,6 +18,7 @@ from user.api.viewsets import (
     FeedbackView,
     UserDeleteView,
     UserDeleteRevokeView,
+    UserDeleteCronView,
     InviteListView,
     UserDetailsAPI,
     UserDetailsPhoneAPI,
@@ -96,6 +97,7 @@ urlpatterns = [
     path(
         "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
     ),
+    path("user_delete/cron/", UserDeleteCronView.as_view(), name="user_delete_cron"),
     path("lang/", LanguageView.as_view(), name="language_detect"),
     path("feedback/", FeedbackView.as_view(), name="feedback"),
     path("invite_list/", InviteListView.as_view(), name="get_invite_list"),

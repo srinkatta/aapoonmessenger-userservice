@@ -361,11 +361,13 @@ class VerifyPhoneSerializer(serializers.Serializer):
                 user_setting.wrong_attempts = user_setting.wrong_attempts + 1
                 user_setting.save()
                 raise serializers.ValidationError(
-                    "Your OTP is Incorrect. Please re-enter."
+                    {"details": "Your OTP is Incorrect. Please re-enter."}
                 )
         else:
             raise serializers.ValidationError(
-                "You have reached Max Phone Attempts for Phone Verification"
+                {
+                    "details": "You have reached Max Phone Attempts for Phone Verification"
+                }
             )
 
 
@@ -689,10 +691,13 @@ class UserDetailsSerializer(serializers.Serializer):
     jid = serializers.CharField(required=False)
     unique_id = serializers.CharField(required=False)
     profile_pic = serializers.SerializerMethodField()
-    user_type = serializers.CharField(required=False)
+    user_type = serializers.SerializerMethodField()
 
     def get_profile_pic(self, obj):
         return obj.secondary_picture
+
+    def get_user_type(self, obj):
+        return user_kyc_status(obj)
 
 
 class aapoonContactSyncSerializer(serializers.Serializer):
