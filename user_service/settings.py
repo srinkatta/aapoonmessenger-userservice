@@ -115,6 +115,14 @@ DATABASES = {
         "HOST": os.environ["XMPP_DB_HOST"],
         "PORT": "5432",
     },
+    "circle_service_database": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ["CIRCLE_DB_NAME"],
+        "USER": os.environ["CIRCLE_DB_USER"],
+        "PASSWORD": os.environ["CIRCLE_DB_PASSWORD"],
+        "HOST": os.environ["CIRCLE_DB_HOST"],
+        "PORT": os.environ["CIRCLE_DB_PORT"],
+    },
 }
 
 

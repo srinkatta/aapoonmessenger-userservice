@@ -624,6 +624,35 @@ class UserDeleteRevokeView(APIView):
         )
 
 
+class UserDeleteCronView(APIView):
+    permission_classes = (HasAPIKey,)
+    allowed_methods = ("GET",)
+
+    def get(self, pk, request):
+        import datetime
+
+        if pk:
+            deleting_users = User.objects.filter(id=pk)
+        else:
+            deleted_users = DeletedUser.objects.all()
+            deleting_users = deleted_users.filter(
+                created__lte=datetime.datetime.now() - datetime.timedelta(days=30)
+            ).filter(is_deleted=False)
+        self.delete_user_associated_objects(deleting_users)
+
+        return Response(
+            data={"data": "User's deleted successfully."}, status=status.HTTP_200_OK
+        )
+
+    def delete_user_associated_objects(self, deleted_users):
+        for deleted_user in deleted_users:
+            try:
+                UserDelete().delete(deleted_user.user.id)
+                logger.info("User deleted successfully")
+            except Exception as e:
+                logger.debug("Error while deleting the user: %s", e)
+
+
 class InviteListView(APIView):
     """
     Download Invite User List
