@@ -361,12 +361,12 @@ class VerifyPhoneSerializer(serializers.Serializer):
                 user_setting.wrong_attempts = user_setting.wrong_attempts + 1
                 user_setting.save()
                 raise serializers.ValidationError(
-                    {"details": "Your OTP is Incorrect. Please re-enter."}
+                    {"detail": "Your OTP is Incorrect. Please re-enter."}
                 )
         else:
             raise serializers.ValidationError(
                 {
-                    "details": "You have reached Max Phone Attempts for Phone Verification"
+                    "detail": "You have reached Max Phone Attempts for Phone Verification"
                 }
             )
 
