@@ -1,5 +1,7 @@
 import logging
 
+import boto3
+from django.conf import settings
 from django.db import connections
 from user.api.viewsets import send_email_notification, send_sms_message
 from user.models import (
@@ -47,6 +49,8 @@ class UserDelete:
         self.delete_user_from_xmpp(username)
         self.delete_user_related_object()
         self.fetch_deleted_user_record()
+        self.delete_user_circle_invites()
+        self.delete_user_s3_content()
         self.delete_chats(username)
         self.delete_user_chat_circle()
         self.send_email()
@@ -126,15 +130,45 @@ class UserDelete:
         except Exception as err:
             logging.debug("Exception while executing query: %s", err)
 
+    def delete_user_circle_invites(self):
+        query = f"DELETE from circle_circleinvite where sender={self.user.id};"
+        self.circle_execute_query(query)
+        query = f"DELETE from circle_circleinvite where recipient={self.user.id};"
+        self.circle_execute_query(query)
+
     def delete_user_related_object(self):
         # User.objects.filter(id=self.user.id).delete()  #Enable to delete user from web server
-
         DeviceInfo.objects.filter(user=self.user).delete()
-
         UserDevice.objects.filter(user=self.user).delete()
-
         UserLog.objects.filter(user=self.user).delete()
-
         UserVerificationSetting.objects.filter(user=self.user).delete()
-
         UserProfile.objects.filter(user=self.user).delete()
+
+    def delete_user_s3_content(self):
+        # Initialize S3 client
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=settings.S3_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.S3_AWS_SECRET_ACCESS_KEY,
+        )
+
+        s3_paths = [
+            f"{str(self.user.unique_id)}/kyc",
+            f"{self.user.unique_id}/feedback",
+            f"{self.user.jid}/circle",
+            f"{self.user.jid}/circle/images" f"{self.user.jid}/circle/videos",
+            f"{self.user.jid}/circle/documents",
+            f"{self.user.jid}/circle/audios",
+        ]
+
+        # iterate over all objects in the bucket
+        paginator = s3.get_paginator("list_objects_v2")
+        for result in paginator.paginate(Bucket=settings.AWS_S3_BUCKET_NAME):
+            for obj in result.get("Contents", []):
+                # check if the object matches the filter
+                for path in s3_paths:
+                    if obj["key"].startswith(path):
+                        # delete the object
+                        s3.delete_object(
+                            Bucket=settings.AWS_S3_BUCKET_NAME, Key=obj["Key"]
+                        )
