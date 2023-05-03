@@ -35,7 +35,7 @@ class NotifyRedirectDmViewSet(APIView):
         Renamed the field `from` to `from_user` because `from` is a reserved keyword and can't be used a variable
         """
         message = request.data["body"]
-        message_from = request.data["from_user"]
+        message_from = request.data["from"]
         to = request.data["to"]
         xml = request.data.get("xml")
         message_id = request.data.get("message_id")
