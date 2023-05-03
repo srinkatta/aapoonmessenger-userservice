@@ -5,8 +5,8 @@ from user.models import MuteCoversation
 class NotifyRedirectDmSerializer(serializers.Serializer):
     body = serializers.CharField(max_length=512)
     xml = serializers.CharField(max_length=256)
-    from_user = serializers.CharField(
-        max_length=256, label="from", help_text="renamed this `from` to `from_user"
+    from = serializers.CharField(
+        max_length=256, label="from"
     )
     to = serializers.CharField(max_length=256)
     vhost = serializers.CharField(max_length=256)
