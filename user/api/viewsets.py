@@ -626,7 +626,7 @@ class UserDeleteRevokeView(APIView):
 
 
 class UserDeleteCronView(APIView):
-    permission_classes = (HasAPIKey,)
+    permission_classes = [HasAPIKey|AllowAny]
     allowed_methods = ("GET",)
 
     def get(self, request):
