@@ -37,7 +37,10 @@ class UserDelete:
         return DeletedUser.objects.create(user=self.user)
 
     def fetch_deleted_user_record(self):
-        self.user.deleted_object.delete()
+        try:
+            self.user.deleted_object.delete()
+        except Exception as exc:
+            print(exc)
         return
 
     def delete(self, user_id):
@@ -64,9 +67,7 @@ class UserDelete:
             template = "config/email/account_deleted.html"
             send_email_notification(self.user, template, subject)
         else:
-            phone = str(self.user.updated_country_code) + str(
-                self.user.updated_phone_number
-            )
+            phone = str(self.user.country_code) + str(self.user.phone_number)
             send_sms_message(message, self.user, phone)
 
     def delete_user_from_xmpp(self, username):
@@ -152,23 +153,34 @@ class UserDelete:
             aws_secret_access_key=settings.S3_AWS_SECRET_ACCESS_KEY,
         )
 
-        s3_paths = [
-            f"{str(self.user.unique_id)}/kyc",
-            f"{self.user.unique_id}/feedback",
-            f"{self.user.jid}/circle",
-            f"{self.user.jid}/circle/images" f"{self.user.jid}/circle/videos",
-            f"{self.user.jid}/circle/documents",
-            f"{self.user.jid}/circle/audios",
-        ]
+        # search for the paths you want to delete and whatever the result iterate and delete those
+        try:
+            user_id = str(self.user.unique_id)
+            jid = str(self.user.jid)
 
-        # iterate over all objects in the bucket
-        paginator = s3.get_paginator("list_objects_v2")
-        for result in paginator.paginate(Bucket=settings.AWS_S3_BUCKET_NAME):
-            for obj in result.get("Contents", []):
-                # check if the object matches the filter
-                for path in s3_paths:
-                    if obj["key"].startswith(path):
-                        # delete the object
-                        s3.delete_object(
-                            Bucket=settings.AWS_S3_BUCKET_NAME, Key=obj["Key"]
-                        )
+            # delete objects with prefix "{user_id}/kyc"
+            response = s3.list_objects_v2(
+                Bucket=settings.AWS_S3_BUCKET_NAME, Prefix=f"{user_id}/kyc"
+            )
+            if "Contents" in response:
+                for obj in response["Contents"]:
+                    s3.delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=obj["Key"])
+
+            # delete objects with prefix "{user_id}/feedback"
+            response = s3.list_objects_v2(
+                Bucket=settings.AWS_S3_BUCKET_NAME, Prefix=f"{user_id}/feedback"
+            )
+            if "Contents" in response:
+                for obj in response["Contents"]:
+                    s3.delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=obj["Key"])
+
+            # delete objects with prefix "{jid}/circle"
+            response = s3.list_objects_v2(
+                Bucket=settings.AWS_S3_BUCKET_NAME, Prefix=f"{jid}/circle"
+            )
+            if "Contents" in response:
+                for obj in response["Contents"]:
+                    s3.delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=obj["Key"])
+
+        except Exception as exc:
+            print("Exception: ", exc)
