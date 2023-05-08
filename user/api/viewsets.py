@@ -646,7 +646,7 @@ class UserDeleteCronView(APIView):
     def delete_user_associated_objects(self, deleted_users):
         for deleted_user in deleted_users:
             try:
-                UserDelete().delete(deleted_user.user.id)
+                UserDelete().delete(deleted_user.id)
                 logger.info("User deleted successfully")
             except Exception as e:
                 logger.debug("Error while deleting the user: %s", e)
