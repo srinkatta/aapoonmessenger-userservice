@@ -1,5 +1,6 @@
 import re
 from pyfcm import FCMNotification
+import logging
 
 from user_service import settings
 
@@ -97,6 +98,7 @@ def notify_dm(
                         content_available=True,
                     )
                     print(android_result)
+                    logging.info(f"Android result: , {android_result}")
                 else:
                     token = to_user.fcm_token
                     push_service = FCMNotification(api_key=settings.FCM_API_KEY)
@@ -110,4 +112,5 @@ def notify_dm(
                         extra_kwargs={"mutable_content": True},
                     )
                     print(result)
+                    logging.info(f"IOS result: , {result}")
                 return True
