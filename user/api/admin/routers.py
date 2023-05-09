@@ -13,35 +13,35 @@ admin_router.register(
 
 urlpatterns = [
     path(
-        "superuser/register/",
-        admin_viewsets.RegisterSuperUserAPI.as_view(),
-        name="Super User Creation",
+        "admin-panel/register/",
+        admin_viewsets.AdminPanelRegisterAPI.as_view(),
+        name="Admin Panel Register",
     ),
     path(
-        "superuser/login/",
-        admin_viewsets.SuperUserLoginAPI.as_view(),
-        name="Super User Login",
+        "admin-panel/login/",
+        admin_viewsets.AdminPanelLoginAPI.as_view(),
+        name="Admin Panel Login",
     ),
     path("", include(admin_router.urls)),
     path("users/", admin_viewsets.UserListDetailsAPI.as_view(), name="UserListAPI"),
     # path("user_detail/<int:pk>/", UserDetailAPI.as_view(), name="UserDetailAPI"),
     path(
-        "verify_settings/",
+        "verify/settings/",
         admin_viewsets.UserVerificationSettingAPI.as_view(),
         name="UserVerificationSettingAPI",
     ),
     path(
-        "users-filter/", admin_viewsets.AdminUserFilters.as_view(), name="UserFilterAPI"
+        "users/filter/", admin_viewsets.AdminUserFilters.as_view(), name="UserFilterAPI"
     ),
     path(
-        "user_delete/",
+        "user/delete/",
         admin_viewsets.UserDeleteAdminAPI.as_view(),
         name="UserDeleteAdminAPI",
     ),
     path(
-        "export-data/", admin_viewsets.UsersExportAPI.as_view(), name="Export User Data"
+        "export/data/", admin_viewsets.UsersExportAPI.as_view(), name="Export User Data"
     ),
     path(
-        "deleted_users/", admin_viewsets.DeletedUserAPI.as_view(), name="Deleted Users"
+        "deleted/users/", admin_viewsets.DeletedUserAPI.as_view(), name="Deleted Users"
     ),
 ]

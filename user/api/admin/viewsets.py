@@ -4,7 +4,6 @@ import logging
 from django.http import HttpResponse
 from django.contrib.auth import login
 from django.contrib.auth.hashers import check_password
-from django_filters import rest_framework as filters
 
 from rest_framework import status, viewsets, permissions
 from rest_framework.pagination import PageNumberPagination
@@ -19,6 +18,7 @@ from user.utils import make_request
 from user.user_delete import UserDelete
 from user.api import serializers as user_serializers
 from user.api.admin import serializers as admin_serializers
+from user.api.admin.filters import UserFilter
 from user_service import settings
 
 
@@ -79,19 +79,6 @@ class UserVerificationSettingAPI(APIView, PageNumberPagination):
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserFilter(filters.FilterSet):
-    class Meta:
-        model = user_models.User
-        fields = {
-            "date_joined": ["exact", "gt", "lt"],
-            "country_code": ["exact"],
-            "country_iso_code": ["exact"],
-            "phone_number_verified": ["exact"],
-            "last_login": ["exact", "gt", "lt"],
-            "user_type": ["exact"],
-        }
 
 
 class AdminUserFilters(APIView, PageNumberPagination):
@@ -251,7 +238,7 @@ class DeletedUserAPI(APIView, PageNumberPagination):
         )
 
 
-class RegisterSuperUserAPI(APIView):
+class AdminPanelRegisterAPI(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = (AllowAny,)
     serializer_class = admin_serializers.CreateSuperUserSerializer
@@ -275,7 +262,7 @@ class RegisterSuperUserAPI(APIView):
         )
 
 
-class SuperUserLoginAPI(APIView):
+class AdminPanelLoginAPI(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = (AllowAny,)
     serializer_class = admin_serializers.SuperUserLoginSerializer
