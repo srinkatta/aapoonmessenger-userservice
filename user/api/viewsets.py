@@ -2,6 +2,7 @@ import csv
 import os
 import logging
 import phonenumbers
+import datetime
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
@@ -627,18 +628,15 @@ class UserDeleteCronView(APIView):
     allowed_methods = ("GET",)
 
     def get(self, request):
-        import datetime
-
         pk = request.GET.get("pk", None)
         if pk:
-            deleting_users = User.objects.filter(id=pk)
+            users_to_delete = User.objects.filter(id=pk)
         else:
-            deleted_users = DeletedUser.objects.all()
-            deleting_users = deleted_users.filter(
+            users_to_delete = DeletedUser.objects.filter(
                 created__lte=datetime.datetime.now() - datetime.timedelta(days=30)
             ).filter(is_deleted=False)
-        self.delete_user_associated_objects(deleting_users)
 
+        self.delete_user_associated_objects(users_to_delete)
         return Response(
             data={"data": "User's deleted successfully."}, status=status.HTTP_200_OK
         )
@@ -646,7 +644,7 @@ class UserDeleteCronView(APIView):
     def delete_user_associated_objects(self, deleted_users):
         for deleted_user in deleted_users:
             try:
-                UserDelete().delete(deleted_user.user.id)
+                UserDelete().delete(deleted_user.id)
                 logger.info("User deleted successfully")
             except Exception as e:
                 logger.debug("Error while deleting the user: %s", e)
