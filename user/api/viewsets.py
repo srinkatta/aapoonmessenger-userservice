@@ -88,14 +88,14 @@ class AuthUserRegistrationView(APIView):
                 if email and email_address_exists(email):
                     return Response(
                         {
-                            "Detail": "A user is already registered with this e-mail address."
+                            "detail": "A user is already registered with this e-mail address."
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(
-            {"Message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
+            {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
         )
 
     def perform_create(self, serializer):
@@ -116,16 +116,14 @@ class AuthUserLoginView(APIView):
 
         if not user:
             return Response(
-                {"Details": "Invalid login credentials"},
+                {"detail": "Invalid login credentials"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         otp = request.data["otp"]
         user = user.first()
         if otp and otp != user.otp_requested:
-            return Response(
-                {"Details": "Wrong OTP"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Wrong OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(
             data=request.data, context={"request": request}
@@ -521,7 +519,7 @@ class DeviceInfoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LanguageView(ListAPIView):
+class LanguageView(APIView):
     """
     API View to list all available languages
     """
@@ -572,7 +570,7 @@ class UserDeleteView(APIView):
             UserDelete().save_delete_record(user)
         except Exception as error:
             return Response(
-                {"details": ERROR_MESSAGE, "message": str(error), "status_code": 500},
+                {"detail": ERROR_MESSAGE, "message": str(error), "status_code": 500},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -588,11 +586,11 @@ class UserDeleteView(APIView):
                 send_sms_message(message, user, phone)
         except SMTPAuthenticationError:
             return Response(
-                data={"Details": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
+                data={"detail": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
             )
         except User.DoesNotExist:
             return Response(
-                data={"Details": "User doesn't exist."},
+                data={"detail": "User doesn't exist."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -626,7 +624,7 @@ class UserDeleteRevokeView(APIView):
 
 
 class UserDeleteCronView(APIView):
-    permission_classes = [HasAPIKey|AllowAny]
+    permission_classes = [HasAPIKey | AllowAny]
     allowed_methods = ("GET",)
 
     def get(self, request):

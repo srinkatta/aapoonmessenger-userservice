@@ -115,7 +115,7 @@ class RegisterSerializer(serializers.Serializer):
         ):
             raise ValidationError(
                 {
-                    "message": "Thank you for your interest in aapoon. We contact you as soon as aapoon "
+                    "detail": "Thank you for your interest in aapoon. We contact you as soon as aapoon "
                     "is available in your country."
                 }
             )
@@ -177,7 +177,7 @@ class RegisterSerializer(serializers.Serializer):
             subject = _("Max Attempts Reached on Phone Verification")
             phone_failure(user, subject)
             msg = "You reached maximum attempts to login. Please try again after 10 minutes."
-            raise serializers.ValidationError({"message": msg})
+            raise serializers.ValidationError({"detail": msg})
 
     def login_attempts_reset(self, user):
         if user and user.login_attempts >= 5 and user.last_login_time:
@@ -224,7 +224,7 @@ class UserLoginSerializer(serializers.Serializer):
 
             if otp and otp != user.otp_requested:
                 # TODO: add wrong attempts logic
-                raise serializers.ValidationError("Wrong otp")
+                raise serializers.ValidationError({"detail": "Wrong otp"})
 
             refresh = RefreshToken.for_user(user)
             refresh_token = str(refresh)
@@ -365,9 +365,7 @@ class VerifyPhoneSerializer(serializers.Serializer):
                 )
         else:
             raise serializers.ValidationError(
-                {
-                    "detail": "You have reached Max Phone Attempts for Phone Verification"
-                }
+                {"detail": "You have reached Max Phone Attempts for Phone Verification"}
             )
 
 
