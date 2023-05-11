@@ -32,6 +32,7 @@ from user.api.direct_messages.viewsets import (
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
+from user.api.admin import viewsets as admin_viewsets
 
 router = routers.SimpleRouter()
 router.register(r"user", UserViewSet, basename="user"),
@@ -39,6 +40,12 @@ router.register(r"profile", UserProfileViewSet, basename="user_profile"),
 router.register(r"logs", UserLogsViewSet, basename="user_logs"),
 router.register(r"invite", UserInviteViewSet, basename="user_invite"),
 router.register(r"device", UserDeviceViewSet, basename="user_device")
+router.register(
+    r"admin-panel/app_policy", admin_viewsets.AppPolicyViewSet, basename="App Policy"
+),
+router.register(
+    r"admin-panel/app_info", admin_viewsets.AppInfoViewSet, basename="App Info"
+),
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -115,4 +122,45 @@ urlpatterns = [
         name="xmpp_chat",
     ),
     path(r"user_chat_delete/", UserChatDeleteView.as_view(), name="user_chat_delete"),
+    # Admin Panel urls
+    path(
+        "admin-panel/register/",
+        admin_viewsets.AdminPanelRegisterAPI.as_view(),
+        name="Admin Panel Register",
+    ),
+    path(
+        "admin-panel/login/",
+        admin_viewsets.AdminPanelLoginAPI.as_view(),
+        name="Admin Panel Login",
+    ),
+    path(
+        "admin-panel/users/",
+        admin_viewsets.UserListDetailsAPI.as_view(),
+        name="UserListAPI",
+    ),
+    path(
+        "admin-panel/verify/settings/",
+        admin_viewsets.UserVerificationSettingAPI.as_view(),
+        name="UserVerificationSettingAPI",
+    ),
+    path(
+        "admin-panel/users/filter/",
+        admin_viewsets.AdminUserFilters.as_view(),
+        name="UserFilterAPI",
+    ),
+    path(
+        "admin-panel/user/delete/",
+        admin_viewsets.UserDeleteAdminAPI.as_view(),
+        name="UserDeleteAdminAPI",
+    ),
+    path(
+        "admin-panel/export/data/",
+        admin_viewsets.UsersExportAPI.as_view(),
+        name="Export User Data",
+    ),
+    path(
+        "admin-panel/deleted/users/",
+        admin_viewsets.DeletedUserAPI.as_view(),
+        name="Deleted Users",
+    ),
 ]

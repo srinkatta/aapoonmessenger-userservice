@@ -7,11 +7,10 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
-from user_service.router_urls import router_urlpatterns, router_admin_urlpatterns
+from user_service.router_urls import router_urlpatterns
 
 urlpatterns = [
     path("api/users/", include(router_urlpatterns)),
-    path("api/admin/users/", include(router_admin_urlpatterns)),
     path("/api-auth/users/", include("rest_framework.urls")),
     path("accounts/users/", include("allauth.urls")),
     path("api/users/schema/", SpectacularAPIView.as_view(), name="schema"),
