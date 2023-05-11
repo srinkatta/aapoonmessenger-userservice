@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 
 from user import models as user_models
 from user.utils import make_request
@@ -31,6 +32,16 @@ class UserListDetailsAPI(APIView, PageNumberPagination):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = admin_serializers.UserListSerializer
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                description="Retrieve User details with id",
+                required=False,
+                type=int,
+            )
+        ]
+    )
     def get(self, request):
         pk = request.query_params.get("id", None)
         if pk:
@@ -53,6 +64,16 @@ class UserVerificationSettingAPI(APIView, PageNumberPagination):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = admin_serializers.UserVerificationSerializer
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                description="User Verify Settings with id",
+                required=False,
+                type=int,
+            )
+        ]
+    )
     def get(self, request):
         pk = request.query_params.get("id", None)
         if pk:
@@ -64,6 +85,16 @@ class UserVerificationSettingAPI(APIView, PageNumberPagination):
         serializer = self.serializer_class(pagination, many=True)
         return self.get_paginated_response(serializer.data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                description="User Verify Settings with user id",
+                required=True,
+                type=int,
+            )
+        ]
+    )
     def put(self, request):
         pk = request.query_params.get("id", None)
         if pk:
@@ -223,6 +254,16 @@ class DeletedUserAPI(APIView, PageNumberPagination):
         serializer = self.serializer_class(paginated_qs, many=True)
         return self.get_paginated_response(serializer.data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                description="User delete with id specific",
+                required=True,
+                type=int,
+            )
+        ]
+    )
     def delete(self, request, *args, **kwargs):
         user_id = request.query_params.get("id", None)
         try:
