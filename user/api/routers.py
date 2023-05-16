@@ -14,7 +14,7 @@ from user.api.viewsets import (
     SendOTPView,
     VerifyPhoneView,
     DeviceInfoView,
-    LanguageView,
+    AppPolicyView,
     FeedbackView,
     UserDeleteView,
     UserDeleteRevokeView,
@@ -105,7 +105,7 @@ urlpatterns = [
         "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
     ),
     path("user_delete/cron/", UserDeleteCronView.as_view(), name="user_delete_cron"),
-    path("lang/", LanguageView.as_view(), name="language_detect"),
+    path("app_policy/", AppPolicyView.as_view(), name="app_policy"),
     path("feedback/", FeedbackView.as_view(), name="feedback"),
     path("invite_list/", InviteListView.as_view(), name="get_invite_list"),
     path("user_details/", UserDetailsAPI.as_view(), name="user_details"),

@@ -632,7 +632,7 @@ class AppInfoSerializer(serializers.ModelSerializer):
         fields = ("name", "current_version", "last_compulsory_version", "download_path")
 
 
-class LanguageSerializer(serializers.Serializer):
+class AppPolicySerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     language = serializers.CharField(required=False)
     video_url = serializers.CharField(required=False)
