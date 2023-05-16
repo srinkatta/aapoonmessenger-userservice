@@ -10,6 +10,7 @@ WORKDIR /code
 COPY . /code/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+RUN pre-commit install
 
 # RUN python manage.py makemigrations
 # RUN python manage.py migrate
