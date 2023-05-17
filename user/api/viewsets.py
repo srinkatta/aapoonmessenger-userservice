@@ -30,7 +30,7 @@ from user.api.serializers import (
     VerifyPhoneSerializer,
     DeviceInfoSerializer,
     AppInfoSerializer,
-    LanguageSerializer,
+    AppPolicySerializer,
     FeedbackSerializer,
     UserRemoveSerializer,
     UserDetailsSerializer,
@@ -214,7 +214,7 @@ class SendOTPView(APIView):
             )
         else:
             return Response(
-                {"error": "Special characters not allowed"},
+                {"detail": "Special characters not allowed"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -260,7 +260,7 @@ class VerifyPhoneView(APIView):
         except Exception as e:
             logger.debug("Error registering user at websocket server %s" % e)
         return Response(
-            {"detail": "Phone Number successfully verified"}, status=status.HTTP_200_OK
+            {"message": "Phone Number successfully verified"}, status=status.HTTP_200_OK
         )
 
 
@@ -287,7 +287,7 @@ class UserLogsViewSet(viewsets.ModelViewSet):
         pk = kwargs.get("pk")
         if not str(request.user.id) == pk:
             return Response(
-                {"error": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
             )
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -317,7 +317,7 @@ class UserInviteViewSet(viewsets.ModelViewSet):
         pk = kwargs.get("pk")
         if not str(request.user.id) == pk:
             return Response(
-                {"error": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
             )
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -347,7 +347,7 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
         pk = kwargs.get("pk")
         if not str(request.user.id) == pk:
             return Response(
-                {"error": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
             )
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -383,7 +383,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         pk = kwargs.get("pk")
         if not str(request.user.id) == pk:
             return Response(
-                {"error": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
             )
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -393,7 +393,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         pk = kwargs.get("pk")
         if not str(request.user.id) == pk:
             return Response(
-                {"error": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
             )
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
@@ -481,7 +481,10 @@ class PushNotificationSettings(APIView):
         user.apns_token = request.data.get("apns_token", "")
         user.save()
 
-        return Response({"Data": "Push Notification Settings Updated."}, status=200)
+        return Response(
+            {"message": "Push Notification Settings Updated."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class DeviceInfoView(APIView):
@@ -519,24 +522,23 @@ class DeviceInfoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LanguageView(APIView):
+class AppPolicyView(APIView):
     """
-    API View to list all available languages
+    API View to maintain App Policies
     """
 
-    serializer_class = LanguageSerializer
+    serializer_class = AppPolicySerializer
     permission_classes = (AllowAny,)
     queryset = Languages.objects.all()
 
-    @method_decorator(cache_page(settings.CACHE_TTL))
-    def list(self, request):
+    def get(self, request):
         lang = Languages.objects.filter(language="en")
         if lang:
-            serializer = LanguageSerializer(lang, many=True)
+            serializer = self.serializer_class(lang, many=True)
             return Response(serializer.data, status=200)
         else:
             lang = Languages.objects.filter(language="en")
-            serializer = LanguageSerializer(lang, many=True)
+            serializer = self.serializer_class(lang, many=True)
             return Response(serializer.data, status=200)
 
 
@@ -555,7 +557,7 @@ class FeedbackView(APIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             feedback_mail(request, serializer.data)
-            return Response({"data": "Feedback Sent Successfully"}, status=200)
+            return Response({"message": "Feedback Sent Successfully"}, status=200)
         else:
             return Response(serializer.errors, status=400)
 
@@ -595,7 +597,7 @@ class UserDeleteView(APIView):
             )
 
         return Response(
-            data={"Message": "User added to be deleted list."},
+            data={"message": "User added to be deleted list."},
             status=status.HTTP_200_OK,
         )
 
@@ -619,7 +621,7 @@ class UserDeleteRevokeView(APIView):
         user = request.data["user_id"]
         DeletedUser.objects.filter(user=user).delete()
         return Response(
-            data={"data": "User deletion action revoked"}, status=status.HTTP_200_OK
+            data={"message": "User deletion action revoked"}, status=status.HTTP_200_OK
         )
 
 
@@ -638,7 +640,7 @@ class UserDeleteCronView(APIView):
 
         self.delete_user_associated_objects(users_to_delete)
         return Response(
-            data={"data": "User's deleted successfully."}, status=status.HTTP_200_OK
+            data={"message": "User's deleted successfully."}, status=status.HTTP_200_OK
         )
 
     def delete_user_associated_objects(self, deleted_users):
@@ -708,12 +710,12 @@ class UserDetailsAPI(APIView):
             user = self.get_user("jid", user_jid)
         else:
             return Response(
-                {"error": "Input data error"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Input data error"}, status=status.HTTP_403_FORBIDDEN
             )
 
         if not user:
             return Response(
-                {"error": "user not found"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "user not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = UserDetailsSerializer(user)
@@ -743,12 +745,12 @@ class UserDetailsPhoneAPI(APIView):
             user = self.get_user(country_code=country_code, phone_number=phone_number)
         else:
             return Response(
-                {"error": "Input data error"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Input data error"}, status=status.HTTP_403_FORBIDDEN
             )
 
         if not user:
             return Response(
-                {"error": "user not found"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "user not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = UserDetailsSerializer(user)

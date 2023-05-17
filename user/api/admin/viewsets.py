@@ -235,7 +235,7 @@ class AppPolicyViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = user_serializers.LanguageSerializer
+    serializer_class = user_serializers.AppPolicySerializer
     queryset = user_models.Languages.objects.all()
 
 
@@ -275,7 +275,7 @@ class DeletedUserAPI(APIView, PageNumberPagination):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(
-            {"Message": "User deleted successfully"}, status=status.HTTP_200_OK
+            {"message": "User deleted successfully"}, status=status.HTTP_200_OK
         )
 
 
@@ -298,7 +298,7 @@ class AdminPanelRegisterAPI(APIView):
         )
 
         return Response(
-            {"Message": "Superuser created successfully."},
+            {"message": "Superuser created successfully."},
             status=status.HTTP_201_CREATED,
         )
 

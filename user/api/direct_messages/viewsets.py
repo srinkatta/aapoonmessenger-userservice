@@ -54,7 +54,7 @@ class NotifyRedirectDmViewSet(APIView):
                 if not to_user:
                     logger.error(f"No User exists with the given user_jid: {to_user}")
                     return Response(
-                        {"data": "No user found"}, status=status.HTTP_404_NOT_FOUND
+                        {"detail": "No user found"}, status=status.HTTP_404_NOT_FOUND
                     )
                 from_phone = phonenumbers.parse(f"+{message_from}", None)
                 from_user = User.objects.get(
@@ -67,7 +67,7 @@ class NotifyRedirectDmViewSet(APIView):
                         f"No User exists with the given phone number: {from_user}"
                     )
                     return Response(
-                        {"data": "No user found"}, status=status.HTTP_404_NOT_FOUND
+                        {"detail": "No user found"}, status=status.HTTP_404_NOT_FOUND
                     )
 
                 # Check for muted conversation
@@ -87,7 +87,7 @@ class NotifyRedirectDmViewSet(APIView):
                 else:
                     print("No Mute")
                     notification.notify_dm(to_user, from_user, message, xml)
-        return Response({"data": "Notification sent."}, status=200)
+        return Response({"message": "Notification sent."}, status=status.HTTP_200_OK)
 
 
 class MuteMessageView(APIView):
@@ -110,7 +110,8 @@ class MuteMessageView(APIView):
             serializer = MuteMessageSerializer(message, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(
-            {"data": "Field missing in Query params."}, status=status.HTTP_200_OK
+            {"detail": "Field missing in Query params."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     def post(self, request):
@@ -259,7 +260,7 @@ class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
             return self.get_paginated_response(serializer.data)
         except Exception as e:
             print(e)
-            return Response({"data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def xml_timestamp_value(self, xml):
         import xml.etree.ElementTree as ET
@@ -283,11 +284,11 @@ class XMPPDeleteDMViewSet(APIView):
             with connections["xmpp_database"].cursor() as cursor:
                 cursor.execute(q)
             return Response(
-                {"data": "Message deleted Successfully"}, status=status.HTTP_200_OK
+                {"message": "Message deleted Successfully"}, status=status.HTTP_200_OK
             )
         except Exception as e:
             print(e)
-            return Response({"data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserChatDeleteView(APIView):
@@ -300,5 +301,6 @@ class UserChatDeleteView(APIView):
         jid = request.data["recipient"]
         UserDelete().delete_chat(username, jid)
         return Response(
-            data={"data": "User chat deleted successfully."}, status=status.HTTP_200_OK
+            data={"message": "User chat deleted successfully."},
+            status=status.HTTP_200_OK,
         )
