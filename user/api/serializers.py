@@ -259,12 +259,14 @@ class UserLoginSerializer(serializers.Serializer):
                 "access": access_token,
                 "refresh": refresh_token,
                 "id": user.id,
+                "username": user.username,
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "country_code": user.country_code,
                 "second_last_login": second_last_login,
                 "jid": user.jid,
                 "user_profile": user_status,
+                "profile_pic": user.secondary_picture
             }
 
             self.xmpp_check_account(user, access_token)
@@ -647,16 +649,19 @@ class FeedbackSerializer(serializers.Serializer):
     phone = serializers.CharField(required=False)
     topic = serializers.CharField(required=True)
     message = serializers.CharField(required=True)
-    url = serializers.CharField(required=False)
+    url = serializers.ListField(required=False)
 
     def validate(self, attrs):
-        url = attrs.get("url")
-        if url:
-            parsed_url = urlparse(url)
-            s3_url = s3_url_extract(url)
-            path = clear_bucket_from_path(parsed_url.path)
-            url = s3_url + path
-            attrs["url"] = url
+        urls = attrs.get("url")
+        result = []
+        if urls:
+            for url in urls:
+                parsed_url = urlparse(url)
+                s3_url = s3_url_extract(url)
+                path = clear_bucket_from_path(parsed_url.path)
+                url = s3_url + path
+                result.append(url)
+        attrs["url"] = result
         return attrs
 
 
