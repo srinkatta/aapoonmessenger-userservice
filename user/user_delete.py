@@ -166,6 +166,14 @@ class UserDelete:
                 for obj in response["Contents"]:
                     s3.delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=obj["Key"])
 
+            # delete objects with prefix "{user_id}/chat"
+            response = s3.list_objects_v2(
+                Bucket=settings.AWS_S3_BUCKET_NAME, Prefix=f"{user_id}/chat"
+            )
+            if "Contents" in response:
+                for obj in response["Contents"]:
+                    s3.delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=obj["Key"])
+
             # delete objects with prefix "{user_id}/feedback"
             response = s3.list_objects_v2(
                 Bucket=settings.AWS_S3_BUCKET_NAME, Prefix=f"{user_id}/feedback"
