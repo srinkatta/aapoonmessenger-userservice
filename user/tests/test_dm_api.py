@@ -54,6 +54,7 @@ class NotificationRedirectTest(APITestCase):
         }
 
         response = self.client.post("/api/users/notify_dm/", data=payload)
+        print(response.data)
         self.assertEqual(response.data["detail"], "No user found")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
