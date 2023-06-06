@@ -54,7 +54,6 @@ class NotificationRedirectTest(APITestCase):
         }
 
         response = self.client.post("/api/users/notify_dm/", data=payload)
-        print(response.data)
         self.assertEqual(response.data["detail"], "No user found")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -77,7 +76,6 @@ class NotificationRedirectTest(APITestCase):
 
 class UserChatDeleteTest(APITestCase):
     def setUp(self):
-        super().setUpClass()
         self.apiclient = APIClient()
         self.user = User.objects.create_user(
             username="aryan",
@@ -104,7 +102,6 @@ class UserChatDeleteTest(APITestCase):
 
 class MuteMessageTest(APITestCase):
     def setUp(self):
-        super().setUpClass()
         self.apiclient = APIClient()
         MuteCoversation.objects.create(
             sender_id=f"aryan@{settings.XMPP_HOST}",
