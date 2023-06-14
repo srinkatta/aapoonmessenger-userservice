@@ -259,14 +259,14 @@ class UserLoginSerializer(serializers.Serializer):
                 "access": access_token,
                 "refresh": refresh_token,
                 "id": user.id,
-                "username": user.username,
+                "name": user.name,
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "country_code": user.country_code,
                 "second_last_login": second_last_login,
                 "jid": user.jid,
                 "user_profile": user_status,
-                "profile_pic": user.secondary_picture
+                "profile_pic": user.secondary_picture,
             }
 
             self.xmpp_check_account(user, access_token)
