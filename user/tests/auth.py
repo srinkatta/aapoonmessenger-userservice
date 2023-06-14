@@ -9,9 +9,11 @@ from django.urls import reverse
 from rest_framework.pagination import PageNumberPagination
 from unittest.mock import patch
 from user.api.serializers import *
+
 from user.api.viewsets import *
 from user.helpers.sms import *
 from user.models import *
+
 # from user.api import AuthUserRegistrationView
 
 class RegistrationAPITestCase(APITestCase):
@@ -98,6 +100,7 @@ class AuthUserRegisterTest(APITestCase):
 
 
     def test_existing_user_without_email(self):
+
         payload = dict(country_code="91", phone_number="9110043114")
 
         with mock.patch.object(RegisterSerializer, "send_otp") as mocked_function:
@@ -179,6 +182,7 @@ class AuthUserLoginView(APITestCase):
         self.jwt_token = response.data["access"]
         self.assertIsNotNone(self.jwt_token)
     
+
 class Auth_send_otp_view(APITestCase):
     def setUp(self):
         self.url = "/api/users/auth/send_otp/"
@@ -479,4 +483,3 @@ class UserCheckAPIViewTestCase(APITestCase):
         self.assertEqual(response.data[0]['aapoonUser'], False)
 
 
-       
