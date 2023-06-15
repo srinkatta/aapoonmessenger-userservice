@@ -122,7 +122,7 @@ class AuthUserLoginView(APIView):
 
         otp = request.data["otp"]
         user = user.first()
-        if otp and otp != user.otp_requested:
+        if otp and str(otp) != user.otp_requested:
             return Response({"detail": "Wrong OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(
@@ -143,8 +143,8 @@ class SendOTPView(APIView):
     def get_serializer(self, *args, **kwargs):
         return SendOTPSerializer(*args, **kwargs)
 
-    def send_otp(self, phone_number, otp, user, number):
-        if user.country_code == "91":
+    def send_otp(self, country_code, phone_number, otp, user, number):
+        if country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
@@ -202,7 +202,7 @@ class SendOTPView(APIView):
 
         if phone_number.isdigit():
             otp = generate_otp()
-            self.send_otp(phone_number, otp, user_settings, number)
+            self.send_otp(country_code, phone_number, otp, user_settings, number)
             print(f"Generated Otp: {otp}")
             user.otp_requested = otp
             user_settings.phone_number = phone_number

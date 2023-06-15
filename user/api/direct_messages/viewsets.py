@@ -102,8 +102,8 @@ class MuteMessageView(APIView):
     def get(self, request, *args, **kwargs):
         params = request.GET
         if "mute" in params and "recipient" in params and "sender" in params:
-            sender = params.get("sender") + "@" + settings.XMPP_HOST
-            recipient = params.get("recipient") + "@" + settings.XMPP_HOST
+            sender = params.get("sender")
+            recipient = params.get("recipient")
             message = MuteCoversation.objects.filter(
                 sender_id=sender, recipient_id=recipient, mute=True
             )
@@ -117,9 +117,9 @@ class MuteMessageView(APIView):
     def post(self, request):
         data = request.data
         sender = data.get("sender_id")
-        sender = str(sender) + "@" + settings.XMPP_HOST
+        # sender = str(sender) + "@" + settings.XMPP_HOST
         recipient = data.get("recipient_id")
-        recipient = str(recipient) + "@" + settings.XMPP_HOST
+        # recipient = str(recipient) + "@" + settings.XMPP_HOST
         mute_time = data.get("mute_time")
         mute = data.get("mute")
         if MuteCoversation.objects.filter(
