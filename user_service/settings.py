@@ -25,7 +25,7 @@ load_dotenv()  # take environment variables from .env.
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("USER_SECRET") or os.environ.get("SECRET")
+SECRET_KEY = 'django-insecure-dt^l_+peijv0p69+@ug%45=s71'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -98,40 +98,40 @@ WSGI_APPLICATION = "user_service.wsgi.application"
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ["DB_NAME"],
-        "USER": os.environ["DB_USER"],
-        "PASSWORD": os.environ["DB_PASSWORD"],
-        "HOST": os.environ["DB_HOST"],
-        "PORT": os.environ["DB_PORT"],
-    },
-    "xmpp_database": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "ejabberd",
-        "USER": "postgres",
-        "PASSWORD": os.environ["XMPP_DB_PASSWORD"],
-        "HOST": os.environ["XMPP_DB_HOST"],
-        "PORT": "5432",
-    },
-    "circle_service_database": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ["CIRCLE_DB_NAME"],
-        "USER": os.environ["CIRCLE_DB_USER"],
-        "PASSWORD": os.environ["CIRCLE_DB_PASSWORD"],
-        "HOST": os.environ["CIRCLE_DB_HOST"],
-        "PORT": os.environ["CIRCLE_DB_PORT"],
-    },
-}
-
-
 # DATABASES = {
 #     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
+#         "ENGINE": "django.db.backends.mysql",
+#         "NAME": os.environ["DB_NAME"],
+#         "USER": os.environ["DB_USER"],
+#         "PASSWORD": os.environ["DB_PASSWORD"],
+#         #"HOST": ",jsdgfsDKb",
+#         "PORT": os.environ["DB_PORT"],
+#     },
+#     "xmpp_database": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "ejabberd",
+#         "USER": "postgres",
+#         "PASSWORD": "hdhtdjyt",
+#         #"HOST": os.environ["XMPP_DB_HOST"],
+#         "PORT": 8432,
+#     },
+#     "circle_service_database": {
+#         "ENGINE": "django.db.backends.mysql",
+#         "NAME": "agefasdf",
+#         "USER": "sfwrf",
+#         "PASSWORD": "asdjhfbawlhfb",
+#         #"HOST": "alfdkhasildvb",
+#         "PORT": 5555,
+#     },
 # }
+
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -232,7 +232,7 @@ SPECTACULAR_SETTINGS = {
 DEFAULT_FROM_EMAIL = "support@aapoon.net"
 SUPPORT_EMAIL = "support@aapoon.net"
 
-FCM_API_KEY = os.environ["FCM_API_KEY"]
+FCM_API_KEY = "SDFSD"
 
 FAST_API_KEY = os.environ["FAST_API_KEY"]
 SNS_AWS_ACCESS_KEY = os.environ["SNS_AWS_ACCESS_KEY"]
@@ -243,20 +243,20 @@ S3_AWS_ACCESS_KEY_ID = os.environ["S3_MEDIA_AWS_ACCESS_KEY_ID"]
 S3_AWS_SECRET_ACCESS_KEY = os.environ["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
 
 
-AWS_S3_ACL = os.environ["AWS_S3_ACL"]
+AWS_S3_ACL = 'kasxklsbsaijc'
 AWS_S3_BUCKET_NAME = os.environ["AWS_S3_BUCKET_NAME"]
 
 XMPP_AUTHORIZATION = os.environ["XMPP_AUTHORIZATION"]
 XMPP_HOST = os.environ["XMPP_HOST"]
-XMPP_PORT = "5280"
+XMPP_PORT = "8000"
 XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
 
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.environ["EMAIL_HOST"]
+EMAIL_HOST = "SDFSDAF"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ["EMAIL_HOST_USER"]
-EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
+EMAIL_HOST_USER ="SDVASD"
+EMAIL_HOST_PASSWORD = "SDVSV"
