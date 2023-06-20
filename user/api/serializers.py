@@ -210,7 +210,6 @@ class UserLoginSerializer(serializers.Serializer):
     otp = serializers.CharField(required=True)
 
     def validate(self, data):
-
         country_code = data["country_code"]
         phone_number = data["phone_number"]
         otp = data["otp"]
@@ -374,6 +373,10 @@ class VerifyPhoneSerializer(serializers.Serializer):
 class UserSerializer(FlexFieldsModelSerializer):
     kyc_done = serializers.SerializerMethodField("get_kyc_done")
     manual_verify = serializers.SerializerMethodField()
+    user_profile = serializers.SerializerMethodField()
+
+    def get_user_profile(self, obj):
+        return user_kyc_status(obj)
 
     def get_kyc_done(self, instance):
         return instance.settings.get().kyc_done
@@ -467,7 +470,6 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         return attrs
 
     def __validate_account_details(self, request, attrs):
-
         # Name Validate & Update
         self.name_validate(request, attrs)
 
