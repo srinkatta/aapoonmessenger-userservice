@@ -140,7 +140,7 @@ class UserVerificationSetting(BaseTimeStampedModel):
     kyc_done = models.BooleanField(default=False)
     id_laminated = models.BooleanField(default=False)
     id_matched = models.BooleanField(default=False)
-    scan_attempts = models.BooleanField(default=False)
+    scan_attempts = models.IntegerField(default=0)
     id_match_attempts = models.IntegerField(default=0)
     manual_verify = models.BooleanField(default=False)
     selfie = models.BooleanField(default=False)
@@ -208,7 +208,6 @@ class UserProfile(BaseTimeStampedModel):
         null=True,
         blank=True,
         max_choices=100,
-        max_length=100,
     )
     about_me = models.TextField(blank=True, null=True)
     skillset = models.CharField(max_length=250, null=True, blank=True)
