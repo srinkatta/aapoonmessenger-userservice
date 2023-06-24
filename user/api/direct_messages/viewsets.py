@@ -72,11 +72,11 @@ class NotifyRedirectDmViewSet(APIView):
 
                 # Check for muted conversation
                 if MuteCoversation.objects.filter(
-                    sender_id=from_user.id, recipient_id=to_user.id, mute=True
+                    sender_id=message_from, recipient_id=to, mute=True
                 ).exists():
                     print(time.time())
                     mutify = MuteCoversation.objects.filter(
-                        sender_id=from_user.id, recipient_id=to_user.id, mute=True
+                        sender_id=message_from, recipient_id=to, mute=True
                     ).first()
                     if time.time() > mutify.mute_time:
                         print("Mute expired")
