@@ -67,7 +67,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "user_service.urls"
 
-CSRF_TRUSTED_ORIGINS = ["https://dev.aapoon.com", "http://localhost:3000", "https://qa.aapoon.com",]
+CSRF_TRUSTED_ORIGINS = [
+    "https://dev.aapoon.com",
+    "http://localhost:3000",
+    "https://qa.aapoon.com",
+]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -100,7 +104,7 @@ WSGI_APPLICATION = "user_service.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ["DB_NAME"],
         "USER": os.environ["DB_USER"],
         "PASSWORD": os.environ["DB_PASSWORD"],
