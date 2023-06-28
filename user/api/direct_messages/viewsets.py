@@ -8,11 +8,13 @@ from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_api_key.permissions import HasAPIKey
 
 from user.api.direct_messages.serializers import (
     NotifyRedirectDmSerializer,
     MuteMessageSerializer,
     ArchiveChatSerializer,
+    UserChatDeleteSerializer,
 )
 from user.models import (
     User,
@@ -21,6 +23,7 @@ from user.models import (
 from user.utils import CustomPagination
 from user.helpers import notification
 from user_service import settings
+from user.user_delete import UserDelete
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +31,7 @@ logger = logging.getLogger(__name__)
 class NotifyRedirectDmViewSet(APIView):
     http_method_names = ["post"]
     serializer_class = NotifyRedirectDmSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = [HasAPIKey | AllowAny]
 
     def post(self, request):
         """
@@ -51,7 +54,7 @@ class NotifyRedirectDmViewSet(APIView):
                 if not to_user:
                     logger.error(f"No User exists with the given user_jid: {to_user}")
                     return Response(
-                        {"data": "No user found"}, status=status.HTTP_404_NOT_FOUND
+                        {"detail": "No user found"}, status=status.HTTP_404_NOT_FOUND
                     )
                 from_phone = phonenumbers.parse(f"+{message_from}", None)
                 from_user = User.objects.get(
@@ -64,16 +67,16 @@ class NotifyRedirectDmViewSet(APIView):
                         f"No User exists with the given phone number: {from_user}"
                     )
                     return Response(
-                        {"data": "No user found"}, status=status.HTTP_404_NOT_FOUND
+                        {"detail": "No user found"}, status=status.HTTP_404_NOT_FOUND
                     )
 
                 # Check for muted conversation
                 if MuteCoversation.objects.filter(
-                    sender_id=from_user.id, recipient_id=to_user.id, mute=True
+                    sender_id=message_from, recipient_id=to, mute=True
                 ).exists():
                     print(time.time())
                     mutify = MuteCoversation.objects.filter(
-                        sender_id=from_user.id, recipient_id=to_user.id, mute=True
+                        sender_id=message_from, recipient_id=to, mute=True
                     ).first()
                     if time.time() > mutify.mute_time:
                         print("Mute expired")
@@ -84,7 +87,7 @@ class NotifyRedirectDmViewSet(APIView):
                 else:
                     print("No Mute")
                     notification.notify_dm(to_user, from_user, message, xml)
-        return Response({"data": "Notification sent."}, status=200)
+        return Response({"message": "Notification sent."}, status=status.HTTP_200_OK)
 
 
 class MuteMessageView(APIView):
@@ -99,23 +102,24 @@ class MuteMessageView(APIView):
     def get(self, request, *args, **kwargs):
         params = request.GET
         if "mute" in params and "recipient" in params and "sender" in params:
-            sender = params.get("sender") + "@" + settings.XMPP_HOST
-            recipient = params.get("recipient") + "@" + settings.XMPP_HOST
+            sender = params.get("sender")
+            recipient = params.get("recipient")
             message = MuteCoversation.objects.filter(
                 sender_id=sender, recipient_id=recipient, mute=True
             )
             serializer = MuteMessageSerializer(message, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(
-            {"data": "Field missing in Query params."}, status=status.HTTP_200_OK
+            {"detail": "Field missing in Query params."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     def post(self, request):
         data = request.data
         sender = data.get("sender_id")
-        sender = str(sender) + "@" + settings.XMPP_HOST
+        # sender = str(sender) + "@" + settings.XMPP_HOST
         recipient = data.get("recipient_id")
-        recipient = str(recipient) + "@" + settings.XMPP_HOST
+        # recipient = str(recipient) + "@" + settings.XMPP_HOST
         mute_time = data.get("mute_time")
         mute = data.get("mute")
         if MuteCoversation.objects.filter(
@@ -186,8 +190,7 @@ class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
     def fetch_archive_chat(self, archive_data):
         archive_chat = []
         for archive in archive_data:
-            # ToDo : test
-            user = User.objects.filter(id=archive[-1])
+            user = User.objects.filter(jid=archive[-1])
             username = None
             user_pic = None
             timestamp = self.xml_timestamp_value(archive[1])
@@ -258,7 +261,7 @@ class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
             return self.get_paginated_response(serializer.data)
         except Exception as e:
             print(e)
-            return Response({"data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def xml_timestamp_value(self, xml):
         import xml.etree.ElementTree as ET
@@ -282,8 +285,23 @@ class XMPPDeleteDMViewSet(APIView):
             with connections["xmpp_database"].cursor() as cursor:
                 cursor.execute(q)
             return Response(
-                {"data": "Message deleted Successfully"}, status=status.HTTP_200_OK
+                {"message": "Message deleted Successfully"}, status=status.HTTP_200_OK
             )
         except Exception as e:
             print(e)
-            return Response({"data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserChatDeleteView(APIView):
+    permission_classes = (IsAuthenticated,)
+    allowed_methods = ("POST",)
+    serializer_class = UserChatDeleteSerializer
+
+    def post(self, request):
+        username = request.data["sender"]
+        jid = request.data["recipient"]
+        UserDelete().delete_chat(username, jid)
+        return Response(
+            data={"message": "User chat deleted successfully."},
+            status=status.HTTP_200_OK,
+        )

@@ -31,8 +31,8 @@ class User(AbstractUser):
     user_type = models.CharField(max_length=15, null=True)
     second_last_login = models.DateTimeField(null=True, blank=True)
     jid = models.CharField(max_length=255, null=True, blank=True)
-    fcm_token = models.CharField(max_length=100, null=True, blank=True)
-    apns_token = models.CharField(max_length=100, null=True, blank=True)
+    fcm_token = models.CharField(max_length=255, null=True, blank=True)
+    apns_token = models.CharField(max_length=255, null=True, blank=True)
     otp_requested = models.CharField(max_length=100, null=True, blank=True)
     login_attempts = models.IntegerField(default=0)
     last_login_time = models.DateTimeField(null=True, blank=True)
@@ -42,6 +42,7 @@ class User(AbstractUser):
     id_xmpp_register = models.BooleanField(
         verbose_name="XMPP Registered", default=False
     )
+    unique_id = models.CharField(max_length=255, default=uuid.uuid4().hex)
     hash_tag = models.TextField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
@@ -139,7 +140,7 @@ class UserVerificationSetting(BaseTimeStampedModel):
     kyc_done = models.BooleanField(default=False)
     id_laminated = models.BooleanField(default=False)
     id_matched = models.BooleanField(default=False)
-    scan_attempts = models.BooleanField(default=False)
+    scan_attempts = models.IntegerField(default=0)
     id_match_attempts = models.IntegerField(default=0)
     manual_verify = models.BooleanField(default=False)
     selfie = models.BooleanField(default=False)
@@ -207,7 +208,6 @@ class UserProfile(BaseTimeStampedModel):
         null=True,
         blank=True,
         max_choices=100,
-        max_length=100,
     )
     about_me = models.TextField(blank=True, null=True)
     skillset = models.CharField(max_length=250, null=True, blank=True)

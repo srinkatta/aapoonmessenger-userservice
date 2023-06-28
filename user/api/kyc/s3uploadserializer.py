@@ -45,6 +45,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "key": self.key,
             "AWSAccessKeyId": self.aws_access_key,
             "AWSSecretKey": self.aws_secret_key,
+            "AWSS3BucketName": settings.AWS_S3_BUCKET_NAME,
             "acl": self.acl,
             "policy": policy,
             "signature": signature,

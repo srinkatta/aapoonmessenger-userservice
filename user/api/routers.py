@@ -14,10 +14,11 @@ from user.api.viewsets import (
     SendOTPView,
     VerifyPhoneView,
     DeviceInfoView,
-    LanguageView,
+    AppPolicyView,
     FeedbackView,
     UserDeleteView,
     UserDeleteRevokeView,
+    UserDeleteCronView,
     InviteListView,
     UserDetailsAPI,
     UserDetailsPhoneAPI,
@@ -27,10 +28,11 @@ from user.api.direct_messages.viewsets import (
     NotifyRedirectDmViewSet,
     MuteMessageView,
     XMPPMonthlyChatViewSet,
-    XMPPDeleteDMViewSet,
+    UserChatDeleteView,
 )
 
 from user.api.kyc import viewsets as kyc_viewsets
+from user.api.admin import viewsets as admin_viewsets
 
 router = routers.SimpleRouter()
 router.register(r"user", UserViewSet, basename="user"),
@@ -38,6 +40,12 @@ router.register(r"profile", UserProfileViewSet, basename="user_profile"),
 router.register(r"logs", UserLogsViewSet, basename="user_logs"),
 router.register(r"invite", UserInviteViewSet, basename="user_invite"),
 router.register(r"device", UserDeviceViewSet, basename="user_device")
+router.register(
+    r"admin-panel/app_policy", admin_viewsets.AppPolicyViewSet, basename="App Policy"
+),
+router.register(
+    r"admin-panel/app_info", admin_viewsets.AppInfoViewSet, basename="App Info"
+),
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -96,7 +104,8 @@ urlpatterns = [
     path(
         "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
     ),
-    path("lang/", LanguageView.as_view(), name="language_detect"),
+    path("user_delete/cron/", UserDeleteCronView.as_view(), name="user_delete_cron"),
+    path("app_policy/", AppPolicyView.as_view(), name="app_policy"),
     path("feedback/", FeedbackView.as_view(), name="feedback"),
     path("invite_list/", InviteListView.as_view(), name="get_invite_list"),
     path("user_details/", UserDetailsAPI.as_view(), name="user_details"),
@@ -112,5 +121,46 @@ urlpatterns = [
         XMPPMonthlyChatViewSet.as_view({"get": "list"}),
         name="xmpp_chat",
     ),
-    path(r"delete_chat/", XMPPDeleteDMViewSet.as_view(), name="delete_chat"),
+    path(r"user_chat_delete/", UserChatDeleteView.as_view(), name="user_chat_delete"),
+    # Admin Panel urls
+    path(
+        "admin-panel/register/",
+        admin_viewsets.AdminPanelRegisterAPI.as_view(),
+        name="Admin Panel Register",
+    ),
+    path(
+        "admin-panel/login/",
+        admin_viewsets.AdminPanelLoginAPI.as_view(),
+        name="Admin Panel Login",
+    ),
+    path(
+        "admin-panel/users/",
+        admin_viewsets.UserListDetailsAPI.as_view(),
+        name="UserListAPI",
+    ),
+    path(
+        "admin-panel/verify/settings/",
+        admin_viewsets.UserVerificationSettingAPI.as_view(),
+        name="UserVerificationSettingAPI",
+    ),
+    path(
+        "admin-panel/users/filter/",
+        admin_viewsets.AdminUserFilters.as_view(),
+        name="UserFilterAPI",
+    ),
+    path(
+        "admin-panel/user/delete/",
+        admin_viewsets.UserDeleteAdminAPI.as_view(),
+        name="UserDeleteAdminAPI",
+    ),
+    path(
+        "admin-panel/export/data/",
+        admin_viewsets.UsersExportAPI.as_view(),
+        name="Export User Data",
+    ),
+    path(
+        "admin-panel/deleted/users/",
+        admin_viewsets.DeletedUserAPI.as_view(),
+        name="Deleted Users",
+    ),
 ]
