@@ -159,7 +159,7 @@ def user_kyc_status(user):
             status = "Pending"
     elif kyc_done:
         status = "Fully Verified"
-    elif user.phone_number_verified and user.account_details and not kyc_done:
+    elif user.phone_number_verified and user_kyc_settings.account_details and not kyc_done:
         status = "Basic Verified"
     else:
         status = "Phone Registered"
