@@ -144,7 +144,7 @@ def is_english(value):
 
 
 def user_kyc_status(user):
-    status = False
+    status = ""
     try:
         logs = user.logs.filter().first()
         logs = logs.kyc_logs
@@ -161,8 +161,8 @@ def user_kyc_status(user):
         status = "Fully Verified"
     elif user.phone_number_verified:
         status = "Basic Verified"
-    elif user.phone_number_verified:
-        status = "Phone Verified"
+    else:
+        status = "Phone Registered"
 
     return status
 
