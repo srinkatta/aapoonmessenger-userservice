@@ -5,15 +5,17 @@ from user.choices import COUNTRY_CODE_CHOICES
 
 
 class Command(BaseCommand):
-    help = 'old users country iso code update'
+    help = "old users country iso code update"
 
     def handle(self, **options):
         users = User.objects.all()
         for user in users:
-            if user.country_code == '91' or user.country_code == '1':
+            if user.country_code == "91" or user.country_code == "1":
                 try:
-                    country = get_data_from_choices(user.country_code, COUNTRY_CODE_CHOICES)
+                    country = get_data_from_choices(
+                        user.country_code, COUNTRY_CODE_CHOICES
+                    )
                     user.country_iso_code = country
                     user.save()
-                except:
-                    pass
+                except Exception as exc:
+                    print("An error occurred while updating user: %s", exc)

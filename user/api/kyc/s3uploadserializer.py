@@ -2,7 +2,7 @@ import uuid
 
 from user_service import settings
 import base64
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from rest_framework import serializers
 
 
@@ -47,10 +47,12 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "acl": self.acl,
             "policy": policy,
             "signature": signature,
-            "expiry": (datetime.now() + self.expires_after).strftime(
+            "expiry": (datetime.now(tz=timezone.utc) + self.expires_after).strftime(
                 "%Y-%m-%dT%H:%M:%S.000Z"
             ),
-            "epoch_time": int((datetime.now() + self.expires_after).timestamp()),
+            "epoch_time": int(
+                (datetime.now(tz=timezone.utc) + self.expires_after).timestamp()
+            ),
         }
         if self.success_action_redirect:
             obj["success_action_redirect"] = self.success_action_redirect
@@ -84,7 +86,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
                     ["starts-with", "$Content-Type", "%s" % self.content_type]
                 )
         policy_document = {
-            "expiration": (datetime.now() + self.expires_after).strftime(
+            "expiration": (datetime.now(tz=timezone.utc) + self.expires_after).strftime(
                 "%Y-%m-%dT%H:%M:%S.000Z"
             ),
             "conditions": conditions,
@@ -96,7 +98,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
         import hashlib
 
         signature = hmac.new(
-            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha1
+            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha256
         ).digest()
         return base64.b64encode(signature)
 

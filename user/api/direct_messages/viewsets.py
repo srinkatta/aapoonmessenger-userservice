@@ -45,7 +45,6 @@ class NotifyRedirectDmViewSet(APIView):
 
         if "vhost" in request.data:
             if request.data["vhost"] == settings.XMPP_HOST:
-
                 to_phone = phonenumbers.parse(f"+{to}", None)
                 to_user = User.objects.get(
                     country_code=to_phone.country_code,
@@ -147,7 +146,7 @@ class MuteMessageView(APIView):
 class ArchiveChat(object):
     def __init__(self, **kwargs):
         for field in ("id", "bare_peer", "timestamp", "xml", "username", "user_pic"):
-            setattr(self, field, kwargs.get(field, None))
+            setattr(self, field, kwargs.get(field))
 
 
 class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
@@ -263,7 +262,7 @@ class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def xml_timestamp_value(self, xml):
-        import xml.etree.ElementTree as ET
+        import defusedxml.ElementTree as ET
 
         root = ET.fromstring(xml)
         for page in root:

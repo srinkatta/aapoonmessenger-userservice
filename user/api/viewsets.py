@@ -80,7 +80,6 @@ class AuthUserRegistrationView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
@@ -640,7 +639,8 @@ class UserDeleteCronView(APIView):
             users_to_delete = User.objects.filter(id=pk)
         else:
             users_to_delete = DeletedUser.objects.filter(
-                created__lte=datetime.datetime.now() - datetime.timedelta(days=30)
+                created__lte=datetime.datetime.now(tz=datetime.timezone.utc)
+                - datetime.timedelta(days=30)
             ).filter(is_deleted=False)
 
         self.delete_user_associated_objects(users_to_delete)
@@ -762,7 +762,6 @@ class UserDetailsPhoneAPI(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get_user(self, phone_number, country_code):
-
         filters = {
             "country_code": country_code,
             "phone_number": phone_number,

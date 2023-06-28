@@ -1,6 +1,6 @@
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from email import charset
 
 import distance
@@ -161,7 +161,7 @@ class BaseKYCSerializer(serializers.Serializer):
 
     def get_logs(self, user):
         log_message = "<br/><br/>"
-        log_message = info_message(user, log_message, datetime.now())
+        log_message = info_message(user, log_message, datetime.now(timezone.utc))
         if self.data.get("source_key"):
             log_message = info_message(
                 user, log_message, self.data["source_key"], "Source Image"
@@ -458,7 +458,7 @@ class BaseKYCSerializer(serializers.Serializer):
         verification["pictures_match"] = False
         if logs:
             attempts = re.findall(r"<b>Target Image: https://", logs)
-            if len(attempts) == 0:
+            if not attempts:
                 verification["exception"] = MESSAGES["FIRST_ATTEMPTS_FAILURE"]
             elif len(attempts) == 1:
                 verification["exception"] = MESSAGES["SECOND_ATTEMPTS_FAILURE"]
@@ -873,7 +873,9 @@ class ProfileSerializer(BaseKYCSerializer):
 class CompareFacesV2Serializer(BaseKYCSerializer):
     source_key = serializers.CharField(required=True)
     target_key = serializers.CharField(required=True)
-    source_key_back_side = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    source_key_back_side = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
 
     def compare_faces(self, user):
         user_kyc_setting = user.settings.filter().first()
@@ -971,7 +973,6 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
         target_faceid_response = None
 
         if self.data["target_key"] != "":
-
             verification = self.gif_validation(
                 "target_key", user, log_message, verification
             )
