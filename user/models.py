@@ -309,9 +309,12 @@ class DeletedUser(BaseTimeStampedModel):
         blank=True,
         related_name="deleted_object",
     )
+    name = models.CharField(max_length=100, null=True, blank=True)
+    country_code = models.CharField(max_length=10, null=True)
+    phone_number = models.CharField(max_length=30, null=True)
 
 
-class MuteCoversation(models.Model):
+class MuteConversation(models.Model):
     """
     Mute Conversation Model
     """

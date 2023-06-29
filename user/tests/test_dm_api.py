@@ -3,7 +3,7 @@ from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from rest_framework import status
 
 from user_service import settings
-from user.models import User, MuteCoversation
+from user.models import User, MuteConversation
 from user.api.direct_messages.serializers import MuteMessageSerializer
 from user.api.direct_messages.viewsets import XMPPMonthlyChatViewSet
 
@@ -103,13 +103,13 @@ class UserChatDeleteTest(APITestCase):
 class MuteMessageTest(APITestCase):
     def setUp(self):
         self.apiclient = APIClient()
-        MuteCoversation.objects.create(
+        MuteConversation.objects.create(
             sender_id=f"aryan@{settings.XMPP_HOST}",
             recipient_id=f"receiver@{settings.XMPP_HOST}",
             mute=True,
             mute_time=123,
         )
-        MuteCoversation.objects.create(
+        MuteConversation.objects.create(
             sender_id=f"xyz@{settings.XMPP_HOST}",
             recipient_id=f"abc@{settings.XMPP_HOST}",
             mute=False,
@@ -117,7 +117,7 @@ class MuteMessageTest(APITestCase):
         )
 
     def tearDown(self):
-        MuteCoversation.objects.all().delete()
+        MuteConversation.objects.all().delete()
 
     def test_mute_get_missing_query(self):
         response = self.apiclient.get("/api/users/mute_messages/")
@@ -131,7 +131,7 @@ class MuteMessageTest(APITestCase):
         ]
 
         for mute in para:
-            obj = MuteCoversation.objects.filter(
+            obj = MuteConversation.objects.filter(
                 sender_id=f"{mute['sender']}@{settings.XMPP_HOST}",
                 recipient_id=f"{mute['recipient']}@{settings.XMPP_HOST}",
                 mute=True,
@@ -153,7 +153,7 @@ class MuteMessageTest(APITestCase):
         }
 
         response = self.apiclient.post("/api/users/mute_messages/", data=payload)
-        obj = MuteCoversation.objects.get(
+        obj = MuteConversation.objects.get(
             sender_id=f"{payload['sender_id']}@{settings.XMPP_HOST}",
             recipient_id=f"{payload['recipient_id']}@{settings.XMPP_HOST}",
         )
@@ -171,7 +171,7 @@ class MuteMessageTest(APITestCase):
         }
 
         response = self.apiclient.post("/api/users/mute_messages/", data=payload)
-        obj = MuteCoversation.objects.get(
+        obj = MuteConversation.objects.get(
             sender_id=f"{payload['sender_id']}@{settings.XMPP_HOST}",
             recipient_id=f"{payload['recipient_id']}@{settings.XMPP_HOST}",
         )
@@ -179,7 +179,7 @@ class MuteMessageTest(APITestCase):
         serialized_data = serializer.data
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serialized_data)
-        self.assertEqual(MuteCoversation.objects.count(), 3)
+        self.assertEqual(MuteConversation.objects.count(), 3)
 
 
 class XMPPMonthlyChatViewTest(APITestCase):
