@@ -18,7 +18,7 @@ from user.api.direct_messages.serializers import (
 )
 from user.models import (
     User,
-    MuteCoversation,
+    MuteConversation,
 )
 from user.utils import CustomPagination
 from user.helpers import notification
@@ -71,11 +71,11 @@ class NotifyRedirectDmViewSet(APIView):
                     )
 
                 # Check for muted conversation
-                if MuteCoversation.objects.filter(
+                if MuteConversation.objects.filter(
                     sender_id=message_from, recipient_id=to, mute=True
                 ).exists():
                     print(time.time())
-                    mutify = MuteCoversation.objects.filter(
+                    mutify = MuteConversation.objects.filter(
                         sender_id=message_from, recipient_id=to, mute=True
                     ).first()
                     if time.time() > mutify.mute_time:
@@ -104,7 +104,7 @@ class MuteMessageView(APIView):
         if "mute" in params and "recipient" in params and "sender" in params:
             sender = params.get("sender")
             recipient = params.get("recipient")
-            message = MuteCoversation.objects.filter(
+            message = MuteConversation.objects.filter(
                 sender_id=sender, recipient_id=recipient, mute=True
             )
             serializer = MuteMessageSerializer(message, many=True)
@@ -122,10 +122,10 @@ class MuteMessageView(APIView):
         # recipient = str(recipient) + "@" + settings.XMPP_HOST
         mute_time = data.get("mute_time")
         mute = data.get("mute")
-        if MuteCoversation.objects.filter(
+        if MuteConversation.objects.filter(
             sender_id=sender, recipient_id=recipient
         ).exists():
-            message = MuteCoversation._default_manager.get(
+            message = MuteConversation._default_manager.get(
                 sender_id=sender, recipient_id=recipient
             )
             message.mute_time = mute_time

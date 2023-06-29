@@ -429,6 +429,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
             user_settings.account_details = True
+            user_settings.save()
         instance.save()
 
         return instance

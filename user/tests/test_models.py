@@ -9,7 +9,7 @@ from user.models import (
     UserLog,
     UserVerificationSetting,
     UserProfile,
-    MuteCoversation,
+    MuteConversation,
 )
 from user.models import DeviceInfo, UserInvite, UserDevice, AppInfo, Languages
 from user.signals import user_kyc_profile_settings
@@ -809,25 +809,25 @@ class LanguagesFieldValidationTest(TestCase):
 
 class MuteConversationFieldValidationTest(TestCase):
     def test_sender_id_max_length(self):
-        max_length = MuteCoversation._meta.get_field("sender_id").max_length
-        mute_conversation = MuteCoversation(
+        max_length = MuteConversation._meta.get_field("sender_id").max_length
+        mute_conversation = MuteConversation(
             sender_id="a" * (max_length + 1), recipient_id="12345"
         )
         with self.assertRaises(ValidationError):
             mute_conversation.full_clean()
 
     def test_recipient_id_max_length(self):
-        max_length = MuteCoversation._meta.get_field("recipient_id").max_length
-        mute_conversation = MuteCoversation(
+        max_length = MuteConversation._meta.get_field("recipient_id").max_length
+        mute_conversation = MuteConversation(
             sender_id="54321", recipient_id="b" * (max_length + 1)
         )
         with self.assertRaises(ValidationError):
             mute_conversation.full_clean()
 
     def test_mute_default_value(self):
-        mute_conversation = MuteCoversation(sender_id="54321", recipient_id="12345")
+        mute_conversation = MuteConversation(sender_id="54321", recipient_id="12345")
         self.assertEqual(mute_conversation.mute, False)
 
     def test_mute_time_default_value(self):
-        mute_conversation = MuteCoversation(sender_id="54321", recipient_id="12345")
+        mute_conversation = MuteConversation(sender_id="54321", recipient_id="12345")
         self.assertEqual(mute_conversation.mute_time, 0)

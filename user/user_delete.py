@@ -34,7 +34,13 @@ class UserDelete:
         self.create_deleted_user_record()
 
     def create_deleted_user_record(self):
-        return DeletedUser.objects.create(user=self.user)
+        user = self.user
+        return DeletedUser.objects.create(
+            user=user,
+            phone_number=user.phone_number,
+            country_code=user.country_code,
+            name=user.name,
+        )
 
     def fetch_deleted_user_record(self):
         try:
