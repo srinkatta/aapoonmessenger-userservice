@@ -154,12 +154,15 @@ def user_kyc_status(user):
         logging.debug("User kyc logs not found: %s", err)
     user_kyc_settings = user.settings.filter().first()
     kyc_done = user_kyc_settings.kyc_done
-    if logs and len(attempts) >= 2:
-        if user.phone_number_verified and len(attempts) >= 2 and not kyc_done:
-            status = "Pending"
+    if logs and len(attempts) >= 2 and user.phone_number_verified and not kyc_done:
+        status = "Pending"
     elif kyc_done:
         status = "Fully Verified"
-    elif user.phone_number_verified and user_kyc_settings.account_details and not kyc_done:
+    elif (
+        user.phone_number_verified
+        and user_kyc_settings.account_details
+        and not kyc_done
+    ):
         status = "Basic Verified"
     else:
         status = "Phone Registered"
