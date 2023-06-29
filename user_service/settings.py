@@ -135,14 +135,13 @@ DATABASES = {
         "HOST": os.environ["DB_HOST"],
         "PORT": os.environ["DB_PORT"],
         "OPTIONS": {
-            "charset": "utf8mb4",
             "init_command": "SET foreign_key_checks = 0;",
         },
     },
 }
 
 
-DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
+# DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
 
 
 # Password validation
