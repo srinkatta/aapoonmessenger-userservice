@@ -116,15 +116,19 @@ class MuteMessageView(APIView):
 
     def post(self, request):
         data = request.data
+        print(data)
+        print(sender)
         sender = data.get("sender_id")
         # sender = str(sender) + "@" + settings.XMPP_HOST
         recipient = data.get("recipient_id")
+        print(recipient)
         # recipient = str(recipient) + "@" + settings.XMPP_HOST
         mute_time = data.get("mute_time")
         mute = data.get("mute")
         if MuteConversation.objects.filter(
             sender_id=sender, recipient_id=recipient
         ).exists():
+            print("update")
             message = MuteConversation._default_manager.get(
                 sender_id=sender, recipient_id=recipient
             )
@@ -136,6 +140,7 @@ class MuteMessageView(APIView):
         else:
             serializer = MuteMessageSerializer(data=request.data)
             if serializer.is_valid():
+                print("create")
                 serializer.validated_data["sender_id"] = sender
                 serializer.validated_data["recipient_id"] = recipient
                 serializer.save()
