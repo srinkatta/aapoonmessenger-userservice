@@ -117,8 +117,8 @@ class MuteMessageView(APIView):
     def post(self, request):
         data = request.data
         print(data)
-        print(sender)
         sender = data.get("sender_id")
+        print(sender)
         # sender = str(sender) + "@" + settings.XMPP_HOST
         recipient = data.get("recipient_id")
         print(recipient)
