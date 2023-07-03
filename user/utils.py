@@ -43,6 +43,7 @@ def clear_bucket_from_path(path):
 
 
 def make_request(url, method, data={}, params={}):
+    print(settings.XMPP_AUTHORIZATION)
     try:
         headers = {
             "content-type": "application/json",
