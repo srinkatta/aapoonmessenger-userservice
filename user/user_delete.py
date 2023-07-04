@@ -58,10 +58,12 @@ class UserDelete:
         self.delete_user_from_xmpp(username)
         self.delete_user_related_object()
         self.fetch_deleted_user_record()
+        self.delete_user_circle_and_related_objects()
         self.delete_user_circle_invites()
         self.delete_user_s3_content()
         self.delete_chats(username)
         self.delete_user_chat_circle()
+        self.delete_user_circle()
         self.send_email()
         self.user.delete()
         return
@@ -136,6 +138,12 @@ class UserDelete:
                 cursor.fetchall()
         except Exception as err:
             logging.debug("Exception while executing query: %s", err)
+
+    def delete_user_circle_and_related_objects(self):
+        query = f"DELETE FROM circle_circlesubscriberrole WHERE user_id={self.user.id};"
+        self.circle_execute_query(query)
+        query = f"DELETE from circle_circle where owner_id={self.user.id};"
+        self.circle_execute_query(query)
 
     def delete_user_circle_invites(self):
         query = f"DELETE from circle_circleinvite where sender={self.user.id};"

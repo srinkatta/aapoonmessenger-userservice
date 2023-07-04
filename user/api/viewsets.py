@@ -80,7 +80,6 @@ class AuthUserRegistrationView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
@@ -511,19 +510,18 @@ class DeviceInfoView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = self.get_serializer(
-            data=request.data, context={"request": request}
-        )
-        if serializer.is_valid():
-            if serializer.validated_data["user"] is not None:
+        if not DeviceInfo.objects.filter(
+            device_id=request.data["device_id"], user_id=request.data["user"]
+        ).exists():
+            serializer = self.get_serializer(
+                data=request.data, context={"request": request}
+            )
+            if serializer.is_valid():
                 serializer.save()
-                queryset = AppInfo.objects.all()
-                serializer = AppInfoSerializer(queryset, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            queryset = AppInfo.objects.all()
-            serializer = AppInfoSerializer(queryset, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        queryset = AppInfo.objects.all()
+        serializer = AppInfoSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AppPolicyView(APIView):
@@ -761,7 +759,6 @@ class UserDetailsPhoneAPI(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get_user(self, phone_number, country_code):
-
         filters = {
             "country_code": country_code,
             "phone_number": phone_number,
