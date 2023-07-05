@@ -355,6 +355,32 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    def create(self, request):
+        device_model = request.data["device_model"]
+        user_id = request.data["user"]
+
+        if not UserDevice.objects.filter(
+            device_model=device_model, user_id=user_id
+        ).exists():
+            serializer = self.serializer_class(
+                data=request.data, context={request: "request"}
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            user_device = UserDevice.objects.filter(
+                device_model=device_model, user_id=user_id
+            ).first()
+            serializer = self.get_serializer(
+                user_device, data=request.data, context={"request": request}
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     """
@@ -510,18 +536,28 @@ class DeviceInfoView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        if not DeviceInfo.objects.filter(
-            device_id=request.data["device_id"], user_id=request.data["user"]
-        ).exists():
-            serializer = self.get_serializer(
-                data=request.data, context={"request": request}
+        device_id = request.data["device_id"]
+        user_id = request.data["user"]
+
+        if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
+            serializer = self.serializer_class(
+                data=request.data, context={request: "request"}
             )
-            if serializer.is_valid():
-                serializer.save()
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        queryset = AppInfo.objects.all()
-        serializer = AppInfoSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            device_info = DeviceInfo.objects.filter(
+                device_id=device_id, user_id=user_id
+            ).first()
+            serializer = self.get_serializer(
+                device_info, data=request.data, context={"request": request}
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AppPolicyView(APIView):

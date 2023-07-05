@@ -122,7 +122,8 @@ class UserDelete:
         query = f"""SELECT circle.room_id AS room_id
                 FROM circle_circlesubscriberrole AS csr
                 JOIN circle_circle AS circle ON circle.id = csr.circle_id
-                WHERE csr.user_id = {self.user.id} AND csr.role=;"""
+                WHERE csr.user_id = {self.user.id};"""
+        # ToDo: validate the query and change accordingly
         circle_rooms = self.circle_execute_query(query)
         return self.delete_circle(circle_rooms)
 
@@ -142,7 +143,7 @@ class UserDelete:
     def delete_user_circle_and_related_objects(self):
         query = f"DELETE FROM circle_circlesubscriberrole WHERE user_id={self.user.id};"
         self.circle_execute_query(query)
-        query = f"DELETE from circle_circle where owner_id={self.user.id};"
+        query = f"DELETE from circle_circle WHERE owner_id={self.user.id} AND parent IS NULL;"
         self.circle_execute_query(query)
 
     def delete_user_circle_invites(self):
