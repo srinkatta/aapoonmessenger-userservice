@@ -510,15 +510,25 @@ class DeviceInfoView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        if not DeviceInfo.objects.filter(
-            device_id=request.data["device_id"], user_id=request.data["user"]
-        ).exists():
+        device_id = request.data["device_id"]
+        user_id = request.data["user"]
+
+        if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
             serializer = self.get_serializer(
                 data=request.data, context={"request": request}
             )
             if serializer.is_valid():
                 serializer.save()
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            device_info = DeviceInfo.objects.filter(
+                device_id=device_id, user_id=user_id
+            ).first()
+            serializer = self.get_serializer(
+                device_info, data=request.data, context={"request": request}
+            )
+            if serializer.is_valid():
+                serializer.save()
+
         queryset = AppInfo.objects.all()
         serializer = AppInfoSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
