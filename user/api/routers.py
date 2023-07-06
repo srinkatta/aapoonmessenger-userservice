@@ -23,6 +23,7 @@ from user.api.viewsets import (
     UserDetailsAPI,
     UserDetailsPhoneAPI,
     UserCheckAPIView,
+    UserProfileSearchAPI,
 )
 from user.api.direct_messages.viewsets import (
     NotifyRedirectDmViewSet,
@@ -67,11 +68,39 @@ urlpatterns = [
     path("auth/login/", AuthUserLoginView.as_view(), name="login"),
     path("auth/send_otp/", SendOTPView.as_view(), name="send_otp"),
     path("auth/verify_otp/", VerifyPhoneView.as_view(), name="verify_otp"),
+    path("device_info/", DeviceInfoView.as_view(), name="device_info"),
+    path("user_delete/", UserDeleteView.as_view(), name="user_delete"),
+    path(
+        "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
+    ),
+    path("user_delete/cron/", UserDeleteCronView.as_view(), name="user_delete_cron"),
+    path("app_policy/", AppPolicyView.as_view(), name="app_policy"),
+    path("feedback/", FeedbackView.as_view(), name="feedback"),
+    path("invite_list/", InviteListView.as_view(), name="get_invite_list"),
+    path("user_details/", UserDetailsAPI.as_view(), name="user_details"),
+    path(
+        "user_details_phone/", UserDetailsPhoneAPI.as_view(), name="user_details_phone"
+    ),
+    path("user_friends_check/", UserCheckAPIView.as_view(), name="user_friends_check"),
     path(
         "notify_settings/",
         PushNotificationSettings.as_view(),
         name="push_notification_settings",
     ),
+    path(
+        "profile_search/",
+        UserProfileSearchAPI.as_view(),
+        name="user_profile_search",
+    ),
+    # Direct message urls
+    path("notify_dm/", NotifyRedirectDmViewSet.as_view(), name="notify_redirect_dm"),
+    path("mute_messages/", MuteMessageView.as_view(), name="mute_messages"),
+    path(
+        r"xmpp_monthly_chat/",
+        XMPPMonthlyChatViewSet.as_view({"get": "list"}),
+        name="xmpp_chat",
+    ),
+    path(r"user_chat_delete/", UserChatDeleteView.as_view(), name="user_chat_delete"),
     # KYC urls
     path("selfie/", kyc_viewsets.SelfieViewSet.as_view(), name="selfie"),
     path(
@@ -99,29 +128,6 @@ urlpatterns = [
         kyc_viewsets.FeedbackUploadViewSet.as_view({"get": "list"}),
         name="feedback_upload",
     ),
-    path("device_info/", DeviceInfoView.as_view(), name="device_info"),
-    path("user_delete/", UserDeleteView.as_view(), name="user_delete"),
-    path(
-        "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
-    ),
-    path("user_delete/cron/", UserDeleteCronView.as_view(), name="user_delete_cron"),
-    path("app_policy/", AppPolicyView.as_view(), name="app_policy"),
-    path("feedback/", FeedbackView.as_view(), name="feedback"),
-    path("invite_list/", InviteListView.as_view(), name="get_invite_list"),
-    path("user_details/", UserDetailsAPI.as_view(), name="user_details"),
-    path(
-        "user_details_phone/", UserDetailsPhoneAPI.as_view(), name="user_details_phone"
-    ),
-    path("user_friends_check/", UserCheckAPIView.as_view(), name="user_friends_check"),
-    # Direct message urls
-    path("notify_dm/", NotifyRedirectDmViewSet.as_view(), name="notify_redirect_dm"),
-    path("mute_messages/", MuteMessageView.as_view(), name="mute_messages"),
-    path(
-        r"xmpp_monthly_chat/",
-        XMPPMonthlyChatViewSet.as_view({"get": "list"}),
-        name="xmpp_chat",
-    ),
-    path(r"user_chat_delete/", UserChatDeleteView.as_view(), name="user_chat_delete"),
     # Admin Panel urls
     path(
         "admin-panel/register/",

@@ -38,6 +38,7 @@ from user.api.serializers import (
     NotificationSettingsSerializer,
     UserPhoneDetailsInputSerializer,
     UserCheckSerializer,
+    UserProfileSearchSerializer,
 )
 from user.models import (
     UserLog,
@@ -57,6 +58,7 @@ from user.utils import (
     send_email_notification,
     feedback_mail,
     user_kyc_status,
+    GenericPagination,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
@@ -844,3 +846,30 @@ class UserCheckAPIView(APIView):
             response.append(result)
 
         return Response(data=response, status=status.HTTP_200_OK)
+
+
+class UserProfileSearchAPI(APIView, GenericPagination):
+    """
+    User Profile search with JID
+    """
+
+    serializer_class = UserProfileSearchSerializer
+    permission_classes = (permissions.AllowAny,)
+    # pagination_class = GenericPagination
+
+    def get(self, request, *args, **kwargs):
+        jid = request.GET.get("jid")
+
+        if jid:
+            profiles = User.objects.filter(jid=jid)
+            paginated_profiles = self.paginate_queryset(profiles, request)
+            if paginated_profiles is not None:
+                serializer = self.serializer_class(paginated_profiles, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.serializer_class(profiles, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(
+            {"detail": "No jid provided"}, status=status.HTTP_400_BAD_REQUEST
+        )

@@ -1,6 +1,7 @@
 import re
 import requests
 import json
+from collections import OrderedDict
 from datetime import datetime
 import logging
 from requests.exceptions import HTTPError
@@ -363,3 +364,30 @@ def get_data_from_choices(key, CHOICES):
 class CustomPagination(PageNumberPagination):
     def get_paginated_response(self, data):
         return Response({"results": data})
+
+
+class GenericPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = "page_size"
+
+    def get_paginated_response(self, data):
+        return Response(
+            OrderedDict(
+                [
+                    ("count", self.page.paginator.count),
+                    (
+                        "next",
+                        self.get_next_link().replace("http", "https")
+                        if self.get_next_link()
+                        else None,
+                    ),
+                    (
+                        "previous",
+                        self.get_previous_link().replace("http", "https")
+                        if self.get_previous_link()
+                        else None,
+                    ),
+                    ("results", data),
+                ]
+            )
+        )

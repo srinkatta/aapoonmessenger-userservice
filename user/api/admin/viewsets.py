@@ -6,7 +6,6 @@ from django.contrib.auth import login
 from django.contrib.auth.hashers import check_password
 
 from rest_framework import status, viewsets, permissions
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 
 from user import models as user_models
-from user.utils import make_request
+from user.utils import make_request, GenericPagination
 from user.user_delete import UserDelete
 from user.api import serializers as user_serializers
 from user.api.admin import serializers as admin_serializers
@@ -23,7 +22,7 @@ from user.api.admin.filters import UserFilter
 from user_service import settings
 
 
-class UserListDetailsAPI(APIView, PageNumberPagination):
+class UserListDetailsAPI(APIView, GenericPagination):
     """
     Users List & Detail view
     """
@@ -55,7 +54,7 @@ class UserListDetailsAPI(APIView, PageNumberPagination):
         return self.get_paginated_response(serializer.data)
 
 
-class UserVerificationSettingAPI(APIView, PageNumberPagination):
+class UserVerificationSettingAPI(APIView, GenericPagination):
     """
     User Kyc Settings List, Detail & Update View
     """
@@ -112,7 +111,7 @@ class UserVerificationSettingAPI(APIView, PageNumberPagination):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AdminUserFilters(APIView, PageNumberPagination):
+class AdminUserFilters(APIView, GenericPagination):
     """
     API to return Users list based on filters
     """
@@ -239,7 +238,7 @@ class AppPolicyViewSet(viewsets.ModelViewSet):
     queryset = user_models.Languages.objects.all()
 
 
-class DeletedUserAPI(APIView, PageNumberPagination):
+class DeletedUserAPI(APIView, GenericPagination):
     """
     List & delete Deleted Users records
     """
