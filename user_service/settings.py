@@ -132,7 +132,7 @@ DATABASES = {
         "NAME": os.environ["DB_NAME"],
         "USER": os.environ["DB_NAME"],
         "PASSWORD": os.environ["DB_PASSWORD"],
-        "HOST": os.environ["DB_HOST"],
+        "HOST": os.environ["DB_READ_HOST"],
         "PORT": os.environ["DB_PORT"],
         "OPTIONS": {
             "init_command": "SET foreign_key_checks = 0;",
@@ -141,7 +141,7 @@ DATABASES = {
 }
 
 
-# DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
+DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
 
 
 # Password validation
