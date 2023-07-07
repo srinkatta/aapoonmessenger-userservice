@@ -215,7 +215,7 @@ class UserProfile(BaseTimeStampedModel):
     profession = models.CharField(max_length=55, null=True, blank=True)
     iam_looking_for = models.TextField(null=True, blank=True)
     political_interests = models.CharField(max_length=250, null=True, blank=True)
-    date_of_birth = models.DateTimeField(null=True, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
     address = models.CharField(max_length=250, null=True, blank=True)
     address1 = models.CharField(max_length=250, null=True, blank=True)
     city = models.CharField(max_length=55, null=True, blank=True)
