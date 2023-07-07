@@ -733,10 +733,8 @@ class PhotoIDSerializer(BaseKYCSerializer):
                 user, log_message, source_faceid_response, verification
             )
             return verification
-
         if not source_face_id and recognitionResult:
             verification = self.faceId_validation(user, log_message, verification)
-
         if source_face_id and not recognitionResult:
             exception = "Please upload the side of the ID with photo"
             verification = self.ocr_recognition_validation(
@@ -749,7 +747,6 @@ class PhotoIDSerializer(BaseKYCSerializer):
                 user, log_message, verification, exception
             )
             return verification
-
         return verification
 
     def check_aadhar_verification(
@@ -873,7 +870,9 @@ class ProfileSerializer(BaseKYCSerializer):
 class CompareFacesV2Serializer(BaseKYCSerializer):
     source_key = serializers.CharField(required=True)
     target_key = serializers.CharField(required=True)
-    source_key_back_side = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    source_key_back_side = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
 
     def compare_faces(self, user):
         user_kyc_setting = user.settings.filter().first()
