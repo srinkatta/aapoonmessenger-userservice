@@ -1,6 +1,7 @@
 import boto3
 import requests
 from django.conf import settings
+from twilio.rest import Client
 
 
 class SMS:
@@ -120,4 +121,51 @@ class FAST_SMS:
                 return response.json()
         except Exception as exc:
             print(exc)
+            return False
+
+
+class TWILIO_SMS:
+    def __init__(self, phone_number, message, user, *args, **kwargs):
+        self.ACCOUNT_SID = settings.TWILIO_ACCOUNT_SID
+        self.AUTH_TOKEN = settings.TWILIO_AUTH_TOKEN
+        self.FROM_NUMBER = settings.TWILIO_FROM_NUMBER
+        self.client = Client(self.ACCOUNT_SID, self.AUTH_TOKEN)
+        self.phone_number = phone_number
+        self.message = message
+        self.user = user
+
+    def send_message(self):
+        try:
+            if (
+                self.user
+                and self.user.hash_tag
+                and self.user.hash_tag.lower() != "null"
+            ):
+                self.message = f"<#> One-Time Password(OTP) to activate aapoon account is {self.message} {self.user.hash_tag}"
+            else:
+                self.message = f"{self.message} is the One-Time Password(OTP) to activate aapoon account."
+
+            response = self.client.messages.create(
+                body=self.message,
+                from_=self.FROM_NUMBER,
+                to=f"+{self.phone_number}",
+            )
+            print(response.sid)
+
+            return True
+        except Exception as exc:
+            print(exc)
+            return False
+
+    def send_generic_message(self):
+        try:
+            response = self.client.messages.create(
+                body=self.message,
+                from_=self.FROM_NUMBER,
+                to=f"+{self.phone_number}",
+            )
+            print(response.sid)
+            return True
+        except Exception as e:
+            print(e)
             return False

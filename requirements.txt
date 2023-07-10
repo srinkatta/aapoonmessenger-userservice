@@ -23,3 +23,4 @@ pyfcm==1.5.4
 python-dotenv==0.21.0
 black==22.10.0
 pre-commit==3.3.1
+twilio==8.4.0

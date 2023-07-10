@@ -61,7 +61,7 @@ def make_request(url, method, data={}, params={}):
 
 
 def send_sms_message(message, user, number):
-    sms_client = sms.SMS(number, message, user)
+    sms_client = sms.TWILIO_SMS(number, message, user)
     sms_client.send_generic_message()
 
 
@@ -79,7 +79,6 @@ def send_email_notification(user, template, subject):
 
 
 def phone_failure(user, subject):
-
     from_email = settings.DEFAULT_FROM_EMAIL
     to_email = ["support@aapoon.net"]
     context = {

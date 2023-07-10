@@ -159,7 +159,7 @@ class RegisterSerializer(serializers.Serializer):
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
-            sms_client = sms.SMS(number, otp, user)
+            sms_client = sms.TWILIO_SMS(number, otp, user)
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
