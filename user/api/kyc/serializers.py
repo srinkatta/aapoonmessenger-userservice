@@ -1,6 +1,6 @@
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from email import charset
 
 import distance
@@ -161,7 +161,7 @@ class BaseKYCSerializer(serializers.Serializer):
 
     def get_logs(self, user):
         log_message = "<br/><br/>"
-        log_message = info_message(user, log_message, datetime.now())
+        log_message = info_message(user, log_message, datetime.now(timezone.utc))
         if self.data.get("source_key"):
             log_message = info_message(
                 user, log_message, self.data["source_key"], "Source Image"
@@ -458,7 +458,7 @@ class BaseKYCSerializer(serializers.Serializer):
         verification["pictures_match"] = False
         if logs:
             attempts = re.findall(r"<b>Target Image: https://", logs)
-            if len(attempts) == 0:
+            if attempts:
                 verification["exception"] = MESSAGES["FIRST_ATTEMPTS_FAILURE"]
             elif len(attempts) == 1:
                 verification["exception"] = MESSAGES["SECOND_ATTEMPTS_FAILURE"]

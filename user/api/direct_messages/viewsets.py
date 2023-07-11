@@ -120,15 +120,16 @@ class MuteMessageView(APIView):
         sender = data.get("sender_id")
         print(sender)
         # sender = str(sender) + "@" + settings.XMPP_HOST
+        print(sender)
         recipient = data.get("recipient_id")
         print(recipient)
         # recipient = str(recipient) + "@" + settings.XMPP_HOST
+        print(recipient)
         mute_time = data.get("mute_time")
         mute = data.get("mute")
         if MuteConversation.objects.filter(
             sender_id=sender, recipient_id=recipient
         ).exists():
-            print("update")
             message = MuteConversation._default_manager.get(
                 sender_id=sender, recipient_id=recipient
             )
@@ -140,7 +141,6 @@ class MuteMessageView(APIView):
         else:
             serializer = MuteMessageSerializer(data=request.data)
             if serializer.is_valid():
-                print("create")
                 serializer.validated_data["sender_id"] = sender
                 serializer.validated_data["recipient_id"] = recipient
                 serializer.save()
@@ -152,7 +152,8 @@ class MuteMessageView(APIView):
 class ArchiveChat(object):
     def __init__(self, **kwargs):
         for field in ("id", "bare_peer", "timestamp", "xml", "username", "user_pic"):
-            setattr(self, field, kwargs.get(field, None))
+            if field in kwargs:
+                setattr(self, field, kwargs.get(field))
 
 
 class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
