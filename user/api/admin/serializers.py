@@ -186,7 +186,7 @@ class UserFilterSerializer(serializers.ModelSerializer):
 class DeletedUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = user_models.DeletedUser
-        fields = ["id", "user", "is_deleted"]
+        fields = ["id", "user", "is_deleted", "name", "country_code", "phone_number"]
 
 
 class CreateSuperUserSerializer(serializers.Serializer):

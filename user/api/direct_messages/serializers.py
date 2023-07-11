@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from user.models import MuteCoversation
+from user.models import MuteConversation
 
 
 class NotifyRedirectDmSerializer(serializers.Serializer):
@@ -17,7 +17,7 @@ class NotifyRedirectDmSerializer(serializers.Serializer):
 
 class MuteMessageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MuteCoversation
+        model = MuteConversation
         fields = "__all__"
 
 

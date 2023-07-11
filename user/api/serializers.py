@@ -159,7 +159,7 @@ class RegisterSerializer(serializers.Serializer):
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
-            sms_client = sms.SMS(number, otp, user)
+            sms_client = sms.TWILIO_SMS(number, otp, user)
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
@@ -728,3 +728,26 @@ class UserCheckSerializer(serializers.Serializer):
     """
 
     contacts = aapoonContactSyncSerializer(many=True)
+
+
+class UserProfileSearchSerializer(serializers.Serializer):
+    id = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    jid = serializers.SerializerMethodField()
+    profile_pic = serializers.SerializerMethodField()
+    user_profile = serializers.SerializerMethodField()
+
+    def get_id(self, obj):
+        return obj.id
+
+    def get_name(self, obj):
+        return obj.name
+
+    def get_jid(self, obj):
+        return obj.jid
+
+    def get_profile_pic(self, obj):
+        return obj.secondary_picture
+
+    def get_user_profile(self, obj):
+        return user_kyc_status(obj)

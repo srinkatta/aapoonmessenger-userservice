@@ -120,22 +120,26 @@ DATABASES = {
         "PORT": "5432",
     },
     "circle_service_database": {
-        "ENGINE": "django.db.backends.mysql",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ["CIRCLE_DB_NAME"],
         "USER": os.environ["CIRCLE_DB_USER"],
         "PASSWORD": os.environ["CIRCLE_DB_PASSWORD"],
         "HOST": os.environ["CIRCLE_DB_HOST"],
         "PORT": os.environ["CIRCLE_DB_PORT"],
     },
+    "slave1": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["DB_NAME"],
+        "USER": os.environ["DB_NAME"],
+        "PASSWORD": os.environ["DB_PASSWORD"],
+        "HOST": os.environ["DB_READ_HOST"],
+        "PORT": os.environ["DB_PORT"],
+    },
 }
 
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
+DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -264,3 +268,8 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ["EMAIL_HOST_USER"]
 EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
+
+# twilio
+TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
+TWILIO_AUTH_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
+TWILIO_FROM_NUMBER = os.environ["TWILIO_FROM_NUMBER"]

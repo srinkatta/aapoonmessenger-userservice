@@ -38,6 +38,7 @@ from user.api.serializers import (
     NotificationSettingsSerializer,
     UserPhoneDetailsInputSerializer,
     UserCheckSerializer,
+    UserProfileSearchSerializer,
 )
 from user.models import (
     UserLog,
@@ -57,6 +58,7 @@ from user.utils import (
     send_email_notification,
     feedback_mail,
     user_kyc_status,
+    GenericPagination,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
@@ -80,7 +82,6 @@ class AuthUserRegistrationView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
@@ -151,7 +152,7 @@ class SendOTPView(APIView):
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
-            sms_client = sms.SMS(number, otp, user)
+            sms_client = sms.TWILIO_SMS(number, otp, user)
             sms_client.send_message()
         user.verify_attempts = user.verify_attempts + 1
         user.save()
@@ -356,6 +357,32 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    def create(self, request):
+        device_model = request.data["device_model"]
+        user_id = request.data["user"]
+
+        if not UserDevice.objects.filter(
+            device_model=device_model, user_id=user_id
+        ).exists():
+            serializer = self.serializer_class(
+                data=request.data, context={request: "request"}
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            user_device = UserDevice.objects.filter(
+                device_model=device_model, user_id=user_id
+            ).first()
+            serializer = self.get_serializer(
+                user_device, data=request.data, context={"request": request}
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     """
@@ -429,6 +456,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
             user_settings.account_details = True
+            user_settings.save()
         instance.save()
 
         return instance
@@ -510,19 +538,28 @@ class DeviceInfoView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = self.get_serializer(
-            data=request.data, context={"request": request}
-        )
-        if serializer.is_valid():
-            if serializer.validated_data["user"] is not None:
-                serializer.save()
-                queryset = AppInfo.objects.all()
-                serializer = AppInfoSerializer(queryset, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            queryset = AppInfo.objects.all()
-            serializer = AppInfoSerializer(queryset, many=True)
+        device_id = request.data["device_id"]
+        user_id = request.data["user"]
+
+        if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
+            serializer = self.serializer_class(
+                data=request.data, context={request: "request"}
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            device_info = DeviceInfo.objects.filter(
+                device_id=device_id, user_id=user_id
+            ).first()
+            serializer = self.get_serializer(
+                device_info, data=request.data, context={"request": request}
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AppPolicyView(APIView):
@@ -760,7 +797,6 @@ class UserDetailsPhoneAPI(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get_user(self, phone_number, country_code):
-
         filters = {
             "country_code": country_code,
             "phone_number": phone_number,
@@ -810,3 +846,30 @@ class UserCheckAPIView(APIView):
             response.append(result)
 
         return Response(data=response, status=status.HTTP_200_OK)
+
+
+class UserProfileSearchAPI(APIView, GenericPagination):
+    """
+    User Profile search with JID
+    """
+
+    serializer_class = UserProfileSearchSerializer
+    permission_classes = (permissions.AllowAny,)
+    # pagination_class = GenericPagination
+
+    def get(self, request, *args, **kwargs):
+        jid = request.GET.get("jid")
+
+        if jid:
+            profiles = User.objects.filter(jid=jid)
+            paginated_profiles = self.paginate_queryset(profiles, request)
+            if paginated_profiles is not None:
+                serializer = self.serializer_class(paginated_profiles, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.serializer_class(profiles, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(
+            {"detail": "No jid provided"}, status=status.HTTP_400_BAD_REQUEST
+        )
