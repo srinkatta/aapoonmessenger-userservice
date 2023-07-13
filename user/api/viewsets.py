@@ -148,14 +148,16 @@ class SendOTPView(APIView):
         return SendOTPSerializer(*args, **kwargs)
 
     def send_otp(self, country_code, phone_number, otp, user, number):
-        if country_code == "91":
+        valid_country_code = ["91", 91]
+        if country_code in valid_country_code:
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
             sms_client = sms.TWILIO_SMS(number, otp, user)
             sms_client.send_message()
-        user.verify_attempts = user.verify_attempts + 1
-        user.save()
+        user_settings = user.settings.filter().first()
+        user_settings.verify_attempts += 1
+        user_settings.save()
 
     def max_phone_attempts(self, request):
         user_settings = request.user.settings.filter().first()
@@ -174,8 +176,9 @@ class SendOTPView(APIView):
         if user_settings.phone_number:
             phone = f"{user_settings.country_code}{user_settings.phone_number}"
             phone_number = user_settings.phone_number
+            country_code = user_settings.country_code
             otp = generate_otp()
-            self.send_otp(phone_number, otp, user_settings, phone)
+            self.send_otp(country_code, phone_number, otp, user_settings, phone)
             user.otp_requested = otp
             user.save()
             print(f"Generated Otp: {otp}")
@@ -206,7 +209,7 @@ class SendOTPView(APIView):
 
         if phone_number.isdigit():
             otp = generate_otp()
-            self.send_otp(country_code, phone_number, otp, user_settings, number)
+            self.send_otp(country_code, phone_number, otp, user, number)
             print(f"Generated Otp: {otp}")
             user.otp_requested = otp
             user_settings.phone_number = phone_number
