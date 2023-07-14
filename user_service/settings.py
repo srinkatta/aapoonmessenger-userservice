@@ -138,7 +138,7 @@ DATABASES = {
 }
 
 
-DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
+# DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
 
 
 # Password validation
