@@ -673,7 +673,7 @@ class UserDeleteCronView(APIView):
     allowed_methods = ("GET",)
 
     def get(self, request):
-        pk = request.GET.get("pk", None)
+        pk = request.GET.get("id", None)
         if pk:
             users_to_delete = User.objects.filter(id=pk)
         else:

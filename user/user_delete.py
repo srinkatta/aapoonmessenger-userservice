@@ -50,20 +50,22 @@ class UserDelete:
         return
 
     def delete(self, user_id):
-        self.user_id = user_id
-        self.user = self.get_user(self.user_id)
+        self.user_id = str(user_id)
+        self.user = self.get_user(user_id)
 
         username = str(self.user.country_code + self.user.phone_number)
 
-        self.delete_user_from_xmpp(username)
-        self.delete_user_related_object()
-        self.fetch_deleted_user_record()
-        self.delete_user_circle_and_related_objects()
+        self.delete_user_chat_circle()
+        self.circle_unsubscribe_user()
+        self.hierarchy_circle_unsubscribe_user()
         self.delete_user_circle_invites()
         self.delete_user_s3_content()
         self.delete_chats(username)
-        self.delete_user_chat_circle()
-        self.delete_user_circle()
+        self.delete_user_circle_subscriber_role()
+        self.delete_user_owned_circles()
+        self.delete_user_from_xmpp(username)
+        self.delete_user_related_object()
+        self.fetch_deleted_user_record()
         self.send_email()
         self.user.delete()
         return
@@ -118,12 +120,25 @@ class UserDelete:
         )
         return self.execute_query(query)
 
-    def delete_user_circles(self):
+    def circle_unsubscribe_user(self):
+        # unsubscribe the user from single created circle
         query = f"""SELECT circle.room_id AS room_id
                 FROM circle_circlesubscriberrole AS csr
                 JOIN circle_circle AS circle ON circle.id = csr.circle_id
-                WHERE csr.user_id = {self.user.id};"""
-        # ToDo: validate the query and change accordingly
+                WHERE csr.user_id = '{self.user_id}' AND circle.owner_id='{self.user_id}'
+                  AND circle.parent_id IS NULL
+                  AND circle.hierarchy = FALSE;"""
+        circle_rooms = self.circle_execute_query(query)
+        return self.delete_circle(circle_rooms)
+
+    def hierarchy_circle_unsubscribe_user(self):
+        # unsubscribe the user except role of chief admin from hierarchy circles
+        query = f"""SELECT circle.room_id AS room_id
+                FROM circle_circle AS circle
+                JOIN circle_circlesubscriberrole AS csr ON circle.id = csr.circle_id
+                JOIN circle_circlerole AS cr ON cr.id = csr.role_id
+                WHERE csr.user_id = '{self.user_id}'
+                  AND cr.role IN (0, 20, 30, 40);"""
         circle_rooms = self.circle_execute_query(query)
         return self.delete_circle(circle_rooms)
 
@@ -136,24 +151,72 @@ class UserDelete:
         try:
             with connections["circle_service_database"].cursor() as cursor:
                 cursor.execute(query)
-                cursor.fetchall()
+                return cursor.fetchall()
         except Exception as err:
             logging.debug("Exception while executing query: %s", err)
 
-    def delete_user_circle_and_related_objects(self):
-        query = f"DELETE FROM circle_circlesubscriberrole WHERE user_id={self.user.id};"
-        self.circle_execute_query(query)
-        query = f"DELETE from circle_circle WHERE owner_id={self.user.id} AND parent IS NULL;"
+    def delete_user_circle_subscriber_role(self):
+        # delete all circle subscriber roles, except for the chief admin role
+        query = f"""DELETE FROM circle_circlesubscriberrole AS csr
+                JOIN circle_circlerole AS cr ON cr.id = csr.role_id
+                WHERE user_id='{self.user_id}'
+                AND cr.role IN (0, 20, 30, 40);"""
         self.circle_execute_query(query)
 
-    def delete_user_circle_invites(self):
-        query = f"DELETE from circle_circleinvite where sender={self.user.id};"
+        # delete all circle subscriber roles for chief admins with self-created single circles
+        query = f"""DELETE FROM circle_circlesubscriberrole AS csr
+                JOIN circle_circle AS circle ON circle.id = csr.circle_id
+                JOIN circle_circlerole AS cr ON cr.id = csr.role_id
+                WHERE csr.user_id = '{self.user_id}' AND circle.owner_id='{self.user_id}'
+                  AND circle.parent_id IS NULL
+                  AND circle.hierarchy = FALSE
+                  AND cr.role IN (10);"""
         self.circle_execute_query(query)
-        query = f"DELETE from circle_circleinvite where recipient={self.user.id};"
+
+    def delete_user_owned_circle_hierarchy(self):
+        # delete the hierarchy circles owned by the chief admins themselves
+        circle_query = f"SELECT id FROM circle_circle WHERE owner_id='{self.user_id}' AND hierarchy=TRUE"
+        circles = self.circle_execute_query(circle_query)
+        for circle in circles:
+            hierarchy_query = f"""
+            WITH RECURSIVE circle_hierarchy (id, name, parent_id, owner_id) AS (
+              SELECT id, name, parent_id, owner_id
+              FROM circle_circle
+              WHERE parent_id = {circle[0]}
+              UNION ALL
+              SELECT p.id, p.name, p.parent_id, p.owner_id
+              FROM circle_circle p
+              INNER JOIN circle_hierarchy
+              ON p.parent_id = circle_hierarchy.id
+              WHERE p.owner_id = circle_hierarchy.owner_id
+            )
+            SELECT * FROM circle_hierarchy
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM circle_hierarchy
+              WHERE owner_id <> (SELECT owner_id FROM circle_circle WHERE id = {circle[0]})
+            );
+            """
+            hierarchy_circles = self.circle_execute_query(hierarchy_query)
+            print(hierarchy_circles)
+
+    def delete_user_owned_circles(self):
+        # delete the self created single circles
+        query = f"DELETE from circle_circle WHERE owner_id='{self.user_id}' AND parent_id IS NULL AND hierarchy=FALSE;"
+        self.circle_execute_query(query)
+
+        # delete the hierarchy circles owned by the chief admins themselves
+        circle_query = f"DELETE FROM circle_circle WHERE owner_id='{self.user_id}' AND hierarchy=TRUE"
+        self.circle_execute_query(circle_query)
+
+    def delete_user_circle_invites(self):
+        query = f"DELETE FROM circle_circleinvite WHERE sender='{self.user_id}';"
+        self.circle_execute_query(query)
+        query = f"DELETE FROM circle_circleinvite WHERE recipient='{self.user_id}';"
         self.circle_execute_query(query)
 
     def delete_user_related_object(self):
-        # User.objects.filter(id=self.user.id).delete()  #Enable to delete user from web server
+        User.objects.filter(id=self.user.id).delete()
         DeviceInfo.objects.filter(user=self.user).delete()
         UserDevice.objects.filter(user=self.user).delete()
         UserLog.objects.filter(user=self.user).delete()
