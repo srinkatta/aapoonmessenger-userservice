@@ -71,6 +71,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://dev.aapoon.com",
     "http://localhost:3000",
     "https://qa.aapoon.com",
+    "https://go.aapoon.com"
 ]
 
 CORS_ALLOWED_ORIGINS = [
