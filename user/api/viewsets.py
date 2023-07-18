@@ -838,7 +838,8 @@ class UserCheckAPIView(APIView):
                 result["contactFcmToken"] = user.fcm_token
                 result["contactaapoonUserID"] = user.id
                 user_settings = user.settings.filter().first()
-                if user_settings.kyc_done:
+                kyc_done = user_settings.kyc_done if user_settings else None
+                if kyc_done:
                     result["contactaapoonUserProfileStatus"] = "completed"
                 else:
                     result["contactaapoonUserProfileStatus"] = "basic"
