@@ -458,7 +458,7 @@ class BaseKYCSerializer(serializers.Serializer):
         verification["pictures_match"] = False
         if logs:
             attempts = re.findall(r"<b>Target Image: https://", logs)
-            if attempts:
+            if not attempts:
                 verification["exception"] = MESSAGES["FIRST_ATTEMPTS_FAILURE"]
             elif len(attempts) == 1:
                 verification["exception"] = MESSAGES["SECOND_ATTEMPTS_FAILURE"]
@@ -970,7 +970,6 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
         target_faceid_response = None
 
         if self.data["target_key"] != "":
-
             verification = self.gif_validation(
                 "target_key", user, log_message, verification
             )

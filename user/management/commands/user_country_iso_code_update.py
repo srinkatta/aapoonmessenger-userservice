@@ -17,5 +17,5 @@ class Command(BaseCommand):
                     )
                     user.country_iso_code = country
                     user.save()
-                except Exception as e:
-                    print("Unexpected error updating user country ISO code: %s", str(e))
+                except Exception as exc:
+                    print("An error occurred while updating user: %s", exc)
