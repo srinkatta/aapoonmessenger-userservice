@@ -173,7 +173,7 @@ class RegisterSerializer(serializers.Serializer):
             user.is_active = True
             user.login_attempts = 0
             user.save()
-        if user.login_attempts >= 5:
+        if user.login_attempts > 3:
             subject = _("Max Attempts Reached on Phone Verification")
             phone_failure(user, subject)
             msg = "You reached maximum attempts to login. Please try again after 10 minutes."
@@ -251,6 +251,9 @@ class UserLoginSerializer(serializers.Serializer):
             )
             user.otp_requested = None
             user.phone_number_verified = True
+            if user.login_attempts in [1, 3]:
+                "if user login attempts are 1 or 3, reset it back to 0"
+                user.login_attempts = 0
             user.save()
 
             user_status = user_kyc_status(user)
