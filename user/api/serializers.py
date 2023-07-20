@@ -169,18 +169,19 @@ class RegisterSerializer(serializers.Serializer):
         user.save()
 
     def max_attempts(self, user):
+
         if user and not user.is_active and user.login_attempts == 1:
             user.is_active = True
             user.login_attempts = 0
             user.save()
-        if user.login_attempts > 3:
+        if user.login_attempts >= 3:
             subject = _("Max Attempts Reached on Phone Verification")
             phone_failure(user, subject)
             msg = "You reached maximum attempts to login. Please try again after 10 minutes."
             raise serializers.ValidationError({"detail": msg})
 
     def login_attempts_reset(self, user):
-        if user and user.login_attempts >= 5 and user.last_login_time:
+        if user and user.login_attempts >= 3 and user.last_login_time:
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
             datetime_format = "%Y-%m-%d %H:%M:%S.%f"
@@ -251,8 +252,8 @@ class UserLoginSerializer(serializers.Serializer):
             )
             user.otp_requested = None
             user.phone_number_verified = True
-            if user.login_attempts in [1, 3]:
-                "if user login attempts are 1 or 3, reset it back to 0"
+            if user.login_attempts <= 3:
+                "if user login attempts between 1 - 3, reset it back to 0"
                 user.login_attempts = 0
             user.save()
 
