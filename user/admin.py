@@ -172,6 +172,7 @@ def source_images(kyc_logs):
     if kyc_logs:
         urls = findUrl(kyc_logs)
         parsed_urls = []
+        html_string = ""
         try:
             if urls and len(urls):
                 for url in urls:
@@ -181,15 +182,18 @@ def source_images(kyc_logs):
                     url = url.replace("<b>", " ")
                     url = url.replace("</b>", " ")
                     parsed_urls.append(url)
-                image_html = []
+                html_list = []
                 for i in list(divide_chunks(parsed_urls, 1)):
-                    image_html.append(
-                        '<div style="display:flex"><div style="flex: 33.33%; padding: 5px">'
-                        '<img width=500 height=500 src="{url}" /></div></div>'.format(
-                            url=i[0],
+                    html_list.append(
+                        '<div style="flex: 33.33%; padding: 5px"><img width=500 height=500 src="{url}" /></div>'.format(
+                            url=i[0]
                         )
                     )
-                return mark_safe("".join(image_html))
+                html_string = '<div style="display:flex">{}</div>'.format(
+                    "".join(html_list)
+                )
+
+                return mark_safe(html_string)
         except Exception as e:
             print("Exception: %s", e)
     return "<div>No images uploaded.</div>"
