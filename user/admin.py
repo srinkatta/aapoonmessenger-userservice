@@ -313,6 +313,9 @@ class UserAdmin(ImportExportModelAdmin, admin.ModelAdmin):
                 logging.debug("Error unregistering user at websocket server %s" % e)
             users = User.objects.filter(id=user.id).first()
             delete_user = DeletedUser(user=users, is_deleted=True)
+            delete_user.name = users.phone_number
+            delete_user.country_code = users.country_code
+            delete_user.phone_number = users.phone_number
             delete_user.save()
             user.delete()
             return delete_user

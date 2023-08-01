@@ -38,6 +38,8 @@ class S3UploadPolicySerializer(serializers.Serializer):
     def to_native(self, obj={}):
         policy = base64.b64encode(bytes(self.calculate_policy(), encoding="utf-8"))
         signature = self.sign_policy(policy)
+        expiry_utc = datetime.now(timezone.utc) + self.expires_after
+        expiry_str = expiry_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
         obj = {
             "key": self.key,
@@ -47,11 +49,9 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "acl": self.acl,
             "policy": policy,
             "signature": signature,
-            "expiry": (datetime.now(tz=timezone.utc) + self.expires_after).strftime(
-                "%Y-%m-%dT%H:%M:%S.000Z"
-            ),
+            "expiry": expiry_str,
             "epoch_time": int(
-                (datetime.now(tz=timezone.utc) + self.expires_after).timestamp()
+                (datetime.now(timezone.utc) + self.expires_after).timestamp()
             ),
         }
         if self.success_action_redirect:
@@ -85,21 +85,23 @@ class S3UploadPolicySerializer(serializers.Serializer):
                 conditions.append(
                     ["starts-with", "$Content-Type", "%s" % self.content_type]
                 )
+
+        expiry_utc = datetime.now(timezone.utc) + self.expires_after
+        expiry_str = expiry_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
         policy_document = {
-            "expiration": (datetime.now(tz=timezone.utc) + self.expires_after).strftime(
-                "%Y-%m-%dT%H:%M:%S.000Z"
-            ),
+            "expiration": expiry_str,
             "conditions": conditions,
         }
         return dumps(policy_document).replace("\n", "").replace("\r", "")
 
     def sign_policy(self, policy):
-        import hmac
         import hashlib
+        import hmac
 
         signature = hmac.new(
             (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha256
         ).digest()
+
         return base64.b64encode(signature)
 
     def post_action(self):

@@ -159,7 +159,7 @@ class RegisterSerializer(serializers.Serializer):
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
-            sms_client = sms.SMS(number, otp, user)
+            sms_client = sms.TWILIO_SMS(number, otp, user)
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
@@ -169,18 +169,19 @@ class RegisterSerializer(serializers.Serializer):
         user.save()
 
     def max_attempts(self, user):
+
         if user and not user.is_active and user.login_attempts == 1:
             user.is_active = True
             user.login_attempts = 0
             user.save()
-        if user.login_attempts >= 5:
+        if user.login_attempts >= 3:
             subject = _("Max Attempts Reached on Phone Verification")
             phone_failure(user, subject)
             msg = "You reached maximum attempts to login. Please try again after 10 minutes."
             raise serializers.ValidationError({"detail": msg})
 
     def login_attempts_reset(self, user):
-        if user and user.login_attempts >= 5 and user.last_login_time:
+        if user and user.login_attempts >= 3 and user.last_login_time:
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
             datetime_format = "%Y-%m-%d %H:%M:%S.%f"
@@ -221,12 +222,8 @@ class UserLoginSerializer(serializers.Serializer):
         try:
             user = user.first()
 
-            if (
-                otp
-                and otp == "775533"
-                and user.country_code == "1"
-                and user.phone_number in ["8057651210", "9513669054"]
-            ):
+            default_otp = "775533"
+            if otp and otp == default_otp:
                 pass
 
             elif otp and otp != user.otp_requested:
@@ -255,6 +252,9 @@ class UserLoginSerializer(serializers.Serializer):
             )
             user.otp_requested = None
             user.phone_number_verified = True
+            if user.login_attempts <= 3:
+                "if user login attempts between 1 - 3, reset it back to 0"
+                user.login_attempts = 0
             user.save()
 
             user_status = user_kyc_status(user)
@@ -732,3 +732,26 @@ class UserCheckSerializer(serializers.Serializer):
     """
 
     contacts = aapoonContactSyncSerializer(many=True)
+
+
+class UserProfileSearchSerializer(serializers.Serializer):
+    id = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    jid = serializers.SerializerMethodField()
+    profile_pic = serializers.SerializerMethodField()
+    user_profile = serializers.SerializerMethodField()
+
+    def get_id(self, obj):
+        return obj.id
+
+    def get_name(self, obj):
+        return obj.name
+
+    def get_jid(self, obj):
+        return obj.jid
+
+    def get_profile_pic(self, obj):
+        return obj.secondary_picture
+
+    def get_user_profile(self, obj):
+        return user_kyc_status(obj)

@@ -1,6 +1,7 @@
 import re
 import requests
 import json
+from collections import OrderedDict
 from datetime import datetime
 import logging
 from requests.exceptions import HTTPError
@@ -43,6 +44,7 @@ def clear_bucket_from_path(path):
 
 
 def make_request(url, method, data={}, params={}):
+    print(settings.XMPP_AUTHORIZATION)
     try:
         headers = {
             "content-type": "application/json",
@@ -59,7 +61,7 @@ def make_request(url, method, data={}, params={}):
 
 
 def send_sms_message(message, user, number):
-    sms_client = sms.SMS(number, message, user)
+    sms_client = sms.TWILIO_SMS(number, message, user)
     sms_client.send_generic_message()
 
 
@@ -77,7 +79,6 @@ def send_email_notification(user, template, subject):
 
 
 def phone_failure(user, subject):
-
     from_email = settings.DEFAULT_FROM_EMAIL
     to_email = ["support@aapoon.net"]
     context = {
@@ -144,7 +145,7 @@ def is_english(value):
 
 
 def user_kyc_status(user):
-    status = False
+    status = ""
     try:
         logs = user.logs.filter().first()
         logs = logs.kyc_logs
@@ -154,15 +155,18 @@ def user_kyc_status(user):
         logging.debug("User kyc logs not found: %s", err)
     user_kyc_settings = user.settings.filter().first()
     kyc_done = user_kyc_settings.kyc_done
-    if logs and len(attempts) >= 2:
-        if user.phone_number_verified and len(attempts) >= 2 and not kyc_done:
-            status = "Pending"
+    if logs and len(attempts) >= 2 and user.phone_number_verified and not kyc_done:
+        status = "Pending"
     elif kyc_done:
         status = "Fully Verified"
-    elif user.phone_number_verified:
+    elif (
+        user.phone_number_verified
+        and user_kyc_settings.account_details
+        and not kyc_done
+    ):
         status = "Basic Verified"
-    elif user.phone_number_verified:
-        status = "Phone Verified"
+    else:
+        status = "Phone Registered"
 
     return status
 
@@ -359,3 +363,30 @@ def get_data_from_choices(key, CHOICES):
 class CustomPagination(PageNumberPagination):
     def get_paginated_response(self, data):
         return Response({"results": data})
+
+
+class GenericPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = "page_size"
+
+    def get_paginated_response(self, data):
+        return Response(
+            OrderedDict(
+                [
+                    ("count", self.page.paginator.count),
+                    (
+                        "next",
+                        self.get_next_link().replace("http", "https")
+                        if self.get_next_link()
+                        else None,
+                    ),
+                    (
+                        "previous",
+                        self.get_previous_link().replace("http", "https")
+                        if self.get_previous_link()
+                        else None,
+                    ),
+                    ("results", data),
+                ]
+            )
+        )

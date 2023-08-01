@@ -733,10 +733,8 @@ class PhotoIDSerializer(BaseKYCSerializer):
                 user, log_message, source_faceid_response, verification
             )
             return verification
-
         if not source_face_id and recognitionResult:
             verification = self.faceId_validation(user, log_message, verification)
-
         if source_face_id and not recognitionResult:
             exception = "Please upload the side of the ID with photo"
             verification = self.ocr_recognition_validation(
@@ -749,7 +747,6 @@ class PhotoIDSerializer(BaseKYCSerializer):
                 user, log_message, verification, exception
             )
             return verification
-
         return verification
 
     def check_aadhar_verification(
