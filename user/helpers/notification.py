@@ -1,8 +1,152 @@
-import re
-from pyfcm import FCMNotification
 import logging
+import re
+
+from pyfcm import FCMNotification
 
 from user_service import settings
+
+
+def extract_media(xml):
+    media = re.findall(
+        r'<MEDIA (\S+)=[""]?((?:.(?![""]?\s+(?:\S+)=|\s*\/?[>""]))+.)[""]?>', xml
+    )
+    return media
+
+
+def extract_command_action(xml):
+    command_action = re.findall(
+        r'<COMMANDACTION (\S+)=[""]?((?:.(?![""]?\s+(?:\S+)=|\s*\/?[>""]))+.)[""]?>',
+        xml,
+    )
+    return command_action
+
+
+def process_media(xml):
+    media = extract_media(xml)
+    if media and media[0][0] == "xmlns" and media[0][1] == "'urn:xmpp:media'":
+        xml = xml.replace("<body>!~~!</body>", "<body>Media</body>")
+        thumbnail = xml.find("<Thumbnail>")
+        if thumbnail > 0:
+            start_index = thumbnail + len("<Thumbnail>")
+            end_index = xml.find("</Thumbnail>")
+            thumbnail_content = xml[start_index:end_index]
+            xml = xml.replace(thumbnail_content, "")
+    return xml
+
+
+def process_command_action(xml, message_value):
+    command_action = extract_command_action(xml)
+    if command_action and message_value == "Contact":
+        if (
+            command_action[0][0] == "xmlns"
+            and command_action[0][1] == "'urn:xmpp:commandaction'"
+        ):
+            xml = xml.replace("<body>!~~!</body>", "<body>Contact</body>")
+            command_message = xml.find("<CommandMessage>")
+            if command_message > 0:
+                start_index = command_message + len("<CommandMessage>")
+                end_index = xml.find("</CommandMessage>")
+                actual_content = xml[start_index:end_index]
+                updated_content = actual_content.replace("&quot;", '"')
+                xml = xml.replace(actual_content, updated_content)
+    return xml
+
+
+def notify_android_device(token, name, message_value):
+    push_service = FCMNotification(api_key=settings.FCM_API_KEY)
+    android_data_message = {
+        "Nick": name,
+        "body": message_value,
+        "priority": "high",
+    }
+    android_result = push_service.notify_single_device(
+        registration_id=token,
+        data_message=android_data_message,
+        content_available=True,
+    )
+    logging.info(f"Android result: , {android_result}")
+
+
+def notify_ios_device(token, name, message_value, data_message):
+    push_service = FCMNotification(api_key=settings.FCM_API_KEY)
+    result = push_service.notify_single_device(
+        registration_id=token,
+        message_title=name,
+        message_body=message_value,
+        data_message=data_message,
+        content_available=True,
+        extra_kwargs={"mutable_content": True},
+    )
+    logging.info(f"IOS result: , {result}")
+
+
+def prepare_data_message(to_user, from_user, message, xml):
+    name = from_user.name
+
+    message_value = extract_message_value(xml)
+    xml = process_media(xml)
+    xml = process_command_action(xml, message_value)
+
+    data_message = {
+        "notification": {
+            "click_action": "ReplyOrRead",
+            "xml": xml,
+            "title": name,
+            "body": message_value,
+            "sound": "default",
+        },
+        "to": to_user.fcm_token,
+        "Nick": name,
+        "body": message_value,
+        "priority": "high",
+        "content_available": True,
+    }
+
+    return data_message
+
+
+def extract_message_value(xml):
+    message_value_dict = {
+        "-6": "Reply",
+        "-1": "Forward",
+        "-3": "Like",
+        "-4": "Dislike",
+        "2": "Image",
+        "3": "Video",
+        "4": "Audio",
+        "5": "Document",
+        "11": "Contact",
+    }
+    bubble_start = xml.find("<Bubble>") + len("<Bubble>")
+    bubble_end = xml.find("</Bubble>")
+    message_value = xml[bubble_start:bubble_end]
+    return message_value_dict.get(message_value, None)
+
+
+def notify_dm_v2(
+    to_user=None,
+    from_user=None,
+    message=None,
+    xml=None,
+):
+    """Refactored version of notify_dm function"""
+    if xml:
+        body = re.findall(r"<body>(.*?)</body>", xml)
+        if body:
+            data_message = prepare_data_message(to_user, from_user, message, xml)
+
+            if to_user.fcm_token and not to_user.apns_token:
+                token = to_user.fcm_token
+                print("Result for DM")
+                print("Android")
+                notify_android_device(token, from_user.name, data_message["body"])
+            else:
+                token = to_user.fcm_token
+                print("iPhone")
+                notify_ios_device(
+                    token, from_user.name, data_message["body"], data_message
+                )
+    return True
 
 
 def notify_dm(
@@ -11,6 +155,7 @@ def notify_dm(
     message=None,
     xml=None,
 ):
+    """Remove this once `notify_dm_v2` is tested completed and ready to be used."""
     if xml:
         body = re.findall(r"<body>(.*?)</body>", xml)
         if body:

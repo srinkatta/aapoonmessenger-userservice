@@ -79,13 +79,13 @@ class NotifyRedirectDmViewSet(APIView):
                     ).first()
                     if time.time() > mutify.mute_time:
                         print("Mute expired")
-                        notification.notify_dm(to_user, from_user, message, xml)
+                        notification.notify_dm_v2(to_user, from_user, message, xml)
                     else:
                         print("Mute notification")
                         pass
                 else:
                     print("No Mute")
-                    notification.notify_dm(to_user, from_user, message, xml)
+                    notification.notify_dm_v2(to_user, from_user, message, xml)
         return Response({"message": "Notification sent."}, status=status.HTTP_200_OK)
 
 
