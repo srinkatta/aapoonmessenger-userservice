@@ -551,7 +551,6 @@ class DeviceInfoView(APIView):
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             device_info = DeviceInfo.objects.filter(
                 device_id=device_id, user_id=user_id
@@ -562,7 +561,9 @@ class DeviceInfoView(APIView):
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        queryset = AppInfo.objects.all()
+        serializer = AppInfoSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AppPolicyView(APIView):
