@@ -127,7 +127,7 @@ class RegisterSerializer(serializers.Serializer):
             )
             return user
 
-        user = User.objects.create(**self.get_cleaned_data())
+        user = self.create_user_auto_increment_validate()
 
         if request.data.get("password"):
             user.set_password(request.data["password"])
@@ -139,6 +139,17 @@ class RegisterSerializer(serializers.Serializer):
         if invited_by:
             self.__invite_flow(user, invited_by)
         return user
+
+    def create_user_auto_increment_validate(self):
+        cleaned_data = self.get_cleaned_data()
+
+        while True:
+            try:
+                user, created = User.objects.get_or_create(**cleaned_data)
+                if created:
+                    return user
+            except IntegrityError:
+                pass
 
     def __invite_flow(self, user, invited_by):
         invited_by_user = User.objects.get(id=invited_by)
