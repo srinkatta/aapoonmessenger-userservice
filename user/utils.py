@@ -24,6 +24,15 @@ from user_service import settings
 
 
 def s3_url_extract(url):
+    """
+    Extract a base URL based on the input URL.
+
+    Args:
+        url (str): The input URL.
+
+    Returns:
+        str: A base URL determined by the input URL.
+    """
     if "socialchain-dev" in url or "mediadev" in url:
         return "https://mediadev.aapoon.com"
     elif "socialchain-prod" in url or "media.aapoon.com" in url:
@@ -33,6 +42,15 @@ def s3_url_extract(url):
 
 
 def clear_bucket_from_path(path):
+    """
+    Remove specific prefixes from a given path.
+
+    Args:
+        path (str): The input path.
+
+    Returns:
+        str: The path with specified prefixes removed.
+    """
     if "socialchain-dev" in path:
         path = path.replace("/socialchain-dev", "")
         return path
@@ -44,6 +62,22 @@ def clear_bucket_from_path(path):
 
 
 def make_request(url, method, data={}, params={}):
+    """
+    Make an HTTP request to a specified URL.
+
+    Args:
+        url (str): The target URL for the HTTP request.
+        method (str): The HTTP method to use (e.g., 'GET', 'POST', etc.).
+        data (dict, optional): The request payload data in JSON format. Default is an empty dictionary.
+        params (dict, optional): Query parameters to include in the request. Default is an empty dictionary.
+
+    Returns:
+        requests.Response: The HTTP response object.
+
+    Raises:
+        HTTPError: If the HTTP request returns a non-200 status code.
+        Exception: For other unexpected errors during the request.
+    """
     print(settings.XMPP_AUTHORIZATION)
     try:
         headers = {
@@ -61,11 +95,33 @@ def make_request(url, method, data={}, params={}):
 
 
 def send_sms_message(message, user, number):
+    """
+    Send an SMS message using the Twilio SMS service.
+
+    Args:
+        message (str): The text of the SMS message to send.
+        user: The user associated with the SMS (e.g., sender).
+        number (str): The recipient's phone number in E.164 format.
+
+    Returns:
+        None
+    """
     sms_client = sms.TWILIO_SMS(number, message, user)
     sms_client.send_generic_message()
 
 
 def send_email_notification(user, template, subject):
+    """
+    Send an email notification to a user using an HTML template.
+
+    Args:
+        user: The user to whom the email is sent.
+        template (str): The path to the HTML template for the email content.
+        subject (str): The subject line of the email.
+
+    Returns:
+        None
+    """
     subject = _(f"{subject}")
     from_email = "support@aapoon.net"
     to_email = f"{user.email}"
@@ -79,6 +135,16 @@ def send_email_notification(user, template, subject):
 
 
 def phone_failure(user, subject):
+    """
+    Send an email notification about phone verification failure.
+
+    Args:
+        user: The user associated with the phone verification.
+        subject (str): The subject line of the email.
+
+    Returns:
+        None
+    """
     from_email = settings.DEFAULT_FROM_EMAIL
     to_email = ["support@aapoon.net"]
     context = {
@@ -92,6 +158,16 @@ def phone_failure(user, subject):
 
 
 def feedback_mail(request, data):
+    """
+    Send an email with user feedback.
+
+    Args:
+        request: The HTTP request object.
+        data (dict): Feedback data including message, topic, URL, email, name, phone.
+
+    Returns:
+        None
+    """
     user = request.user
     subject = _("Feedback")
     from_email = settings.DEFAULT_FROM_EMAIL
@@ -124,6 +200,15 @@ def feedback_mail(request, data):
 
 
 def calculate_age(dob):
+    """
+    Calculate age based on the provided date of birth.
+
+    Args:
+        dob (str): Date of birth in the format 'YYYY-MM-DD'.
+
+    Returns:
+        int: Calculated age.
+    """
     dob = datetime.strptime(dob, "%Y-%m-%d")
     today = datetime.today()
     age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
@@ -131,11 +216,29 @@ def calculate_age(dob):
 
 
 def check_special(value):
+    """
+    Check if a string contains a special character from a predefined set.
+
+    Args:
+        value (str): The string to be checked.
+
+    Returns:
+        bool: True if a special character is found, False otherwise.
+    """
     result = re.match("^[`@?^%*={}|\\?/]", value)
     return bool(result)
 
 
 def is_english(value):
+    """
+    Check if a string consists only of English characters (ASCII).
+
+    Args:
+        value (str): The string to be checked.
+
+    Returns:
+        bool: True if the string consists only of English characters, False otherwise.
+    """
     try:
         value.encode(encoding="utf-8").decode("ascii")
     except UnicodeDecodeError:
@@ -145,6 +248,15 @@ def is_english(value):
 
 
 def user_kyc_status(user):
+    """
+    Determine the KYC status of a user based on various criteria.
+
+    Args:
+        user: The user for whom the KYC status is determined.
+
+    Returns:
+        str: The KYC status of the user ('Pending', 'Fully Verified', 'Basic Verified', 'Phone Registered').
+    """
     status = ""
     try:
         logs = user.logs.filter().first()
@@ -172,6 +284,15 @@ def user_kyc_status(user):
 
 
 def get_month(dob):
+    """
+    Retrieve the abbreviated month name from a date-related string.
+
+    Args:
+        dob (str): The input string, possibly containing a date.
+
+    Returns:
+        str or None: The abbreviated month name ('Jan', 'Feb', ..., 'Dec') if found, or None if not found.
+    """
     if "Jan" in dob:
         return "Jan"
     elif "Feb" in dob:
@@ -201,6 +322,15 @@ def get_month(dob):
 
 
 def month_checker(month):
+    """
+    Convert an abbreviated month name into its corresponding numeric representation.
+
+    Args:
+        month (str): The abbreviated month name (e.g., 'Jan', 'Feb', ..., 'Dec').
+
+    Returns:
+        int: The numeric representation of the month (1 for Jan, 2 for Feb, ..., 12 for Dec).
+    """
     import calendar
 
     months = dict((v, k) for k, v in enumerate(calendar.month_abbr))
@@ -208,7 +338,15 @@ def month_checker(month):
 
 
 def get_dob(dateofbirth):
-    # check date of birth
+    """
+    Process a date of birth (DOB) string, attempting to standardize its format.
+
+    Args:
+        dateofbirth (str): The date of birth string in various formats.
+
+    Returns:
+        str: A standardized date of birth string.
+    """
 
     months = [
         "Jan",
@@ -238,6 +376,15 @@ def get_dob(dateofbirth):
 
 
 def dob_format_check_1(dateofbirth):
+    """
+    Attempt to parse and standardize a date of birth string using various date formats.
+
+    Args:
+        dateofbirth (str): The date of birth string in various formats.
+
+    Returns:
+        str: A standardized date of birth string in the format 'YYYY-MM-DD'.
+    """
     try:
         date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime("%Y-%m-%d")
     except:
@@ -283,6 +430,15 @@ def dob_format_check_1(dateofbirth):
 
 
 def dob_format_check_2(dateofbirth):
+    """
+    Attempt to parse and standardize a date of birth string using various date formats.
+
+    Args:
+        dateofbirth (str): The date of birth string in various formats.
+
+    Returns:
+        str: A standardized date of birth string in the format 'YYYY-MM-DD'.
+    """
     try:
         date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime("%Y-%m-%d")
     except:
@@ -333,6 +489,16 @@ def dob_format_check_2(dateofbirth):
 
 
 def get_key_from_choices(data, CHOICES):
+    """
+    Get the corresponding key from a list of choices based on a given data value.
+
+    Args:
+        data: The data value to match.
+        CHOICES: A list of tuples representing choices where the first element is the key and the second is the value.
+
+    Returns:
+        str: The corresponding key based on the matched data value, or an empty string if no match is found.
+    """
     match = ""
     data = data[:-1]
 
@@ -343,6 +509,16 @@ def get_key_from_choices(data, CHOICES):
 
 
 def get_data_from_choices(key, CHOICES):
+    """
+    Retrieve data from a list of choices based on a given key.
+
+    Args:
+        key: The key to match.
+        CHOICES: A list of tuples representing choices where the first element is the key and the second is the value.
+
+    Returns:
+        str: The extracted data based on the matched key, or an empty string if no match is found.
+    """
     country = ""
     match = ""
 
@@ -361,15 +537,51 @@ def get_data_from_choices(key, CHOICES):
 
 
 class CustomPagination(PageNumberPagination):
+    """
+    Custom pagination class that modifies the structure of the paginated response.
+
+    Instead of the default structure, this class returns the paginated data under a "results" key.
+
+    Example usage:
+    pagination_class = CustomPagination
+    """
+
     def get_paginated_response(self, data):
+        """
+        Customize the structure of the paginated response.
+
+        Args:
+            data: The paginated data.
+
+        Returns:
+            Response: A Response object containing the paginated data under a "results" key.
+        """
         return Response({"results": data})
 
 
 class GenericPagination(PageNumberPagination):
+    """
+    Custom pagination class that modifies the structure and content of the paginated response.
+
+    This class includes additional metadata in the paginated response, such as count, next, previous, and results.
+
+    Example usage:
+    pagination_class = GenericPagination
+    """
+
     page_size = 50
     page_size_query_param = "page_size"
 
     def get_paginated_response(self, data):
+        """
+        Customize the structure and content of the paginated response.
+
+        Args:
+            data: The paginated data.
+
+        Returns:
+            Response: A Response object containing metadata and the paginated data.
+        """
         return Response(
             OrderedDict(
                 [
