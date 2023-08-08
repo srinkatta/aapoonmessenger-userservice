@@ -52,8 +52,9 @@ autodoc_mock_imports = [
     "rest_framework_api_key",
     "rest_framework_simplejwt",
     "multiselectfield",
-    "user.models",
-    "user.user_delete",
+    "django_filters",
+    "import_export",
+    "common.models",
 ]
 
 # Add this line to specify the master document

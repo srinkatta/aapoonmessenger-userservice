@@ -1,4 +1,4 @@
-Otp
+OTP
 ====
 
 .. automodule:: user.helpers.otp
