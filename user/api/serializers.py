@@ -147,7 +147,9 @@ class RegisterSerializer(serializers.Serializer):
             )
             return user
 
+
         user = self.create_user_auto_increment_id()
+
         if request.data.get("password"):
             user.set_password(request.data["password"])
         self.post_flow_actions(
@@ -158,6 +160,7 @@ class RegisterSerializer(serializers.Serializer):
         if invited_by:
             self.__invite_flow(user, invited_by)
         return user
+
 
     def create_user_auto_increment_id(self):
         cleaned_data = self.get_cleaned_data()

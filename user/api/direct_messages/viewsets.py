@@ -113,13 +113,13 @@ class NotifyRedirectDmViewSet(APIView):
                     ).first()
                     if time.time() > mutify.mute_time:
                         print("Mute expired")
-                        notification.notify_dm(to_user, from_user, message, xml)
+                        notification.notify_dm_v2(to_user, from_user, message, xml)
                     else:
                         print("Mute notification")
                         pass
                 else:
                     print("No Mute")
-                    notification.notify_dm(to_user, from_user, message, xml)
+                    notification.notify_dm_v2(to_user, from_user, message, xml)
         return Response({"message": "Notification sent."}, status=status.HTTP_200_OK)
 
 
@@ -242,8 +242,8 @@ class ArchiveChat(object):
         Initialize an ArchiveChat instance with provided attributes.
         """
         for field in ("id", "bare_peer", "timestamp", "xml", "username", "user_pic"):
-            if field in kwargs:
-                setattr(self, field, kwargs.get(field))
+            setattr(self, field, kwargs.get(field))
+
 
 
 class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):

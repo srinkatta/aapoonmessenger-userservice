@@ -99,7 +99,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
         import hmac
 
         signature = hmac.new(
-            bytes(self.aws_secret_key, encoding="utf-8"), policy, hashlib.sha1
+            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha1
         ).digest()
 
         return base64.b64encode(signature)

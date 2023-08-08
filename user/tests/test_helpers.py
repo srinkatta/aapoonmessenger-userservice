@@ -4,7 +4,7 @@ from parameterized import parameterized
 from django.test import SimpleTestCase, TestCase
 
 from user.helpers.aadhar import AadharValidate
-from user.helpers.notification import notify_dm
+from user.helpers import notification
 from user.models import User
 from user.helpers.sms import SMS, FAST_SMS
 from user_service import settings
@@ -43,7 +43,7 @@ class NotifyDMTestCase(TestCase):
         """
         message = "Message content"
 
-        result = notify_dm(
+        result = notification.notify_dm_v2(
             to_user=to_user, from_user=from_user, message=message, xml=xml
         )
 
