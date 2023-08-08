@@ -19,6 +19,32 @@ from multiselectfield import MultiSelectField
 
 
 class User(AbstractUser):
+    """
+    Custom User model for storing user information.
+
+    :param str name: The name of the user. (nullable)
+    :param str country_iso_code: The ISO code of the user's country. (nullable)
+    :param str country_code: The country code of the user's phone number. Choices are based on COUNTRY_CODE_CHOICES. (nullable)
+    :param str phone_number: The phone number of the user. (nullable)
+    :param bool phone_number_verified: Indicates if the user's phone number has been verified. Default: False.
+    :param str user_type: The type of the user. (nullable)
+    :param datetime second_last_login: The second last login time of the user. (nullable)
+    :param str jid: The JID (Jabber ID) of the user. (nullable)
+    :param str fcm_token: The Firebase Cloud Messaging (FCM) token of the user. (nullable)
+    :param str apns_token: The Apple Push Notification service (APNs) token of the user. (nullable)
+    :param str otp_requested: The OTP (One-Time Password) requested by the user. (nullable)
+    :param int login_attempts: The number of login attempts made by the user. Default: 0.
+    :param datetime last_login_time: The last login time of the user. (nullable)
+    :param str secondary_picture: The URL or text data of a secondary picture related to the user. (nullable)
+    :param str logo: The URL or text data of the user's logo. (nullable)
+    :param bool is_business: Indicates if the user is a business user. Default: False.
+    :param bool id_xmpp_register: Indicates if the user is registered in XMPP (Extensible Messaging and Presence Protocol). Default: False.
+    :param str unique_id: The unique ID of the user, generated as a UUID hex. Default: UUID4 hex value.
+    :param str hash_tag: The hash tag associated with the user. (nullable)
+
+    Note: 'nullable' indicates that the field can be empty or null.
+    """
+
     name = models.CharField(max_length=100, null=True, blank=True)
     country_iso_code = models.CharField(max_length=255, null=True, blank=True)
     country_code = models.CharField(
@@ -62,6 +88,14 @@ class User(AbstractUser):
 
 
 class UserLog(BaseTimeStampedModel):
+    """
+    UserLog model for storing user associated logs.
+
+    :param str s3_logs: Logs related to S3 (Simple Storage Service) storage. (nullable)
+    :param str kyc_logs: Logs related to KYC (Know Your Customer) activities. (nullable)
+    :param User user: The user associated with these logs.
+    """
+
     s3_logs = models.TextField(null=True, blank=True)
     kyc_logs = models.TextField(null=True, blank=True)
     user = models.ForeignKey(
@@ -79,6 +113,13 @@ class UserLog(BaseTimeStampedModel):
 
 
 class UserInvite(BaseTimeStampedModel):
+    """
+    UserInvite model represents invitations sent by users to other non aapoon user.
+
+    :param User invited_user: The user who has been invited. This field establishes a ForeignKey relationship with the 'User' model, allowing each invite to be linked to a specific user. (nullable)
+    :param User invited_by: The user who sent the invitation. This field also establishes a ForeignKey relationship with the 'User' model, creating a link between the invite and the inviting user.
+    """
+
     invited_user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -102,6 +143,17 @@ class UserInvite(BaseTimeStampedModel):
 
 
 class UserDevice(BaseTimeStampedModel):
+    """
+    UserDevice model represents devices associated with a user.
+
+    :param str device_model: The model or name of the device. This field stores information about the type of device used by the user. (nullable)
+    :param str device_os_version: The operating system version running on the device. This field stores details about the OS version of the user's device. (nullable)
+    :param User user: The user associated with this device.
+    """
+
+    def __int__(self):
+        pass
+
     device_model = models.CharField(max_length=100, null=True, blank=True)
     device_os_version = models.CharField(max_length=100, null=True, blank=True)
     user = models.ForeignKey(
@@ -119,6 +171,33 @@ class UserDevice(BaseTimeStampedModel):
 
 
 class UserVerificationSetting(BaseTimeStampedModel):
+    """
+    UserVerificationSetting model represents user verification settings and information.
+
+    :param int kyc_status: The status of KYC (Know Your Customer) verification, chosen from a set of predefined choices. Default: 9 (Not Verified).
+    :param str photo_id: The identifier or reference for the user's photo ID used in the verification process.
+    :param bool kyc_done: Indicates if KYC verification is completed for the user. Default: False.
+    :param bool id_laminated: Indicates if the user's ID is laminated. Default: False.
+    :param bool id_matched: Indicates if the user's ID is matched successfully. Default: False.
+    :param int scan_attempts: The number of attempts made to scan the user's documents. Default: 0.
+    :param int id_match_attempts: The number of attempts made to match the user's ID. Default: 0.
+    :param bool manual_verify: Indicates if the user's verification is manually verified. Default: False.
+    :param bool selfie: Indicates if the user's selfie is included in the verification process. Default: False.
+    :param bool scanned: Indicates if the user's documents are scanned. Default: False.
+    :param str attachment: Additional attachments related to user verification. (nullable)
+
+    :param bool account_details: Indicates if the user has provided account details. Default: False.
+    :param bool profile_details: Indicates if the user has provided profile details. Default: False.
+
+    :param str country_code: The updated country code associated with the user's phone number for phone verification. Choices are based on COUNTRY_CODE_CHOICES. (nullable)
+    :param str phone_number: The updated phone number associated with the user for phone verification. (nullable)
+    :param bool phone_number_verified: Indicates if the user's updated phone number has been verified. Default: False.
+    :param int verify_attempts: The number of attempts made to verify the user's phone number. Default: 0.
+    :param int wrong_attempts: The number of wrong attempts made during phone verification. Default: 0.
+
+    :param User user: The user associated with these verification settings and information.
+    """
+
     KYC_STATUS_CHOICES = (
         (1, "Auto Verified"),
         (2, "Holding Photo Id"),
@@ -183,6 +262,36 @@ class UserVerificationSetting(BaseTimeStampedModel):
 
 
 class UserProfile(BaseTimeStampedModel):
+    """
+    UserProfile model represents the profile information of a user.
+
+    :param list education: The educational background of the user, chosen from a set of predefined choices. (nullable)
+    :param str income: The income level of the user, chosen from a set of predefined choices. (nullable)
+    :param str relationship_status: The relationship status of the user, chosen from a set of predefined choices. (nullable)
+    :param list interests: Interests of the user, chosen from a set of predefined choices. (nullable)
+    :param list sports: Sports interests of the user, chosen from a set of predefined choices. (nullable)
+    :param str about_me: A brief description or bio of the user. (nullable)
+    :param str skillset: The user's skillset or areas of expertise. (nullable)
+    :param str experience: The user's work experience details. (nullable)
+    :param str profession: The profession or occupation of the user. (nullable)
+    :param str iam_looking_for: The user's preferences or what they are looking for. (nullable)
+    :param str political_interests: The political interests of the user. (nullable)
+    :param date date_of_birth: The date of birth of the user. (nullable)
+    :param str address: The primary address of the user. (nullable)
+    :param str address1: An additional address field for the user. (nullable)
+    :param str city: The city of the user's address. (nullable)
+    :param str state: The state or region of the user's address. (nullable)
+    :param str postcode: The postal code of the user's address. (nullable)
+    :param str company: The company or organization the user is associated with. (nullable)
+    :param str role: The role or position of the user in their company/organization. (nullable)
+    :param str gender: The gender of the user, chosen from a set of predefined choices. (nullable)
+    :param str chat_theme: The URL of the chat theme chosen by the user. (nullable)
+    :param int team_size: The size of the user's team. Default: 0. (nullable)
+    :param str sector: The sector type of the user's work, chosen from a set of predefined choices. (nullable)
+
+    :param User user: The user associated with this profile.
+    """
+
     education = MultiSelectField(
         choices=EDUCATION_CHOICES,
         null=True,
@@ -247,6 +356,21 @@ class UserProfile(BaseTimeStampedModel):
 
 
 class DeviceInfo(BaseTimeStampedModel):
+    """
+    DeviceInfo model stores information about user devices.
+
+    :param str device_id: The unique identifier of the device. (nullable)
+    :param str os: The operating system running on the device. (nullable)
+    :param str os_version: The version of the operating system. (nullable)
+    :param str device_name: The name or model of the device. (nullable)
+    :param str app_version: The version of the application installed on the device. (nullable)
+    :param str app_version_code: The code representing the version of the application. (nullable)
+    :param str time_zone: The time zone of the device. (nullable)
+    :param datetime created_at: The timestamp indicating when the device information was created. Auto-generated.
+
+    :param User user: The user associated with this device information.
+    """
+
     device_id = models.CharField(max_length=300, null=True, blank=True)
     os = models.CharField(max_length=300, null=True, blank=True)
     os_version = models.CharField(max_length=300, null=True, blank=True)
@@ -272,6 +396,15 @@ class DeviceInfo(BaseTimeStampedModel):
 
 
 class AppInfo(models.Model):
+    """
+    AppInfo model represents information about the mobile application.
+
+    :param str name: The name of the application. (nullable)
+    :param str current_version: The current version of the application. (nullable)
+    :param str last_compulsory_version: The last compulsory version of the application. This indicates the version after which users are required to update. (nullable)
+    :param str download_path: The download path or URL to get the application. (nullable)
+    """
+
     name = models.CharField(max_length=300, null=True, blank=True)
     current_version = models.CharField(max_length=300, null=True, blank=True)
     last_compulsory_version = models.CharField(max_length=300, null=True, blank=True)
@@ -286,6 +419,16 @@ class AppInfo(models.Model):
 
 
 class Languages(models.Model):
+    """
+    Languages model represents the policy information and URLs for the mobile application.
+
+    :param str language: The language used in the application. (nullable)
+    :param str video_url: The URL to a video. (nullable)
+    :param str privacy_policy_url: The URL to the privacy policy of the application. (nullable)
+    :param str terms_conditions_url: The URL to the terms and conditions of the application. (nullable)
+    :param str age_terms_ul: The URL to the terms of use for users under a certain age (e.g., age-restricted content). (nullable)
+    """
+
     language = models.CharField(max_length=300, null=True, blank=True)
     video_url = models.CharField(max_length=300, null=True, blank=True)
     privacy_policy_url = models.CharField(max_length=300, null=True, blank=True)
@@ -301,6 +444,16 @@ class Languages(models.Model):
 
 
 class DeletedUser(BaseTimeStampedModel):
+    """
+    DeletedUser model represents deleted user records in the application.
+
+    :param bool is_deleted: Indicates if the user record is deleted. Default: False.
+    :param User user: The reference to the user associated with this deleted record. This field establishes a OneToOne relationship with the 'User' model, linking each deleted record to a specific user. (nullable)
+    :param str name: The name of the deleted user. (nullable)
+    :param str country_code: The country code of the deleted user's phone number. (nullable)
+    :param str phone_number: The phone number of the deleted user. (nullable)
+    """
+
     is_deleted = models.BooleanField(default=False)
     user = models.OneToOneField(
         User,
@@ -316,7 +469,12 @@ class DeletedUser(BaseTimeStampedModel):
 
 class MuteConversation(models.Model):
     """
-    Mute Conversation Model
+    MuteConversation model represents muted conversations between users in the application.
+
+    :param str sender_id: The identifier of the user who sent the message(s) in the conversation.
+    :param str recipient_id: The identifier of the user who received the message(s) in the conversation.
+    :param bool mute: Indicates if the conversation is currently muted. Default: False.
+    :param int mute_time: The timestamp representing the time until which the conversation is muted, in seconds since the epoch. Default: 0.
     """
 
     sender_id = models.CharField(max_length=200)
