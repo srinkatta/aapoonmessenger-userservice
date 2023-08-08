@@ -11,6 +11,26 @@ def notify_dm(
     message=None,
     xml=None,
 ):
+    """
+    Send a direct message notification to a user.
+
+    This function sends a direct message notification to a specified user. The notification contains information
+    about the sender, the type of message (e.g., text, image, video), and the content of the message.
+
+    Args:
+        to_user (User): The recipient user for the direct message.
+        from_user (User): The sender user for the direct message.
+        message (str): The text content of the direct message.
+        xml (str): The XML representation of the direct message. It contains additional metadata about the message.
+
+    Returns:
+        bool: True if the notification was sent successfully, False otherwise.
+
+    Note:
+        - The `xml` parameter is used to extract additional information about the direct message, such as message type and media.
+        - This function sends both Android and iOS notifications to the specified `to_user`.
+        - The notifications are sent using Firebase Cloud Messaging (FCM) for Android and Apple Push Notification Service (APNs) for iOS.
+    """
     if xml:
         body = re.findall(r"<body>(.*?)</body>", xml)
         if body:

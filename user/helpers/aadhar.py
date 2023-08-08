@@ -23,6 +23,17 @@ perm = [
 
 
 def AadharValidate(aadharNum):
+    """
+    Validate the given Aadhar number using the Verhoeff algorithm.
+
+    The Verhoeff algorithm is a checksum formula used to detect errors in data, including Aadhar numbers.
+
+    Args:
+        aadharNum (str): The Aadhar number to be validated as a string.
+
+    Returns:
+        bool: True if the Aadhar number is valid (passes the checksum), False otherwise.
+    """
     try:
         i = len(aadharNum)
         j = 0
