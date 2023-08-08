@@ -7,6 +7,7 @@ from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
+from django.db import IntegrityError
 from django.utils.translation import gettext_lazy as _
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
@@ -53,6 +54,26 @@ available_countries_iso = ["CA", "US", "IN", "AE", "SA"]
 
 
 class RegisterSerializer(serializers.Serializer):
+    """
+    Serializer for user registration data.
+
+    Attributes:
+        name, email, country_code, phone_number, password, ...
+        user_type, is_business, invited_by, hash_tag
+
+    Methods:
+        validate_email(email): Validate and clean email.
+        validate_password(password): Clean password.
+        get_cleaned_data(): Get cleaned data for user creation.
+        save(request): Save user with validated data.
+        __invite_flow(user, invited_by): Handle user invitation.
+        post_flow_actions(user, country_code, phone_number, ...): Post-registration actions.
+        send_otp(phone_number, otp, user, number): Send OTP to phone number.
+        max_attempts(user): Handle max login attempts.
+        login_attempts_reset(user): Reset login attempts and handle max.
+        save_user_device(user, device, device_version): Save user's device info.
+    """
+
     name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
     country_code = serializers.CharField(required=True)
@@ -102,7 +123,6 @@ class RegisterSerializer(serializers.Serializer):
         phone_number = self.get_cleaned_data()["phone_number"]
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
-
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
 
         phone = f"{country_code}{phone_number}"
@@ -127,8 +147,7 @@ class RegisterSerializer(serializers.Serializer):
             )
             return user
 
-        user = User.objects.create(**self.get_cleaned_data())
-
+        user = self.create_user_auto_increment_id()
         if request.data.get("password"):
             user.set_password(request.data["password"])
         self.post_flow_actions(
@@ -139,6 +158,17 @@ class RegisterSerializer(serializers.Serializer):
         if invited_by:
             self.__invite_flow(user, invited_by)
         return user
+
+    def create_user_auto_increment_id(self):
+        cleaned_data = self.get_cleaned_data()
+
+        while True:
+            try:
+                user, created = User.objects.get_or_create(**cleaned_data)
+                if created:
+                    return user
+            except IntegrityError:
+                pass
 
     def __invite_flow(self, user, invited_by):
         invited_by_user = User.objects.get(id=invited_by)
