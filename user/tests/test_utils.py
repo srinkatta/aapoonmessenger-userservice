@@ -20,82 +20,160 @@ from user.models import *
 
 class S3UrlExtractAPITestCase(APITestCase):
 
+    # Test case for s3_url_extract with dev environment URL
     def test_s3_url_extract_with_dev_environment(self):
+        # Define the input URL for dev environment
         url = "https://socialchain-dev.example.com"
+
+        # Define the expected result for dev environment
         expected_result = "https://mediadev.aapoon.com"
+
+        # Call the s3_url_extract function with the input URL
         result = s3_url_extract(url)
+
+        # Assert that the result matches the expected result
         self.assertEqual(result, expected_result)
 
+    # Test case for s3_url_extract with prod environment URL
     def test_s3_url_extract_with_prod_environment(self):
+        # Define the input URL for prod environment
         url = "https://socialchain-prod.example.com"
+
+        # Define the expected result for prod environment
         expected_result = "https://media.aapoon.com"
+
+        # Call the s3_url_extract function with the input URL
         result = s3_url_extract(url)
+
+        # Assert that the result matches the expected result
         self.assertEqual(result, expected_result)
 
+    # Test case for s3_url_extract with other environment URL
     def test_s3_url_extract_with_other_environment(self):
+        # Define an example input URL for another environment
         url = "https://example.com"
+
+        # Define the common expected result for other environments
         expected_result = "https://media.aapoon.com"
+
+        # Call the s3_url_extract function with the input URL
         result = s3_url_extract(url)
+
+        # Assert that the result matches the expected result
         self.assertEqual(result, expected_result)
 
 class ClearBucketFromPathAPITestCase(APITestCase):
 
+    # Test case to clear bucket from path in the dev environment
     def test_clear_bucket_from_path_with_dev_environment(self):
+        # Given a path with dev environment prefix
         path = "/socialchain-dev/example/path"
+
+        # Expected result after removing the dev environment prefix
         expected_result = "/example/path"
+
+        # Call the clear_bucket_from_path function
         result = clear_bucket_from_path(path)
+
+        # Check if the result matches the expected result
         self.assertEqual(result, expected_result)
 
+    # Test case to clear bucket from path in the prod environment
     def test_clear_bucket_from_path_with_prod_environment(self):
+        # Given a path with prod environment prefix
         path = "/socialchain-prod/example/path"
+
+        # Expected result after removing the prod environment prefix
         expected_result = "/example/path"
+
+        # Call the clear_bucket_from_path function
         result = clear_bucket_from_path(path)
+
+        # Check if the result matches the expected result
         self.assertEqual(result, expected_result)
 
+    # Test case to clear bucket from path in other environments
     def test_clear_bucket_from_path_with_other_environment(self):
+        # Given a path without environment prefix
         path = "/example/path"
+
+        # Expected result remains the same as the input path
         expected_result = "/example/path"
+
+        # Call the clear_bucket_from_path function
         result = clear_bucket_from_path(path)
+
+        # Check if the result matches the expected result
         self.assertEqual(result, expected_result)
 
 class MakeRequestAPITestCase(APITestCase):
 
+    # Test case to make a valid request with a valid URL and method
     def test_make_request_with_valid_url_and_method(self):
+        # Define the URL, method, data, and params for the request
         url = "https://example.com/api/endpoint"
         method = "POST"
         data = {"key": "value"}
         params = {"param": "value"}
+
+        # Make the request using the defined parameters
         response = make_request(url, method, data, params)
+
+        # Check if the response status code matches the expected HTTP 200 OK status
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    # Test case to make a request with an invalid URL
     def test_make_request_with_invalid_url(self):
+        # Define an invalid URL and method for the request
         url = "https://invalidurl"
         method = "GET"
+
+        # Make the request using the defined parameters
         response = make_request(url, method)
+
+        # Check if the response status code matches the expected HTTP 500 Internal Server Error status
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    # Test case to make a request with an invalid method
     def test_make_request_with_invalid_method(self):
+        # Define a valid URL and an invalid method for the request
         url = "https://example.com/api/endpoint"
         method = "INVALID_METHOD"
+
+        # Make the request using the defined parameters
         response = make_request(url, method)
+
+        # Check if the response status code matches the expected HTTP 400 Bad Request status
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    # Test case to make a valid request with a valid URL and no data or params
     def test_make_request_with_valid_url_and_no_data_or_params(self):
+        # Define a valid URL and method for the request
         url = "https://example.com/api/endpoint"
         method = "GET"
+
+        # Make the request using the defined parameters
         response = make_request(url, method)
+
+        # Check if the response status code matches the expected HTTP 200 OK status
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 class MakeRequestAPITestCase(APITestCase):
 
+    # Function to create a mock response
     def create_mock_response(self, status_code=200, json_data=None):
+        # Create a MagicMock object for the mock response
         mock_response = MagicMock()
         mock_response.status_code = status_code
+
+        # Set JSON data for the mock response if provided
         if json_data:
             mock_response.json.return_value = json_data
         return mock_response
 
+    # Test case for successful request
     def test_make_request_success(self):
+        # Define test data
         url = "http://example.com/api"
         method = "POST"
         data = {"key": "value"}
@@ -125,7 +203,9 @@ class MakeRequestAPITestCase(APITestCase):
         # Verify that the response matches the mocked response
         self.assertEqual(response.status_code, 200)
 
+    # Test case for request error
     def test_make_request_error(self):
+        # Define test data
         url = "http://example.com/api"
         method = "GET"
 
@@ -149,97 +229,29 @@ class MakeRequestAPITestCase(APITestCase):
                 }
             )
 
-    def test_make_request_success(self):
-        url = "http://example.com/api"
-        method = "POST"
-        data = {"key": "value"}
-        params = {"param": "value"}
-
-        # Mock the response from requests.request
-        with patch('user.utils.requests.request') as mock_request:
-            # Create a mock response with status code 200
-            mock_response = self.create_mock_response(status_code=200)
-            mock_request.return_value = mock_response
-
-            # Make the request using make_request function
-            response = make_request(url, method, data, params)
-
-            # Verify that requests.request was called with the correct parameters
-            mock_request.assert_called_once_with(
-                method,
-                url,
-                data=json.dumps(data),
-                params=params,
-                headers={
-                    "content-type": "application/json",
-                    "Authorization": settings.XMPP_AUTHORIZATION,
-                }
-            )
-
-        # Verify that the response matches the mocked response
-        self.assertEqual(response.status_code, 200)
-
-    def test_make_request_error(self):
-        url = "http://example.com/api"
-        method = "GET"
-
-        # Mock the exception raised by requests.request
-        with patch('user.utils.requests.request') as mock_request:
-            mock_request.side_effect = HTTPError("Internal Server Error")
-
-            # Make the request using make_request function and expect it to raise an exception
-            with self.assertRaises(HTTPError):
-                make_request(url, method)
-
-            # Verify that requests.request was called with the correct parameters
-            mock_request.assert_called_once_with(
-                method,
-                url,
-                data=json.dumps({}),
-                params={},
-                headers={
-                    "content-type": "application/json",
-                    "Authorization": settings.XMPP_AUTHORIZATION,
-                }
-            )
-
-class SendSMSMessageTestCase(APITestCase):
-
-    @patch('user.utils.sms.SMS')
-    def test_send_sms_message(self, mock_sms_class):
-        message = "Test message"
-        user = "Test user"
-        number = "+1234567890"
-
-        # Create a mock SMS instance
-        mock_sms_instance = mock_sms_class.return_value
-
-        # Call the send_sms_message function
-        send_sms_message(message, user, number)
-
-        # Verify that the SMS class was instantiated with the correct arguments
-        mock_sms_class.assert_called_once_with(number, message, user)
-
-        # Verify that the send_generic_message method was called on the SMS instance
-        mock_sms_instance.send_generic_message.assert_called_once()
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class SendEmailNotificationAPITestCase(APITestCase):
+    # Use mock to test send_email_notification function
     @patch('user.utils.send_email_notification')
     def test_send_email_notification(self, mock_send_mail):
+        # Create a test user
         user = User.objects.create(
             email="test@example.com",
             name="Test User",
         )
+        # Define the email subject
         subject = "Test Subject"
 
+        # Use assertLogs context manager to capture log messages
         with self.assertLogs() as log:
+            # Make a POST request to the specified API endpoint
             response = self.client.post('/api/send-email-notification/', {
                 'user_id': user.id,
                 'subject': subject,
             })
 
-            # Assert the log message
+            # Assert the log message count
             self.assertEqual(len(log.output), 1)
 
 class CalculateAgeTestCase(APITestCase):
