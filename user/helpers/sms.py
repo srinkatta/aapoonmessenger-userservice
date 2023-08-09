@@ -2,7 +2,7 @@ import boto3
 import requests
 from django.conf import settings
 
-# from twilio.rest import Client
+from twilio.rest import Client
 
 
 class SMS:
