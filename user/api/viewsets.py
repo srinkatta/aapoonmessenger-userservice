@@ -178,7 +178,8 @@ class SendOTPView(APIView):
             phone_number = user_settings.phone_number
             country_code = user_settings.country_code
             otp = generate_otp()
-            self.send_otp(country_code, phone_number, otp, user_settings, phone)
+
+            self.send_otp(country_code, phone_number, otp, user, phone)
             user.otp_requested = otp
             user.save()
             print(f"Generated Otp: {otp}")
@@ -188,6 +189,7 @@ class SendOTPView(APIView):
 
     def post(self, request):
         user = request.user
+
         phone_number = request.data["phone_number"]
         country_code = request.data["country_code"]
 
