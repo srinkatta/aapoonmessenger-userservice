@@ -58,7 +58,7 @@ class NotifyRedirectDmViewSet(APIView):
 
     http_method_names = ["post"]
     serializer_class = NotifyRedirectDmSerializer
-    permission_classes = [HasAPIKey or AllowAny]
+    permission_classes = [HasAPIKey | AllowAny]
 
     def post(self, request):
         """
