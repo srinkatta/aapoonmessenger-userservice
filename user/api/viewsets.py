@@ -1712,7 +1712,7 @@ class UserCheckAPIView(APIView):
 
     """
 
-    permission_classes = [HasAPIKey or permissions.AllowAny]
+    permission_classes = [HasAPIKey | permissions.AllowAny]
     allowed_methods = ("POST",)
     serializer_class = UserCheckSerializer
 
