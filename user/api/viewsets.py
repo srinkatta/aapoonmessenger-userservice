@@ -1393,7 +1393,7 @@ class UserDeleteCronView(APIView):
     - Response: JSON response indicating the success or failure of the automated user deletion process.
     """
 
-    permission_classes = [HasAPIKey or AllowAny]
+    permission_classes = [HasAPIKey | AllowAny]
     allowed_methods = ("GET",)
 
     def get(self, request):
@@ -1532,7 +1532,7 @@ class UserDetailsAPI(APIView):
     - Response: Detailed information about the requested user, including user profile data.
     """
 
-    permission_classes = [HasAPIKey or permissions.AllowAny]
+    permission_classes = [HasAPIKey | permissions.AllowAny]
     allowed_methods = ("POST",)
 
     def post(self, request):
@@ -1622,7 +1622,7 @@ class UserDetailsPhoneAPI(APIView):
 
     """
 
-    permission_classes = [HasAPIKey or permissions.AllowAny]
+    permission_classes = [HasAPIKey | permissions.AllowAny]
     allowed_methods = ("POST",)
 
     def post(self, request):
