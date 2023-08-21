@@ -49,8 +49,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
-available_country_code = ["91", "1", "971", "966"]
-available_countries_iso = ["CA", "US", "IN", "AE", "SA"]
+available_country_code = ["91"]
+available_countries_iso = ["IN"]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -147,8 +147,7 @@ class RegisterSerializer(serializers.Serializer):
             )
             return user
 
-
-        user = self.create_user_auto_increment_id()
+        user = self.create_user_auto_increment_validate()
 
         if request.data.get("password"):
             user.set_password(request.data["password"])
@@ -161,8 +160,7 @@ class RegisterSerializer(serializers.Serializer):
             self.__invite_flow(user, invited_by)
         return user
 
-
-    def create_user_auto_increment_id(self):
+    def create_user_auto_increment_validate(self):
         cleaned_data = self.get_cleaned_data()
 
         while True:

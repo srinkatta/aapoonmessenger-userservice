@@ -337,7 +337,8 @@ class SendOTPView(APIView):
             phone_number = user_settings.phone_number
             country_code = user_settings.country_code
             otp = generate_otp()
-            self.send_otp(country_code, phone_number, otp, user_settings, phone)
+
+            self.send_otp(country_code, phone_number, otp, user, phone)
             user.otp_requested = otp
             user.save()
             print(f"Generated Otp: {otp}")
@@ -359,6 +360,7 @@ class SendOTPView(APIView):
         - Response: JSON response indicating the success of OTP sending.
         """
         user = request.user
+
         phone_number = request.data["phone_number"]
         country_code = request.data["country_code"]
 
@@ -1129,8 +1131,8 @@ class DeviceInfoView(APIView):
         device_id = request.data["device_id"]
         user_id = request.data["user"]
         logger.info(f"user_id : {user_id}, device_id: {device_id}")
-        user_info = User.objects.filter(id=user_id).first()
-        logger.info(f"{user_info}")
+        logger.info(request.data)
+        user_info = User.objects.get(id=user_id)
         if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
             serializer = self.serializer_class(
                 data=request.data, context={request: "request"}
