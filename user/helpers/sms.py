@@ -1,10 +1,29 @@
 import boto3
 import requests
 from django.conf import settings
+
 from twilio.rest import Client
 
 
 class SMS:
+    """
+    Class for sending SMS messages using Amazon SNS (Simple Notification Service).
+
+    This class provides methods to send different types of SMS messages, such as OTP (One-Time Password) messages,
+    app download links, and generic messages.
+
+    Attributes:
+        phone_number (str): The phone number to which the SMS message will be sent.
+        message (str): The content of the SMS message.
+        user (User): The user associated with the SMS message (if applicable).
+        aws_access_key (str): The AWS access key used for authentication with Amazon SNS.
+        aws_secret_key (str): The AWS secret key used for authentication with Amazon SNS.
+        region (str): The AWS region where the SNS client is created.
+
+    Note:
+        - The `aws_access_key` and `aws_secret_key` attributes are obtained from the Django settings
+    """
+
     def __init__(self, phone_number, message, user, *args, **kwargs):
         self.aws_access_key = settings.SNS_AWS_ACCESS_KEY
         self.aws_secret_key = settings.SNS_AWS_SECRET_KEY
@@ -14,6 +33,7 @@ class SMS:
         self.region = "us-west-2"
 
     def send_message(self):
+        """Send an OTP message to activate the "aapoon" account."""
         try:
             sns_client = boto3.client(
                 "sns",
@@ -39,6 +59,7 @@ class SMS:
             return False
 
     def send_app_link(self):
+        """Send an SMS message containing the app download link."""
         try:
             sns_client = boto3.client(
                 "sns",
@@ -64,6 +85,7 @@ class SMS:
             return False
 
     def send_generic_message(self):
+        """Send a generic SMS message."""
         try:
             sns_client = boto3.client(
                 "sns",
@@ -85,6 +107,24 @@ class SMS:
 
 
 class FAST_SMS:
+    """
+    Class for sending SMS messages using the FAST2SMS API.
+
+    This class provides a method to send SMS messages to a specified phone number
+    using the FAST2SMS service.
+
+    Attributes:
+        phone_number (str): The recipient's phone number.
+        message (str): The content of the SMS message.
+        user (User): The associated user (optional).
+        api_key (str): The API key for authentication with the FAST2SMS service.
+        url (str): The URL of the FAST2SMS API.
+
+
+    Note:
+        - The `api_key` attribute is obtained from the Django settings (`settings.FAST_API_KEY`).
+    """
+
     def __init__(self, phone_number, message, user, *args, **kwargs):
         self.api_key = settings.FAST_API_KEY
         self.phone_number = phone_number
@@ -93,6 +133,12 @@ class FAST_SMS:
         self.url = "https://www.fast2sms.com/dev/bulkV2"
 
     def send_message(self):
+        """
+        Send the SMS message using the FAST2SMS API.
+
+        Returns:
+            bool: True if the SMS message was sent successfully, False otherwise.
+        """
         try:
             querystring = {
                 "authorization": self.api_key,
@@ -125,6 +171,22 @@ class FAST_SMS:
 
 
 class TWILIO_SMS:
+    """
+    Class for sending SMS messages using Twilio API.
+
+    This class provides methods to send SMS messages to a specified phone number
+    using the Twilio service.
+
+    Attributes:
+        phone_number (str): The recipient's phone number.
+        message (str): The content of the SMS message.
+        user (User): The associated user (optional).
+        ACCOUNT_SID (str): Twilio Account SID for authentication.
+        AUTH_TOKEN (str): Twilio Authentication Token for authentication.
+        FROM_NUMBER (str): Twilio phone number used as the sender.
+        client (Client): Twilio Client instance for API interaction.
+    """
+
     def __init__(self, phone_number, message, user, *args, **kwargs):
         self.ACCOUNT_SID = settings.TWILIO_ACCOUNT_SID
         self.AUTH_TOKEN = settings.TWILIO_AUTH_TOKEN
@@ -135,6 +197,14 @@ class TWILIO_SMS:
         self.user = user
 
     def send_message(self):
+        """
+        Send an OTP message to activate the "aapoon" account.
+
+        The message includes the One-Time Password (OTP) and, if available, the user's hash tag.
+
+        Returns:
+            bool: True if the SMS message was sent successfully, False otherwise.
+        """
         try:
             if (
                 self.user
@@ -158,6 +228,12 @@ class TWILIO_SMS:
             return False
 
     def send_generic_message(self):
+        """
+        Send a generic SMS message.
+
+        Returns:
+            bool: True if the SMS message was sent successfully, False otherwise.
+        """
         try:
             response = self.client.messages.create(
                 body=self.message,

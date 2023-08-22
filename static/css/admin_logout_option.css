@@ -1,9 +1,0 @@
-/* Adjust the position of the logout option */
-#user-tools {
-    position: relative;
-}
-#user-tools .user {
-    position: absolute;
-    top: 0;
-    right: 0;
-}
