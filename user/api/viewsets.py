@@ -124,9 +124,17 @@ class AuthUserLoginView(APIView):
         otp = request.data["otp"]
         user = user.first()
         default_otp = "775533"
-        if otp and otp == default_otp:
+
+        phone = f"+{country_code}{phone_number}"
+        sms_client = sms.PINPOINT_SMS(phone, otp, user)
+        client_verify = sms_client.verify_otp_with_pinpoint()
+
+        if otp and otp == default_otp and country_code == "91":
             pass
-        elif otp and str(otp) != user.otp_requested:
+
+        elif (
+            otp and otp != user.otp_requested and country_code == "91"
+        ) or not client_verify:
             return Response({"detail": "Wrong OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(
@@ -153,7 +161,7 @@ class SendOTPView(APIView):
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         else:
-            sms_client = sms.TWILIO_SMS(number, otp, user)
+            sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
         user_settings = user.settings.filter().first()
         user_settings.verify_attempts += 1
