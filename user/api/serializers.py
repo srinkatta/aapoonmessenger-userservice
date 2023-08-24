@@ -49,8 +49,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
-available_country_code = ["91"]
-available_countries_iso = ["IN"]
+available_country_code = ["91", "1"]
+available_countries_iso = ["CA", "US", "IN"]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -189,8 +189,9 @@ class RegisterSerializer(serializers.Serializer):
         if user.country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
+
         else:
-            sms_client = sms.TWILIO_SMS(number, otp, user)
+            sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
@@ -253,12 +254,18 @@ class UserLoginSerializer(serializers.Serializer):
         try:
             user = user.first()
 
+            phone = f"+{country_code}{phone_number}"
+            sms_client = sms.PINPOINT_SMS(phone, otp, user)
+            client_verify = sms_client.verify_otp_with_pinpoint()
+
             default_otp = "775533"
-            if otp and otp == default_otp:
+
+            if otp and otp == default_otp and country_code == "91":
                 pass
 
-            elif otp and otp != user.otp_requested:
-                # TODO: add wrong attempts logic
+            elif (
+                otp and otp != user.otp_requested and country_code == "91"
+            ) or not client_verify:
                 raise serializers.ValidationError({"detail": "Wrong otp"})
 
             refresh = RefreshToken.for_user(user)
@@ -379,7 +386,6 @@ class VerifyPhoneSerializer(serializers.Serializer):
         user = request.user
         otp = user.otp_requested
         user_setting = request.user.settings.filter().first()
-
         if user_setting.wrong_attempts <= 5:
             if request.data["otp"] == otp:
                 if not user.phone_number_verified:
@@ -397,6 +403,17 @@ class VerifyPhoneSerializer(serializers.Serializer):
                     user.phone_number = user_setting.phone_number
                     user.country_code = user_setting.country_code
                     user.save()
+
+            elif user_setting.country_code != "91":
+                phone = f"+{user_setting.country_code}{user_setting.phone_number}"
+                sms_client = sms.PINPOINT_SMS(phone, otp, user)
+                client_verify = sms_client.verify_otp_with_pinpoint()
+                if client_verify:
+                    user.phone_number_verified = True
+                    user.phone_number = user_setting.phone_number
+                    user.country_code = user_setting.country_code
+                    user.save()
+
             else:
                 user_setting.wrong_attempts = user_setting.wrong_attempts + 1
                 user_setting.save()

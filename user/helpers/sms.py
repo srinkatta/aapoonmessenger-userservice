@@ -1,4 +1,6 @@
 import boto3
+from botocore.exceptions import ClientError
+import hashlib
 import requests
 from django.conf import settings
 
@@ -245,3 +247,76 @@ class TWILIO_SMS:
         except Exception as e:
             print(e)
             return False
+
+
+class PINPOINT_SMS:
+    def __init__(self, phone_number, message, user):
+        self.app_id = settings.AWS_PINPOINT_APP_ID
+        self.originating_number = settings.AWS_PINPOINT_FROM_NUMBER
+        self.aws_access_key_id = settings.SNS_AWS_ACCESS_KEY
+        self.aws_secret_access_key = settings.SNS_AWS_SECRET_KEY
+        self.phone_number = phone_number
+        self.message = message
+        self.user = user
+
+    def send_message(self):
+        try:
+            ref_id = self.generate_ref_id(self.phone_number)
+
+            client = boto3.client(
+                "pinpoint",
+                region_name="us-east-1",
+                aws_access_key_id=self.aws_access_key_id,
+                aws_secret_access_key=self.aws_secret_access_key,
+            )
+
+            response = client.send_otp_message(
+                ApplicationId=self.app_id,
+                SendOTPMessageRequestParameters={
+                    "Channel": "SMS",
+                    "BrandName": "aapoon",
+                    "CodeLength": 6,
+                    "ValidityPeriod": 5,
+                    "AllowedAttempts": 3,
+                    "Language": "en-US",
+                    "OriginationIdentity": self.originating_number,
+                    "DestinationIdentity": self.phone_number,
+                    "ReferenceId": ref_id,
+                },
+            )
+            print(response)
+            return True
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+            return False
+
+    def verify_otp_with_pinpoint(self):
+        try:
+            client = boto3.client(
+                "pinpoint",
+                region_name="us-east-1",
+                aws_access_key_id=self.aws_access_key_id,
+                aws_secret_access_key=self.aws_secret_access_key,
+            )
+
+            ref_id = self.generate_ref_id(self.phone_number)
+            response = client.verify_otp_message(
+                ApplicationId=self.app_id,
+                VerifyOTPMessageRequestParameters={
+                    "DestinationIdentity": self.phone_number,
+                    "ReferenceId": ref_id,
+                    "Otp": str(self.message),
+                },
+            )
+            print(response)
+            return True
+
+        except ClientError as e:
+            print(e.response)
+            return False
+
+    def generate_ref_id(
+        self, destination_number, brand_name="aapoon", source="OTP_verify"
+    ):
+        ref_id = brand_name + source + destination_number
+        return hashlib.md5(ref_id.encode()).hexdigest()

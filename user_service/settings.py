@@ -71,7 +71,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://dev.aapoon.com",
     "http://localhost:3000",
     "https://qa.aapoon.com",
-    "https://go.aapoon.com"
+    "https://go.aapoon.com",
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -101,7 +101,6 @@ WSGI_APPLICATION = "user_service.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-
 
 DATABASES = {
     "default": {
@@ -274,3 +273,7 @@ EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
 TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
 TWILIO_AUTH_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
 TWILIO_FROM_NUMBER = os.environ["TWILIO_FROM_NUMBER"]
+
+# AWS Pinpoint
+AWS_PINPOINT_APP_ID = os.environ["AWS_PINPOINT_APP_ID"]
+AWS_PINPOINT_FROM_NUMBER = os.environ["AWS_PINPOINT_FROM_NUMBER"]
