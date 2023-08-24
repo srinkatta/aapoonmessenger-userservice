@@ -49,8 +49,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
-available_country_code = ["91", "1", "971", "966"]
-available_countries_iso = ["CA", "US", "IN", "AE", "SA"]
+available_country_code = ["91", "1"]
+available_countries_iso = ["CA", "US", "IN"]
 
 
 class RegisterSerializer(serializers.Serializer):
