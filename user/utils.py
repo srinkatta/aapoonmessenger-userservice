@@ -586,7 +586,7 @@ class GenericPagination(PageNumberPagination):
         if next_link and "https" not in next_link:
             next_link = self.get_next_link().replace("http", "https")
 
-        previous_link = self.get_next_link() or None
+        previous_link = self.get_previous_link() or None
         if previous_link and "https" not in previous_link:
             previous_link = self.get_previous_link().replace("http", "https")
 
