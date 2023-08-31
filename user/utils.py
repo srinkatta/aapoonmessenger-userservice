@@ -582,22 +582,20 @@ class GenericPagination(PageNumberPagination):
         Returns:
             Response: A Response object containing metadata and the paginated data.
         """
+        next_link = self.get_next_link() or None
+        if next_link and "https" not in next_link:
+            next_link = self.get_next_link().replace("http", "https")
+
+        previous_link = self.get_next_link() or None
+        if previous_link and "https" not in previous_link:
+            previous_link = self.get_previous_link().replace("http", "https")
+
         return Response(
             OrderedDict(
                 [
                     ("count", self.page.paginator.count),
-                    (
-                        "next",
-                        self.get_next_link().replace("http", "https")
-                        if self.get_next_link()
-                        else None,
-                    ),
-                    (
-                        "previous",
-                        self.get_previous_link().replace("http", "https")
-                        if self.get_previous_link()
-                        else None,
-                    ),
+                    ("next", next_link),
+                    ("previous", previous_link),
                     ("results", data),
                 ]
             )
