@@ -1746,7 +1746,7 @@ class UserCheckAPIView(APIView):
         serializer = UserCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         for contact in serializer.data["contacts"]:
-            result = {"aapoonUser": False}
+            result = {"appUser": False}
 
             phone_number = phonenumbers.parse(f"+{contact['contactPhoneNumber']}")
             user = User.objects.filter(
@@ -1754,22 +1754,22 @@ class UserCheckAPIView(APIView):
                 phone_number=phone_number.national_number,
             ).first()
             if user and user.phone_number_verified:
-                result["aapoonUser"] = True
-                result["contactaapoonName"] = user.name
-                result["contactaapoonprofilepicture"] = (
+                result["appUser"] = True
+                result["contactUserName"] = user.name
+                result["contactUserprofilepicture"] = (
                     user.secondary_picture if user else ""
                 )
-                result["contactaapoonJID"] = user.jid if user else ""
-                result["contactFcmToken"] = user.fcm_token
-                result["contactaapoonUserID"] = user.id
+                result["contactUserJID"] = user.jid if user else ""
+                result["contactUserFcmToken"] = user.fcm_token
+                result["contactUserID"] = user.id
                 user_settings = user.settings.filter().first()
                 kyc_done = user_settings.kyc_done if user_settings else None
                 if kyc_done:
-                    result["contactaapoonUserProfileStatus"] = "completed"
+                    result["contactUserProfileStatus"] = "completed"
                 else:
-                    result["contactaapoonUserProfileStatus"] = "basic"
+                    result["contactUserProfileStatus"] = "basic"
             else:
-                result["aapoonUser"] = False
+                result["appUser"] = False
             result["contactName"] = contact["contactName"]
             result["contactPhoneNumber"] = contact["contactPhoneNumber"]
             response.append(result)
