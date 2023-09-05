@@ -378,6 +378,27 @@ class SendOTPSerializer(serializers.Serializer):
     country_code = serializers.CharField()
     phone_number = serializers.CharField()
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        country_code = attrs["country_code"]
+        phone_number = attrs["phone_number"]
+        phone = f"{country_code}{phone_number}"
+        phone_parse = phonenumbers.parse("+" + phone)
+        country = region_code_for_number(phone_parse)
+
+        if (
+            country_code not in available_country_code
+            or country not in available_countries_iso
+        ):
+            raise ValidationError(
+                {
+                    "detail": "Thank you for your interest in aapoon. We contact you as soon as aapoon "
+                    "is available in your country."
+                }
+            )
+
+        return attrs
+
 
 class VerifyPhoneSerializer(serializers.Serializer):
     otp = serializers.CharField()
