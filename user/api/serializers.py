@@ -201,7 +201,6 @@ class RegisterSerializer(serializers.Serializer):
         user.save()
 
     def max_attempts(self, user):
-
         if user and not user.is_active and user.login_attempts == 1:
             user.is_active = True
             user.login_attempts = 0
@@ -407,7 +406,7 @@ class VerifyPhoneSerializer(serializers.Serializer):
         user = request.user
         otp = user.otp_requested
         user_setting = request.user.settings.filter().first()
-        if user_setting.wrong_attempts <= 5:
+        if user_setting.wrong_attempts <= 2:
             if request.data["otp"] == otp:
                 if not user.phone_number_verified:
                     user.phone_number_verified = True
@@ -434,6 +433,12 @@ class VerifyPhoneSerializer(serializers.Serializer):
                     user.phone_number = user_setting.phone_number
                     user.country_code = user_setting.country_code
                     user.save()
+                else:
+                    user_setting.wrong_attempts = user_setting.wrong_attempts + 1
+                    user_setting.save()
+                    raise serializers.ValidationError(
+                        {"detail": "Your OTP is Incorrect. Please re-enter."}
+                    )
 
             else:
                 user_setting.wrong_attempts = user_setting.wrong_attempts + 1
@@ -443,7 +448,9 @@ class VerifyPhoneSerializer(serializers.Serializer):
                 )
         else:
             raise serializers.ValidationError(
-                {"detail": "You have reached Max Phone Attempts for Phone Verification"}
+                {
+                    "detail": "You have reached the maximum attempts to log in. Please try again after 10 minutes"
+                }
             )
 
 
