@@ -317,11 +317,11 @@ class SendOTPView(APIView):
         - request (Request): The HTTP request.
         """
         user_settings = request.user.settings.filter().first()
-        if user_settings.verify_attempts >= 3:
+        if user_settings.verify_attempts >= 2:
             subject = _("Max Attempts Reached on updated Phone Verification")
             phone_failure(request.user, subject)
             msg = {
-                "detail": "You have reached Max Phone Attempts for Phone Verification"
+                "detail": "You have reached the maximum attempts to log in. Please try again after 10 minutes."
             }
             raise ValidationError(msg)
 
@@ -468,6 +468,7 @@ class VerifyPhoneView(APIView):
         user.phone_number = user_settings.phone_number
         user.country_code = user_settings.country_code
         user_settings.wrong_attempts = 0
+        user_settings.verify_attempts = 0
         user.save()
         user_settings.save()
 
