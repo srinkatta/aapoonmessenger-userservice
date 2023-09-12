@@ -781,6 +781,7 @@ class UserDetailsSerializer(serializers.Serializer):
     unique_id = serializers.CharField(required=False)
     profile_pic = serializers.SerializerMethodField()
     user_type = serializers.SerializerMethodField()
+    fcm_token = serializers.SerializerMethodField()
 
     def get_profile_pic(self, obj):
         return obj.secondary_picture
