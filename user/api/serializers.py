@@ -786,6 +786,9 @@ class UserDetailsSerializer(serializers.Serializer):
     def get_profile_pic(self, obj):
         return obj.secondary_picture
 
+    def get_fcm_token(self, obj):
+        return obj.fcm_token
+
     def get_user_type(self, obj):
         return user_kyc_status(obj)
 
