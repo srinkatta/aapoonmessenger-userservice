@@ -1140,7 +1140,8 @@ class DeviceInfoView(APIView):
         user_id = request.data["user"]
         logger.info(f"user_id : {user_id}, device_id: {device_id}")
         logger.info(request.data)
-        user_info = User.objects.get(id=user_id)
+        user_info = User.objects.filter(id=user_id).first()
+        logger.info(f"{user_info}")
         if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
             serializer = self.serializer_class(
                 data=request.data, context={request: "request"}
