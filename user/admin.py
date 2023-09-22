@@ -38,6 +38,8 @@ admin.site.register(AppInfo)
 admin.site.register(Languages)
 admin.site.register(DeletedUser)
 
+logging = logging.getLogger(__name__)
+
 
 class UserResource(resources.ModelResource):
     phone_number_verified = Field()

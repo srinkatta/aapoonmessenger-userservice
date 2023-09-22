@@ -21,6 +21,8 @@ from user.api.admin import serializers as admin_serializers
 from user.api.admin.filters import UserFilter
 from user_service import settings
 
+logging = logging.getLogger(__name__)
+
 
 class UserListDetailsAPI(APIView, GenericPagination):
     """

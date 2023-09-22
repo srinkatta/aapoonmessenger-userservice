@@ -144,8 +144,8 @@ class FAST_SMS:
         try:
             querystring = {
                 "authorization": self.api_key,
-                "sender_id": "aapoon",
-                "message": "122708",
+                "sender_id": settings.FAST_SMS_SENDER_ID,
+                "message": settings.FAST_SMS_MESSAGE_ID,
                 "variables_values": self.message,
                 "route": "dlt",
                 "numbers": str(self.phone_number),

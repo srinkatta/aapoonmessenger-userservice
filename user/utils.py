@@ -22,6 +22,8 @@ from user.helpers import sms
 from user.choices import COUNTRIES_CHOICES
 from user_service import settings
 
+logging = logging.getLogger(__name__)
+
 
 def s3_url_extract(url):
     """
@@ -33,12 +35,9 @@ def s3_url_extract(url):
     Returns:
         str: A base URL determined by the input URL.
     """
-    if "socialchain-dev" in url or "mediadev" in url:
-        return "https://mediadev.aapoon.com"
-    elif "socialchain-prod" in url or "media.aapoon.com" in url:
-        return "https://media.aapoon.com"
-    else:
-        return "https://media.aapoon.com"
+    if settings.AWS_S3_BUCKET_NAME in url or settings.AWS_CDN_DOMAIN in url:
+        return f"https://{settings.AWS_CDN_DOMAIN}.{settings.HOST_DOMAIN}"
+    return f"https://{settings.AWS_CDN_DOMAIN}.{settings.HOST_DOMAIN}"
 
 
 def clear_bucket_from_path(path):
@@ -51,14 +50,9 @@ def clear_bucket_from_path(path):
     Returns:
         str: The path with specified prefixes removed.
     """
-    if "socialchain-dev" in path:
-        path = path.replace("/socialchain-dev", "")
-        return path
-    elif "socialchain-prod" in path:
-        path = path.replace("/socialchain-prod", "")
-        return path
-    else:
-        return path
+    if settings.AWS_S3_BUCKET_NAME in path:
+        return path.replace(f"/{settings.AWS_S3_BUCKET_NAME}", "")
+    return path
 
 
 def make_request(url, method, data={}, params={}):
