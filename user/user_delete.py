@@ -19,6 +19,8 @@ try:
 except ImportError:
     from email import charset as Charset
 
+logging = logging.getLogger(__name__)
+
 
 class UserDelete:
     """

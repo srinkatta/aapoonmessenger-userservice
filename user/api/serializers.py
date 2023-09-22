@@ -49,6 +49,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
+logger = logging.getLogger(__name__)
+
 available_country_code = ["91", "1"]
 available_countries_iso = ["CA", "US", "IN"]
 
