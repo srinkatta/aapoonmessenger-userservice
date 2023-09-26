@@ -5,6 +5,8 @@ from pyfcm import FCMNotification
 
 from user_service import settings
 
+logging = logging.getLogger(__name__)
+
 
 def extract_media(xml):
     media = re.findall(

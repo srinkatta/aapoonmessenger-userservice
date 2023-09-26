@@ -49,8 +49,10 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
-available_country_code = ["91", "1"]
-available_countries_iso = ["CA", "US", "IN"]
+logger = logging.getLogger(__name__)
+
+available_country_code = ["91", "1", "260"]
+available_countries_iso = ["CA", "US", "IN", "ZM"]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -189,7 +191,9 @@ class RegisterSerializer(serializers.Serializer):
         if user.country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
-
+        elif user.country_code == "260":
+            sns_client = sms.SMS(phone_number, otp, user)
+            sns_client.send_message()
         else:
             sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()

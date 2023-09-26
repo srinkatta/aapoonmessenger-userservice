@@ -67,12 +67,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "user_service.urls"
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://dev.aapoon.com",
-    "http://localhost:3000",
-    "https://qa.aapoon.com",
-    "https://go.aapoon.com",
-]
+CSRF_TRUSTED_ORIGINS = os.environ["CSRF_TRUSTED_ORIGINS"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -243,6 +238,9 @@ SUPPORT_EMAIL = "support@aapoon.net"
 FCM_API_KEY = os.environ["FCM_API_KEY"]
 
 FAST_API_KEY = os.environ["FAST_API_KEY"]
+FAST_SMS_SENDER_ID = os.environ["FAST_SMS_SENDER_ID"]
+FAST_SMS_MESSAGE_ID = os.environ["FAST_SMS_MESSAGE_ID"]
+
 SNS_AWS_ACCESS_KEY = os.environ["SNS_AWS_ACCESS_KEY"]
 SNS_AWS_SECRET_KEY = os.environ["SNS_AWS_SECRET_KEY"]
 
@@ -253,6 +251,11 @@ S3_AWS_SECRET_ACCESS_KEY = os.environ["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
 
 AWS_S3_ACL = os.environ["AWS_S3_ACL"]
 AWS_S3_BUCKET_NAME = os.environ["AWS_S3_BUCKET_NAME"]
+AWS_S3_BUCKET_REGION_NAME = os.environ["AWS_S3_BUCKET_REGION_NAME"]
+
+AWS_CDN_DOMAIN = os.environ["AWS_CDN_DOMAIN"]
+
+HOST_DOMAIN = os.environ["HOST_DOMAIN"]
 
 XMPP_AUTHORIZATION = os.environ["XMPP_AUTHORIZATION"]
 XMPP_HOST = os.environ["XMPP_HOST"]

@@ -32,7 +32,7 @@ class SMS:
         self.phone_number = phone_number
         self.message = message
         self.user = user
-        self.region = "us-west-2"
+        self.region = settings.AWS_S3_BUCKET_REGION_NAME
 
     def send_message(self):
         """Send an OTP message to activate the "aapoon" account."""
@@ -144,8 +144,8 @@ class FAST_SMS:
         try:
             querystring = {
                 "authorization": self.api_key,
-                "sender_id": "aapoon",
-                "message": "159727",
+                "sender_id": settings.FAST_SMS_SENDER_ID,
+                "message": settings.FAST_SMS_MESSAGE_ID,
                 "variables_values": self.message,
                 "route": "dlt",
                 "numbers": str(self.phone_number),
