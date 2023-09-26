@@ -32,7 +32,7 @@ class SMS:
         self.phone_number = phone_number
         self.message = message
         self.user = user
-        self.region = "us-west-2"
+        self.region = "us-east-1"
 
     def send_message(self):
         """Send an OTP message to activate the "aapoon" account."""
