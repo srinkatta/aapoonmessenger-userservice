@@ -317,11 +317,11 @@ class SendOTPView(APIView):
         - request (Request): The HTTP request.
         """
         user_settings = request.user.settings.filter().first()
-        if user_settings.verify_attempts >= 3:
+        if user_settings.verify_attempts >= 2:
             subject = _("Max Attempts Reached on updated Phone Verification")
             phone_failure(request.user, subject)
             msg = {
-                "detail": "You have reached Max Phone Attempts for Phone Verification"
+                "detail": "You have reached the maximum attempts to log in. Please try again after 10 minutes."
             }
             raise ValidationError(msg)
 
@@ -468,6 +468,7 @@ class VerifyPhoneView(APIView):
         user.phone_number = user_settings.phone_number
         user.country_code = user_settings.country_code
         user_settings.wrong_attempts = 0
+        user_settings.verify_attempts = 0
         user.save()
         user_settings.save()
 
@@ -1140,7 +1141,8 @@ class DeviceInfoView(APIView):
         user_id = request.data["user"]
         logger.info(f"user_id : {user_id}, device_id: {device_id}")
         logger.info(request.data)
-        user_info = User.objects.get(id=user_id)
+        user_info = User.objects.filter(id=user_id).first()
+        logger.info(f"{user_info}")
         if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
             serializer = self.serializer_class(
                 data=request.data, context={request: "request"}
@@ -1423,7 +1425,7 @@ class UserDeleteCronView(APIView):
             users_to_delete = User.objects.filter(id=pk)
         else:
             users_to_delete = DeletedUser.objects.filter(
-                created__lte=datetime.datetime.now(tz=datetime.timezone.utc)
+                created_at__lte=datetime.datetime.now(tz=datetime.timezone.utc)
                 - datetime.timedelta(days=30)
             ).filter(is_deleted=False)
 

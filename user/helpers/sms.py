@@ -32,7 +32,7 @@ class SMS:
         self.phone_number = phone_number
         self.message = message
         self.user = user
-        self.region = "us-east-1"
+        self.region = settings.AWS_S3_BUCKET_REGION_NAME
 
     def send_message(self):
         """Send an OTP message to activate the "aapoon" account."""
