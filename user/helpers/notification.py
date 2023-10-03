@@ -66,6 +66,8 @@ def notify_android_device(token, name, message_value):
         data_message=android_data_message,
         content_available=True,
     )
+    print(f"Android Notification - Token: {token}, Data: {android_data_message}")
+    print(f"Android Result:  {android_result}")
     logging.info(f"Android result: , {android_result}")
 
 
@@ -79,6 +81,8 @@ def notify_ios_device(token, name, message_value, data_message):
         content_available=True,
         extra_kwargs={"mutable_content": True},
     )
+    print(f"iOS Notification - Token: {token}, Message: {message_value}, Title: {name}, Data: {data_message}")
+    print(f"IOS Result:  {result}")
     logging.info(f"IOS result: , {result}")
 
 
@@ -103,7 +107,7 @@ def prepare_data_message(to_user, from_user, message, xml):
         "priority": "high",
         "content_available": True,
     }
-
+    print(f"data_message: {data_message}")
     return data_message
 
 
