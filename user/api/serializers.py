@@ -51,8 +51,8 @@ from user_service import settings
 
 logger = logging.getLogger(__name__)
 
-available_country_code = ["91", "1", "260"]
-available_countries_iso = ["CA", "US", "IN", "ZM"]
+available_country_code = ["91", "1", "260", "62", "230", "261", "966", "971"]
+available_countries_iso = ["CA", "US", "IN", "ZM", "ID", "MU", "MG", "SA", "AE"]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -191,12 +191,12 @@ class RegisterSerializer(serializers.Serializer):
         if user.country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
-        elif user.country_code == "260":
-            sns_client = sms.SMS(phone_number, otp, user)
-            sns_client.send_message()
-        else:
+        elif user.country_code == "1":
             sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
+        else:
+            sns_client = sms.SMS(phone_number, otp, user)
+            sns_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
         user.last_login_time = str(datetime.now(tz=timezone.utc))
