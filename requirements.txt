@@ -28,3 +28,5 @@ defusedxml==0.7.1
 requests~=2.31.0
 sphinx==6.2.1
 sphinx-rtd-theme==1.2.2
+httmock==1.4.0
+mock==5.1.0

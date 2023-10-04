@@ -49,8 +49,10 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from user_service import settings
 
-available_country_code = ["91", "1"]
-available_countries_iso = ["CA", "US", "IN"]
+logger = logging.getLogger(__name__)
+
+available_country_code = ["91", "1", "260", "62", "230", "261", "966", "971"]
+available_countries_iso = ["CA", "US", "IN", "ZM", "ID", "MU", "MG", "SA", "AE"]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -189,10 +191,12 @@ class RegisterSerializer(serializers.Serializer):
         if user.country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
-
-        else:
+        elif user.country_code == "1":
             sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
+        else:
+            sns_client = sms.SMS(phone_number, otp, user)
+            sns_client.send_message()
         user.otp_requested = otp
         user.login_attempts = user.login_attempts + 1
         user.last_login_time = str(datetime.now(tz=timezone.utc))
@@ -201,7 +205,6 @@ class RegisterSerializer(serializers.Serializer):
         user.save()
 
     def max_attempts(self, user):
-
         if user and not user.is_active and user.login_attempts == 1:
             user.is_active = True
             user.login_attempts = 0
@@ -407,7 +410,7 @@ class VerifyPhoneSerializer(serializers.Serializer):
         user = request.user
         otp = user.otp_requested
         user_setting = request.user.settings.filter().first()
-        if user_setting.wrong_attempts <= 5:
+        if user_setting.wrong_attempts <= 2:
             if request.data["otp"] == otp:
                 if not user.phone_number_verified:
                     user.phone_number_verified = True
@@ -434,6 +437,12 @@ class VerifyPhoneSerializer(serializers.Serializer):
                     user.phone_number = user_setting.phone_number
                     user.country_code = user_setting.country_code
                     user.save()
+                else:
+                    user_setting.wrong_attempts = user_setting.wrong_attempts + 1
+                    user_setting.save()
+                    raise serializers.ValidationError(
+                        {"detail": "Your OTP is Incorrect. Please re-enter."}
+                    )
 
             else:
                 user_setting.wrong_attempts = user_setting.wrong_attempts + 1
@@ -443,7 +452,9 @@ class VerifyPhoneSerializer(serializers.Serializer):
                 )
         else:
             raise serializers.ValidationError(
-                {"detail": "You have reached Max Phone Attempts for Phone Verification"}
+                {
+                    "detail": "You have reached the maximum attempts to log in. Please try again after 10 minutes"
+                }
             )
 
 
@@ -774,9 +785,13 @@ class UserDetailsSerializer(serializers.Serializer):
     unique_id = serializers.CharField(required=False)
     profile_pic = serializers.SerializerMethodField()
     user_type = serializers.SerializerMethodField()
+    fcm_token = serializers.SerializerMethodField()
 
     def get_profile_pic(self, obj):
         return obj.secondary_picture
+
+    def get_fcm_token(self, obj):
+        return obj.fcm_token
 
     def get_user_type(self, obj):
         return user_kyc_status(obj)
