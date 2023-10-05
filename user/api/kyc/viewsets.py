@@ -1,4 +1,3 @@
-import uuid
 from urllib.parse import urlparse
 
 from rest_framework import permissions
@@ -14,6 +13,7 @@ from user.api.kyc.serializers import (
     CompareFacesV2Serializer,
 )
 from user.utils import s3_url_extract, clear_bucket_from_path
+from user.api.kyc import services as kyc_service
 
 
 class BaseViewSet(APIView):
@@ -151,8 +151,10 @@ class PhotoIDVerifyViewSet(BaseViewSet):
         serializer.is_valid(raise_exception=True)
         request.data["source_key"] = self.cloudfront_cdn(request.data["source_key"])
 
-        serializer = self.serializer_class(request.data)
-        response = serializer.photo_id_verification(request.user)
+        response = kyc_service.validate_and_compare_photo_id(
+            request.user,
+            request.data["source_key"],
+        )
 
         return Response(response)
 
