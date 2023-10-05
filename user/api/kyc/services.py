@@ -53,14 +53,14 @@ def error_message(log_message, error, key=None):
     return log_message
 
 
-def get_logs(data):
+def get_logs(data=None):
     log_message = "<br/><br/>"
     log_message = info_message(log_message, datetime.now(timezone.utc))
-    if data.get("source_key"):
+    if data and data.get("source_key"):
         log_message = info_message(log_message, data["source_key"], "Source Image")
-    if data.get("target_key"):
+    if data and data.get("target_key"):
         log_message = info_message(log_message, data["target_key"], "Target Image")
-    if data.get("source_key_back_side"):
+    if data and data.get("source_key_back_side"):
         log_message = info_message(
             log_message,
             data["source_key_back_side"],
@@ -325,3 +325,18 @@ def handle_id_verification_failure(
         "image and text detected for Photo Id uploaded but ID is not matched",
     )
     add_log_entries(user, log_message)
+
+
+def validate_selfie(user: User, selfie_url: str):
+    user_kyc_setting = user.settings.filter().first()
+    verification = {
+        "id_number_matched": user_kyc_setting.id_matched,
+        "is_verified": False,
+    }
+    log_message = get_logs()
+    log_message = info_message(log_message, selfie_url, "Selfie Image")
+    verification["is_verified"] = True
+    verification["selfie"] = True
+    log_message = info_message(log_message, "Selfie is added successfully")
+    add_log_entries(user, log_message)  # type: ignore
+    return verification

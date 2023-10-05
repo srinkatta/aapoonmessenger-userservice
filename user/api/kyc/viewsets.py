@@ -91,7 +91,7 @@ class SelfieViewSet(BaseViewSet):
         url = serializer.data.get("url", "")
         request.data["url"] = self.cloudfront_cdn(url) if request.data["url"] else ""
 
-        response = serializer.selfie(request.user)
+        response = kyc_service.validate_selfie(request.user, request.data["url"])
 
         if response.get("is_verified"):
             user_kyc_settings = request.user.settings.filter().first()
