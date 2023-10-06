@@ -340,3 +340,20 @@ def validate_selfie(user: User, selfie_url: str):
     log_message = info_message(log_message, "Selfie is added successfully")
     add_log_entries(user, log_message)  # type: ignore
     return verification
+
+
+def update_profile_picture(user: User, profile_pic_url: str):
+    user_kyc_setting = user.settings.filter().first()
+    verification = {
+        "id_number_matched": user_kyc_setting.id_matched,
+        "is_verified": False,
+    }
+    log_message = get_logs()
+
+    log_message = info_message(log_message, profile_pic_url, "Profile Image")
+
+    verification["is_verified"] = True
+    verification["message"] = "Profile Picture Updated Successfully."
+    log_message = info_message(log_message, "Profile is successFull")
+    add_log_entries(user, log_message)
+    return verification

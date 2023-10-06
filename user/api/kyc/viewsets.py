@@ -206,8 +206,9 @@ class ProfileUpdateViewSet(BaseViewSet):
             self.cloudfront_cdn(target_key) if target_key else ""
         )
 
-        serializer = self.serializer_class(request.data)
-        response = serializer.profile(request.user)
+        response = kyc_service.update_profile_picture(
+            request.user, request.data["target_key"]
+        )
 
         if response.get("is_verified"):
             request.user.secondary_picture = request.data["target_key"]
