@@ -270,8 +270,7 @@ class ComparefacesViewSet(BaseViewSet):
             else ""
         )
 
-        serializer = self.serializer_class(request.data)
-        response = serializer.compare_faces(request.user)
+        response = kyc_service.compare_faces(request.user, request.data)
 
         if response.get("is_verified"):
             user_kyc_setting = request.user.settings.filter().first()
