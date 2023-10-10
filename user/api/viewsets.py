@@ -1,8 +1,9 @@
 import csv
 import os
 import logging
-import phonenumbers
 import datetime
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
@@ -1140,9 +1141,12 @@ class DeviceInfoView(APIView):
         device_id = request.data["device_id"]
         user_id = request.data["user"]
         logger.info(f"user_id : {user_id}, device_id: {device_id}")
+        print(f"user_id : {user_id}, device_id: {device_id}")
         logger.info(request.data)
         user_info = User.objects.filter(id=user_id).first()
         logger.info(f"{user_info}")
+        print(f"User Exists: {user_info}")
+
         if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
             serializer = self.serializer_class(
                 data=request.data, context={request: "request"}
@@ -1749,8 +1753,12 @@ class UserCheckAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         for contact in serializer.data["contacts"]:
             result = {"appUser": False}
-
-            phone_number = phonenumbers.parse(f"+{contact['contactPhoneNumber']}")
+            phone_number_str = "+" + contact["contactPhoneNumber"]
+            try:
+                phone_number = phonenumbers.parse(phone_number_str, None)
+            except NumberParseException as e:
+                print(f"Exception : {e}")
+                return Response(f"Error while parsing Phone Number: {e}")
             user = User.objects.filter(
                 country_code=phone_number.country_code,
                 phone_number=phone_number.national_number,
