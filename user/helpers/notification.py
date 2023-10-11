@@ -81,15 +81,18 @@ def notify_ios_device(token, name, message_value, data_message):
         content_available=True,
         extra_kwargs={"mutable_content": True},
     )
-    print(f"iOS Notification - Token: {token}, Message: {message_value}, Title: {name}, Data: {data_message}")
+    print(
+        f"iOS Notification - Token: {token}, Message: {message_value}, Title: {name}, Data: {data_message}"
+    )
     print(f"IOS Result:  {result}")
     logging.info(f"IOS result: , {result}")
 
 
-def prepare_data_message(to_user, from_user, message, xml):
+def prepare_data_message(to_user, from_user, message, xml, body):
     name = from_user.name
 
     message_value = extract_message_value(xml)
+    message_value = body[0] if message_value == "Text" else message_value
     xml = process_media(xml)
     xml = process_command_action(xml, message_value)
 
@@ -117,6 +120,7 @@ def extract_message_value(xml):
         "-1": "Forward",
         "-3": "Like",
         "-4": "Dislike",
+        "1": "Text",
         "2": "Image",
         "3": "Video",
         "4": "Audio",
@@ -139,7 +143,7 @@ def notify_dm_v2(
     if xml:
         body = re.findall(r"<body>(.*?)</body>", xml)
         if body:
-            data_message = prepare_data_message(to_user, from_user, message, xml)
+            data_message = prepare_data_message(to_user, from_user, message, xml, body)
 
             if to_user.fcm_token and not to_user.apns_token:
                 token = to_user.fcm_token
