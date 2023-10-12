@@ -1276,7 +1276,7 @@ class UserDeleteView(APIView):
     """
 
     serializer_class = UserRemoveSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = [HasAPIKey | permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         """
@@ -1290,7 +1290,10 @@ class UserDeleteView(APIView):
         """
         user = request.data["user_id"]
         try:
-            UserDelete().save_delete_record(user)
+            if not DeletedUser.objects.filter(user=user).exist():
+                UserDelete().save_delete_record(user)
+            else:
+                pass
         except Exception as error:
             return Response(
                 {"detail": ERROR_MESSAGE, "message": str(error), "status_code": 500},
