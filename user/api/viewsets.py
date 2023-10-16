@@ -1429,7 +1429,7 @@ class UserDeleteCronView(APIView):
         else:
             users_to_delete = DeletedUser.objects.filter(
                 created_at__lte=datetime.datetime.now(tz=datetime.timezone.utc)
-                - datetime.timedelta(days=30)
+                - datetime.timedelta(days=1)
             ).filter(is_deleted=False)
 
         self.delete_user_associated_objects(users_to_delete)
