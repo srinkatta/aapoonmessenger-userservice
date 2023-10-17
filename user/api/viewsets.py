@@ -1288,9 +1288,6 @@ class UserDeleteView(APIView):
         Returns:
         - Response: JSON response indicating the success or failure of the deletion request.
         """
-        import pdb
-
-        pdb.set_trace()
         user_id = request.data.get("user_id")
         country_code = request.data.get("country_code")
         phone_number = request.data.get("phone_number")
@@ -1312,7 +1309,7 @@ class UserDeleteView(APIView):
             else:
                 user = get_object_or_404(User, id=user_id)
 
-            if not DeletedUser.objects.filter(user=user).exists():
+            if not DeletedUser.objects.filter(user=user.id).exists():
                 UserDelete().save_delete_record(user.id)
 
             message = (
