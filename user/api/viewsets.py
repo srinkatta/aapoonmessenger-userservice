@@ -1288,42 +1288,61 @@ class UserDeleteView(APIView):
         Returns:
         - Response: JSON response indicating the success or failure of the deletion request.
         """
-        user = request.data["user_id"]
-        try:
-            if not DeletedUser.objects.filter(user=user).exist():
-                UserDelete().save_delete_record(user)
-            else:
-                pass
-        except Exception as error:
+        import pdb
+
+        pdb.set_trace()
+        user_id = request.data.get("user_id")
+        country_code = request.data.get("country_code")
+        phone_number = request.data.get("phone_number")
+
+        if not user_id and not (country_code and phone_number):
             return Response(
-                {"detail": ERROR_MESSAGE, "message": str(error), "status_code": 500},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {
+                    "detail": "User ID or (Country Code and Phone Number) is required.",
+                    "status_code": 400,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            user = User.objects.get(id=user)
-            message = "Your request for aapoon account deletion has been performed successfully."
+            if country_code and phone_number:
+                user = get_object_or_404(
+                    User, country_code=country_code, phone_number=phone_number
+                )
+            else:
+                user = get_object_or_404(User, id=user_id)
+
+            if not DeletedUser.objects.filter(user=user).exists():
+                UserDelete().save_delete_record(user.id)
+
+            message = (
+                "Your request for account deletion has been processed successfully."
+            )
             if user.email:
                 subject = "Account Closure Request"
                 template = "config/email/account_closure.html"
                 send_email_notification(user, template, subject)
             else:
-                phone = str(user.country_code) + str(user.phone_number)
+                phone = f"{user.country_code}{user.phone_number}"
                 send_sms_message(message, user, phone)
-        except SMTPAuthenticationError:
+
             return Response(
-                data={"detail": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        except User.DoesNotExist:
-            return Response(
-                data={"detail": "User doesn't exist."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"message": "User added to be deleted list."}, status=status.HTTP_200_OK
             )
 
-        return Response(
-            data={"message": "User added to be deleted list."},
-            status=status.HTTP_200_OK,
-        )
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User doesn't exist."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except SMTPAuthenticationError:
+            return Response(
+                {"detail": "SMTP Error"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as error:
+            return Response(
+                {"detail": ERROR_MESSAGE, "message": str(error), "status_code": 400},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     def xmpp_unregister(self, user):
         """
