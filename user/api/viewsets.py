@@ -1276,7 +1276,9 @@ class UserDeleteView(APIView):
     """
 
     serializer_class = UserRemoveSerializer
-    permission_classes = [HasAPIKey | permissions.IsAuthenticated]
+    permission_classes = [
+        (HasAPIKey or permissions.AllowAny) | permissions.IsAuthenticated
+    ]
 
     def post(self, request, *args, **kwargs):
         """
