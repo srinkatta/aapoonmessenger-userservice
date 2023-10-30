@@ -1,9 +1,10 @@
+import base64
 import uuid
+from datetime import datetime, timedelta, timezone
+
+from rest_framework import serializers
 
 from user_service import settings
-import base64
-from datetime import datetime, timedelta, timezone
-from rest_framework import serializers
 
 
 class S3UploadPolicySerializer(serializers.Serializer):

@@ -1,24 +1,23 @@
 import csv
 import logging
 
-from django.http import HttpResponse
 from django.contrib.auth import login
 from django.contrib.auth.hashers import check_password
-
-from rest_framework import status, viewsets, permissions
+from django.http import HttpResponse
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import permissions, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_spectacular.utils import OpenApiParameter, extend_schema
 
 from user import models as user_models
-from user.utils import make_request, GenericPagination
-from user.user_delete import UserDelete
 from user.api import serializers as user_serializers
 from user.api.admin import serializers as admin_serializers
 from user.api.admin.filters import UserFilter
+from user.user_delete import UserDelete
+from user.utils import GenericPagination, make_request
 from user_service import settings
 
 logging = logging.getLogger(__name__)

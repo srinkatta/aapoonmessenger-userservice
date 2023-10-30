@@ -1,39 +1,39 @@
-from rest_framework import routers
-from django.urls import path, include
 from django.contrib import admin
+from django.urls import include, path
+from rest_framework import routers
 from rest_framework_simplejwt import views as jwt_views
+
+from user.api.admin import viewsets as admin_viewsets
+from user.api.direct_messages.viewsets import (
+    MuteMessageView,
+    NotifyRedirectDmViewSet,
+    UserChatDeleteView,
+    XMPPMonthlyChatViewSet,
+)
+from user.api.kyc import viewsets as kyc_viewsets
 from user.api.viewsets import (
-    AuthUserRegistrationView,
+    AppPolicyView,
     AuthUserLoginView,
-    UserLogsViewSet,
-    UserDeviceViewSet,
-    UserInviteViewSet,
-    UserProfileViewSet,
-    UserViewSet,
+    AuthUserRegistrationView,
+    DeviceInfoView,
+    FeedbackView,
+    InviteListView,
     PushNotificationSettings,
     SendOTPView,
-    VerifyPhoneView,
-    DeviceInfoView,
-    AppPolicyView,
-    FeedbackView,
-    UserDeleteView,
-    UserDeleteRevokeView,
+    UserCheckAPIView,
     UserDeleteCronView,
-    InviteListView,
+    UserDeleteRevokeView,
+    UserDeleteView,
     UserDetailsAPI,
     UserDetailsPhoneAPI,
-    UserCheckAPIView,
+    UserDeviceViewSet,
+    UserInviteViewSet,
+    UserLogsViewSet,
     UserProfileSearchAPI,
+    UserProfileViewSet,
+    UserViewSet,
+    VerifyPhoneView,
 )
-from user.api.direct_messages.viewsets import (
-    NotifyRedirectDmViewSet,
-    MuteMessageView,
-    XMPPMonthlyChatViewSet,
-    UserChatDeleteView,
-)
-
-from user.api.kyc import viewsets as kyc_viewsets
-from user.api.admin import viewsets as admin_viewsets
 
 router = routers.SimpleRouter()
 router.register(r"user", UserViewSet, basename="user"),

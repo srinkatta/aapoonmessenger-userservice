@@ -1,5 +1,5 @@
-from rest_framework import serializers
 from rest_flex_fields import FlexFieldsModelSerializer
+from rest_framework import serializers
 
 from user import models as user_models
 from user.admin import source_images

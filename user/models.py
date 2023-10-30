@@ -2,20 +2,19 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from multiselectfield import MultiSelectField
 
 from common.models import BaseTimeStampedModel
 from user.choices import (
     COUNTRY_CODE_CHOICES,
     EDUCATION_CHOICES,
-    INCOME_CHOICES,
-    MARITAL_STATUS_CHOICES,
-    INTEREST_CHOICES,
-    SPORTS_CHOICES,
     GENDER_CHOICES,
+    INCOME_CHOICES,
+    INTEREST_CHOICES,
+    MARITAL_STATUS_CHOICES,
     SECTORS_TYPE_CHOICES,
+    SPORTS_CHOICES,
 )
-
-from multiselectfield import MultiSelectField
 
 
 class User(AbstractUser):

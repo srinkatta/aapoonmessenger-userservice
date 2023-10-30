@@ -1,9 +1,8 @@
-from rest_framework.test import APITestCase
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient, APITestCase
 
-from user.models import User, UserDevice, UserInvite, Languages, DeviceInfo
 from user.api.serializers import DeviceInfoSerializer
+from user.models import DeviceInfo, Languages, User, UserDevice, UserInvite
 
 
 class UserLogsTest(APITestCase):

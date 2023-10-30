@@ -1,9 +1,10 @@
-import re
-import requests
 import json
+import logging
+import re
 from collections import OrderedDict
 from datetime import datetime
-import logging
+
+import requests
 from requests.exceptions import HTTPError
 
 try:
@@ -12,14 +13,14 @@ except Exception as e:
     from email import charset as Charset
 
 from django.core.mail import send_mail
-from django.utils.html import strip_tags
 from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
-from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 
-from user.helpers import sms
 from user.choices import COUNTRIES_CHOICES
+from user.helpers import sms
 from user_service import settings
 
 logging = logging.getLogger(__name__)

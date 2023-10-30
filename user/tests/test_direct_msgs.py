@@ -1,9 +1,11 @@
-from user.models import *
-from rest_framework.test import APITestCase
 from unittest.mock import MagicMock, patch
+
+from rest_framework.exceptions import ValidationError
+from rest_framework.test import APITestCase
+
 from user.api.direct_messages.serializers import *
 from user.models import *
-from rest_framework.exceptions import ValidationError
+
 
 # Test cases for NotifyRedirectDmSerializer
 class NotifyRedirectDmSerializerTest(APITestCase):
@@ -35,13 +37,15 @@ class NotifyRedirectDmSerializerTest(APITestCase):
 
         serializer = NotifyRedirectDmSerializer(data=data)
         self.assertFalse(serializer.is_valid())
-        self.assertEqual(serializer.errors["from_user"][0], "This field may not be blank.")
+        self.assertEqual(
+            serializer.errors["from_user"][0], "This field may not be blank."
+        )
 
     # Test max length validation
     def test_max_length_validation(self):
         data = {
             "body": "a" * 513,  # Exceeds max_length of 512
-            "xml": "b" * 257,   # Exceeds max_length of 256
+            "xml": "b" * 257,  # Exceeds max_length of 256
             "from_user": "user1",
             "to": "user2",
             "vhost": "c" * 257,  # Exceeds max_length of 256
@@ -67,6 +71,7 @@ class NotifyRedirectDmSerializerTest(APITestCase):
 
         serializer = NotifyRedirectDmSerializer(data=data)
         self.assertTrue(serializer.is_valid())
+
 
 # Test cases for MuteMessageSerializer
 class MuteMessageSerializerTest(APITestCase):
@@ -127,6 +132,7 @@ class MuteMessageSerializerTest(APITestCase):
         self.assertEqual(serializer.data["recipient_id"], "user2")
         self.assertTrue(serializer.data["mute"])
 
+
 # Test cases for ArchiveChatSerializer
 class ArchiveChatSerializerTest(APITestCase):
 
@@ -175,6 +181,7 @@ class ArchiveChatSerializerTest(APITestCase):
         self.assertIn("xml", serializer.errors)
         self.assertIn("username", serializer.errors)
         self.assertIn("user_pic", serializer.errors)
+
 
 # Test cases for UserChatDeleteSerializer
 class UserChatDeleteSerializerTest(APITestCase):
