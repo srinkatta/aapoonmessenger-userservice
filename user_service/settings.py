@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "drf_spectacular",
+    "storages",
     # Custom App
     "user",
 ]
@@ -167,15 +168,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.0/howto/static-files/
-
-STATIC_URL = "static/"
-
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
@@ -292,3 +284,21 @@ TWILIO_FROM_NUMBER = os.environ["TWILIO_FROM_NUMBER"]
 # AWS Pinpoint
 AWS_PINPOINT_APP_ID = os.environ["AWS_PINPOINT_APP_ID"]
 AWS_PINPOINT_FROM_NUMBER = os.environ["AWS_PINPOINT_FROM_NUMBER"]
+
+
+AWS_ACCESS_KEY_ID = os.environ["STATIC_AWS_ACCESS_KEY_ID"]
+AWS_SECRET_ACCESS_KEY = os.environ["STATIC_AWS_SECRET_ACCESS_KEY"]
+AWS_STORAGE_BUCKET_NAME = os.environ["STATIC_AWS_STORAGE_BUCKET_NAME"]
+AWS_S3_REGION_NAME = os.environ["STATIC_AWS_S3_REGION_NAME"]
+AWS_S3_CUSTOM_DOMAIN = os.environ["STATIC_AWS_S3_CUSTOM_DOMAIN"]
+
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=86400",  # cache static files for 1 day
+}
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.0/howto/static-files/
+
+AWS_LOCATION = "static"
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
+STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
