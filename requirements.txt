@@ -31,3 +31,4 @@ sphinx==6.2.1
 sphinx-rtd-theme==1.2.2
 httmock==1.4.0
 mock==5.1.0
+django-storages==1.14.2
