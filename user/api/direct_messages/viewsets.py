@@ -1,7 +1,7 @@
-import time
 import logging
-import phonenumbers
+import time
 
+import phonenumbers
 from django.db import connections
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status, viewsets
@@ -11,19 +11,16 @@ from rest_framework.views import APIView
 from rest_framework_api_key.permissions import HasAPIKey
 
 from user.api.direct_messages.serializers import (
-    NotifyRedirectDmSerializer,
-    MuteMessageSerializer,
     ArchiveChatSerializer,
+    MuteMessageSerializer,
+    NotifyRedirectDmSerializer,
     UserChatDeleteSerializer,
 )
-from user.models import (
-    User,
-    MuteConversation,
-)
-from user.utils import CustomPagination
 from user.helpers import notification
-from user_service import settings
+from user.models import MuteConversation, User
 from user.user_delete import UserDelete
+from user.utils import CustomPagination
+from user_service import settings
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +240,6 @@ class ArchiveChat(object):
         """
         for field in ("id", "bare_peer", "timestamp", "xml", "username", "user_pic"):
             setattr(self, field, kwargs.get(field))
-
 
 
 class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):

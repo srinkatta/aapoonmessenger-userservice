@@ -1,13 +1,12 @@
 from rest_framework import serializers
+
 from user.models import MuteConversation
 
 
 class NotifyRedirectDmSerializer(serializers.Serializer):
     body = serializers.CharField(max_length=512)
     xml = serializers.CharField(max_length=256)
-    from_user = serializers.CharField(
-        max_length=256, label="from"
-    )
+    from_user = serializers.CharField(max_length=256, label="from")
     to = serializers.CharField(max_length=256)
     vhost = serializers.CharField(max_length=256)
     message_id = serializers.CharField(

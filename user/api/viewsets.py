@@ -1,73 +1,72 @@
 import csv
-import os
-import logging
-import phonenumbers
 import datetime
+import logging
+import os
+from smtplib import SMTPAuthenticationError
+
+import phonenumbers
+from allauth.account.adapter import get_adapter
+from allauth.utils import email_address_exists
+from django.http import Http404, HttpResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
-from django.http import Http404, HttpResponse
-from smtplib import SMTPAuthenticationError
-
-from rest_framework import status, viewsets, permissions
-from rest_framework.generics import get_object_or_404, ListAPIView
+from rest_framework import permissions, status, viewsets
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_api_key.permissions import HasAPIKey
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.exceptions import ValidationError
 
 from user.api.serializers import (
-    UserLoginSerializer,
-    RegisterSerializer,
-    UserLogSerializer,
-    UserInviteSerializer,
-    UserDeviceSerializer,
-    UserProfileSerializer,
-    UserProfileInputSerializer,
-    UserSerializer,
-    SendOTPSerializer,
-    VerifyPhoneSerializer,
-    DeviceInfoSerializer,
     AppInfoSerializer,
     AppPolicySerializer,
+    DeviceInfoSerializer,
     FeedbackSerializer,
-    UserRemoveSerializer,
-    UserDetailsSerializer,
-    UserDetailsInputSerializer,
     NotificationSettingsSerializer,
-    UserPhoneDetailsInputSerializer,
+    RegisterSerializer,
+    SendOTPSerializer,
     UserCheckSerializer,
+    UserDetailsInputSerializer,
+    UserDetailsSerializer,
+    UserDeviceSerializer,
+    UserInviteSerializer,
+    UserLoginSerializer,
+    UserLogSerializer,
+    UserPhoneDetailsInputSerializer,
+    UserProfileInputSerializer,
     UserProfileSearchSerializer,
-)
-from user.models import (
-    UserLog,
-    UserInvite,
-    UserDevice,
-    UserProfile,
-    User,
-    DeviceInfo,
-    AppInfo,
-    Languages,
-    DeletedUser,
-)
-from user.utils import (
-    make_request,
-    phone_failure,
-    send_sms_message,
-    send_email_notification,
-    feedback_mail,
-    user_kyc_status,
-    GenericPagination,
+    UserProfileSerializer,
+    UserRemoveSerializer,
+    UserSerializer,
+    VerifyPhoneSerializer,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
+from user.models import (
+    AppInfo,
+    DeletedUser,
+    DeviceInfo,
+    Languages,
+    User,
+    UserDevice,
+    UserInvite,
+    UserLog,
+    UserProfile,
+)
 from user.user_delete import UserDelete
+from user.utils import (
+    GenericPagination,
+    feedback_mail,
+    make_request,
+    phone_failure,
+    send_email_notification,
+    send_sms_message,
+    user_kyc_status,
+)
 from user_service import settings
-from rest_framework_api_key.permissions import HasAPIKey
-
-from allauth.account.adapter import get_adapter
-from allauth.utils import email_address_exists
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,15 @@
-from rest_framework.test import APITestCase
-from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from rest_framework import status
+from rest_framework.test import (
+    APIClient,
+    APIRequestFactory,
+    APITestCase,
+    force_authenticate,
+)
 
-from user_service import settings
-from user.models import User, MuteConversation
 from user.api.direct_messages.serializers import MuteMessageSerializer
 from user.api.direct_messages.viewsets import XMPPMonthlyChatViewSet
+from user.models import MuteConversation, User
+from user_service import settings
 
 
 class NotificationRedirectTest(APITestCase):

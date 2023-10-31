@@ -1,10 +1,10 @@
 """user_service URL Configuration
 """
-from django.urls import path, include
+from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularSwaggerView,
     SpectacularRedocView,
+    SpectacularSwaggerView,
 )
 
 from user_service.router_urls import router_urlpatterns

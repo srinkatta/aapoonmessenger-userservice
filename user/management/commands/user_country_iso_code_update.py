@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
+
+from user.choices import COUNTRY_CODE_CHOICES
 from user.models import User
 from user.utils import get_data_from_choices
-from user.choices import COUNTRY_CODE_CHOICES
 
 
 class Command(BaseCommand):

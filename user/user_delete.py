@@ -3,16 +3,17 @@ import logging
 import boto3
 from django.conf import settings
 from django.db import connections
-from user.utils import send_email_notification, send_sms_message
+
 from user.models import (
-    User,
-    DeviceInfo,
     DeletedUser,
-    UserProfile,
+    DeviceInfo,
+    User,
     UserDevice,
     UserLog,
+    UserProfile,
     UserVerificationSetting,
 )
+from user.utils import send_email_notification, send_sms_message
 
 try:
     from email import Charset

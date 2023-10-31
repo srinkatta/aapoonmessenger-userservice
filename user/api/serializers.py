@@ -1,52 +1,52 @@
-import uuid
 import logging
-import phonenumbers
-from phonenumbers.phonenumberutil import region_code_for_number
+import uuid
+from datetime import datetime, timezone
+from urllib.parse import urlparse
 
+import phonenumbers
 from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from django.db import IntegrityError
 from django.utils.translation import gettext_lazy as _
+from phonenumbers.phonenumberutil import region_code_for_number
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.choices import (
-    SPORTS_CHOICES,
+    COUNTRY_CODE_CHOICES,
+    EDUCATION_CHOICES,
     INTEREST_CHOICES,
     SECTORS_TYPE_CHOICES,
-    EDUCATION_CHOICES,
-    COUNTRY_CODE_CHOICES,
+    SPORTS_CHOICES,
 )
-from user.helpers import sms, hotp
+from user.helpers import hotp, sms
 from user.helpers.otp import generate_otp
 from user.models import (
-    User,
-    UserLog,
-    UserInvite,
-    UserDevice,
-    UserProfile,
-    DeviceInfo,
     AppInfo,
+    DeviceInfo,
+    User,
+    UserDevice,
+    UserInvite,
+    UserLog,
+    UserProfile,
     UserVerificationSetting,
 )
 from user.utils import (
-    s3_url_extract,
-    clear_bucket_from_path,
-    make_request,
     calculate_age,
     check_special,
-    is_english,
-    user_kyc_status,
-    get_dob,
-    phone_failure,
+    clear_bucket_from_path,
     get_data_from_choices,
+    get_dob,
+    is_english,
+    make_request,
+    phone_failure,
+    s3_url_extract,
+    user_kyc_status,
 )
-from datetime import datetime, timezone
-from urllib.parse import urlparse
 from user_service import settings
 
 logger = logging.getLogger(__name__)
