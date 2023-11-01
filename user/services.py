@@ -40,7 +40,7 @@ class KYC:
         request_data: dict = self._prepare_request(target_image=target_image)
         try:
             response: Response = requests.post(
-                f"{self.base_url}/kyc/face-detect",
+                f"{self.base_url}/api/kyc/face-detect",
                 json=request_data,
             )
             response.raise_for_status()
@@ -67,7 +67,7 @@ class KYC:
         )
         try:
             response: Response = requests.post(
-                f"{self.base_url}/kyc/face-comparison",
+                f"{self.base_url}/api/kyc/face-comparison",
                 json=request_data,
             )
             response.raise_for_status()
@@ -92,7 +92,7 @@ class KYC:
         )
         try:
             response: Response = requests.post(
-                f"{self.base_url}/kyc/text-extract",
+                f"{self.base_url}/api/kyc/text-extract",
                 json=request_data,
             )
             response.raise_for_status()
@@ -117,7 +117,7 @@ class KYC:
         )
         try:
             response: Response = requests.post(
-                f"{self.base_url}/kyc/analyze-id",
+                f"{self.base_url}/api/kyc/analyze-id",
                 json=request_data,
             )
             response.raise_for_status()
