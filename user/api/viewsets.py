@@ -23,6 +23,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from user.api.serializers import (
     AppInfoSerializer,
     AppPolicySerializer,
+    DeletedUserSerializer,
     DeviceInfoSerializer,
     FeedbackSerializer,
     NotificationSettingsSerializer,
@@ -1255,7 +1256,7 @@ class FeedbackView(APIView):
             return Response(serializer.errors, status=400)
 
 
-class UserDeleteView(APIView):
+class UserDeleteRequestView(APIView):
     """
     API View to request user account deletion.
 
@@ -1362,6 +1363,41 @@ class UserDeleteView(APIView):
             print("User successfully unregistered at websocket server")
         except Exception as e:
             print("Error unregistering user at websocket server %s" % e)
+
+
+class UserDeleteRequestList(ListAPIView):
+    """
+    API view for listing deleted user objects.
+
+    This view allows authenticated users to retrieve a list of deleted user objects.
+
+    Authentication:
+    - IsAuthenticated: Users must be authenticated to access this view.
+
+    HTTP Methods:
+    - GET: Retrieve a list of deleted user objects.
+
+    Returns:
+    - Response: A response containing the serialized data of deleted user objects.
+    """
+
+    queryset = DeletedUser.objects.all()
+    serializer_class = DeletedUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        """
+        Handle GET requests to retrieve a list of deleted user objects.
+
+        Args:
+            request (Request): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Response: A response containing the serialized data of deleted user objects.
+        """
+        return super().list(request, *args, **kwargs)
 
 
 class UserDeleteRevokeView(APIView):

@@ -23,7 +23,8 @@ from user.api.viewsets import (
     UserCheckAPIView,
     UserDeleteCronView,
     UserDeleteRevokeView,
-    UserDeleteView,
+    UserDeleteRequestView,
+    UserDeleteRequestList,
     UserDetailsAPI,
     UserDetailsPhoneAPI,
     UserDeviceViewSet,
@@ -69,7 +70,10 @@ urlpatterns = [
     path("auth/send_otp/", SendOTPView.as_view(), name="send_otp"),
     path("auth/verify_otp/", VerifyPhoneView.as_view(), name="verify_otp"),
     path("device_info/", DeviceInfoView.as_view(), name="device_info"),
-    path("user_delete/", UserDeleteView.as_view(), name="user_delete"),
+    path("user_delete/", UserDeleteRequestView.as_view(), name="user_delete"),
+    path(
+        "delete-requests/", UserDeleteRequestList.as_view(), name="deleted_users_list"
+    ),
     path(
         "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
     ),

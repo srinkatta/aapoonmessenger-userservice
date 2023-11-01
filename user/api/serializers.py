@@ -27,6 +27,7 @@ from user.helpers import hotp, sms
 from user.helpers.otp import generate_otp
 from user.models import (
     AppInfo,
+    DeletedUser,
     DeviceInfo,
     User,
     UserDevice,
@@ -839,3 +840,9 @@ class UserProfileSearchSerializer(serializers.Serializer):
 
     def get_user_profile(self, obj):
         return user_kyc_status(obj)
+
+
+class DeletedUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeletedUser
+        fields = ["id", "user", "is_deleted", "name", "country_code", "phone_number"]
