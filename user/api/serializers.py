@@ -27,6 +27,7 @@ from user.helpers import hotp, sms
 from user.helpers.otp import generate_otp
 from user.models import (
     AppInfo,
+    DeletedUser,
     DeviceInfo,
     User,
     UserDevice,
@@ -188,6 +189,8 @@ class RegisterSerializer(serializers.Serializer):
         self.save_user_device(user, device_model, device_os_version)
 
     def send_otp(self, phone_number, otp, user, number):
+        logger.info("Sending OTP: Method invoked.(via logs).")
+        print("Sending OTP: Method invoked (via print statement).")
         if user.country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
@@ -839,3 +842,9 @@ class UserProfileSearchSerializer(serializers.Serializer):
 
     def get_user_profile(self, obj):
         return user_kyc_status(obj)
+
+
+class DeletedUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeletedUser
+        fields = ["id", "user", "is_deleted", "name", "country_code", "phone_number"]
