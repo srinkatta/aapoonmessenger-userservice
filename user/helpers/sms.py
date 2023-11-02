@@ -1,5 +1,5 @@
 import hashlib
-
+from loguru import logger
 import boto3
 import requests
 from botocore.exceptions import ClientError
@@ -161,14 +161,18 @@ class FAST_SMS:
             response = requests.request(
                 "GET", self.url, headers=headers, params=querystring
             )
+            logger.info(response)
             print(response)
             if response.status_code == 200:
+                logger.debug(response.json())
                 print(response.json())
                 return True
             else:
+                logger.debug(response.json())
                 print(response.json())
                 return response.json()
         except Exception as exc:
+            logger.error(exc)
             print(exc)
             return False
 
