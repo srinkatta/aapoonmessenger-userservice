@@ -130,7 +130,9 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
-        logger.info("Triggered Register API.")  # todo: remove debugging statements
+        logger.info(
+            "Triggered Register API.(via logs)"
+        )  # todo: remove debugging statements
         print("Triggered Register API.")
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
@@ -161,6 +163,10 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
+        logger.info(
+            "Triggered perform create method.(via logs)"
+        )  # todo: remove debugging statements
+        print("Triggered perform create method.")
         user = serializer.save(self.request)
         return user
 
