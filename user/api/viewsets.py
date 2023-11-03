@@ -130,6 +130,8 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
+        logger.info("Triggered Register API.")  # todo: remove debugging statements
+        print("Triggered Register API.")
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
@@ -205,6 +207,8 @@ class AuthUserLoginView(APIView):
         Returns:
         - Response: JSON response indicating the success of user authentication and login.
         """
+        logger.info("Triggered Login API.")  # todo: remove debugging statements
+        print("Triggered Login API.")
         country_code = request.data["country_code"]
         phone_number = request.data["phone_number"]
 
