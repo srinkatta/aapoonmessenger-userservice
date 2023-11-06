@@ -159,6 +159,10 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
+        logger.info(
+            "Triggered perform create method.(via logs)"
+        )  # todo: remove debugging statements
+        print("Triggered perform create method.")
         user = serializer.save(self.request)
         return user
 
