@@ -13,7 +13,8 @@ RUN pip install -r requirements.txt
 #RUN pre-commit install
 
 # RUN python manage.py makemigrations
-RUN python manage.py migrate
+# RUN python manage.py migrate
+CMD ["python", "manage.py", "migrate"]
 
 # start serverd
 EXPOSE 8000
