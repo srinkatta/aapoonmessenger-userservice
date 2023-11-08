@@ -185,15 +185,10 @@ class MuteMessageView(APIView):
         - Response: JSON response indicating the success or failure of the mute operation.
         """
         data = request.data
-        print(data)
         sender = data.get("sender_id")
-        print(sender)
         # sender = str(sender) + "@" + settings.XMPP_HOST
-        print(sender)
         recipient = data.get("recipient_id")
-        print(recipient)
         # recipient = str(recipient) + "@" + settings.XMPP_HOST
-        print(recipient)
         mute_time = data.get("mute_time")
         mute = data.get("mute")
         if MuteConversation.objects.filter(

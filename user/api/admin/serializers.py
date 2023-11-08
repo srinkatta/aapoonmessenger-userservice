@@ -104,7 +104,6 @@ class UserVerificationDetailsSerializer(FlexFieldsModelSerializer):
         return instance.user.id
 
     def get_kyc_done(self, instance):
-        print(instance)
         return instance.kyc_done
 
     def get_kyc_logs(self, instance):
@@ -135,7 +134,6 @@ class UserVerificationSerializer(FlexFieldsModelSerializer):
         return f"{instance.user.phone_number}{instance.user.country_code}"
 
     def get_kyc_done(self, instance):
-        print(instance)
         return instance.kyc_done
 
     class Meta:

@@ -312,6 +312,7 @@ class UserProfile(BaseTimeStampedModel):
         blank=True,
     )
     sports = MultiSelectField(
+        max_length=1024,
         choices=SPORTS_CHOICES,
         null=True,
         blank=True,
