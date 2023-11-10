@@ -54,6 +54,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "epoch_time": int(
                 (datetime.now(timezone.utc) + self.expires_after).timestamp()
             ),
+            "s3:x-amz-server-side-encryption": "aws:kms",
         }
         if self.success_action_redirect:
             obj["success_action_redirect"] = self.success_action_redirect
@@ -100,10 +101,11 @@ class S3UploadPolicySerializer(serializers.Serializer):
         import hmac
 
         signature = hmac.new(
-            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha1
-        ).digest()
+            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha256
+        ).hexdigest()
+        signature_bytes = bytes.fromhex(signature)
 
-        return base64.b64encode(signature)
+        return base64.b64encode(signature_bytes)
 
     def post_action(self):
         return "https://%s.s3-accelerate.amazonaws.com/" % settings.AWS_S3_BUCKET_NAME
