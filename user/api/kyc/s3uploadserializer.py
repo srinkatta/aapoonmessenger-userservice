@@ -57,6 +57,8 @@ class S3UploadPolicySerializer(serializers.Serializer):
                 (datetime.now(timezone.utc) + self.expires_after).timestamp()
             ),
             "s3:x-amz-server-side-encryption": "aws:kms",
+            "x-amz-server-side-encryption": "aws:kms",
+            "x-amz-server-side-encryption-aws-kms-key-id": settings.KMS_KEY_ARN,
         }
         if self.success_action_redirect:
             obj["success_action_redirect"] = self.success_action_redirect
