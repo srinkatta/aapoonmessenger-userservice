@@ -142,9 +142,16 @@ class AuthUserRegistrationView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        user = self.perform_create(serializer)
+
+        user_status = user_kyc_status(user)
+
+        # User registration status
+        is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
+
         return Response(
-            {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
+            {"message": "Verification Code (OTP) sent", "is_registered": is_registered},
+            status=status.HTTP_200_OK,
         )
 
     def perform_create(self, serializer):
