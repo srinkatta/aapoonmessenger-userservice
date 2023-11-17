@@ -314,7 +314,7 @@ class UserLoginSerializer(serializers.Serializer):
             user.save()
 
             user_status = user_kyc_status(user)
-            is_registered = user_status in ["Basic Verified", "Fully Verified"]
+            is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
             if not user.second_last_login:
                 second_last_login = 0
 
