@@ -1923,7 +1923,7 @@ class SubmitPollData(APIView):
             serializer = self.serializer_class(
                 data={
                     "user": user.id,
-                    "user_phone_number": user.phone_number,
+                    "phone_number": user.phone_number,
                     "male_votes": request.data.get("male_votes"),
                     "female_votes": request.data.get("female_votes"),
                     "transgender_votes": request.data.get("transgender_votes"),
