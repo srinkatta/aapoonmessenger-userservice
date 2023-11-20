@@ -12,9 +12,20 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 #RUN pre-commit install
 
+# Create and copy the entrypoint script
+COPY entrypoint.sh /app
+RUN chmod +x /app/entrypoint.sh
+
+# Apply database migrations
+#RUN python manage.py makemigrations
+RUN python manage.py migrate
+
+# Set the entrypoint to the entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
+
 # RUN python manage.py makemigrations
 # RUN python manage.py migrate
-CMD ["python", "manage.py", "migrate"]
+#CMD ["python", "manage.py", "migrate"]
 
 # start serverd
 EXPOSE 8000
