@@ -1908,6 +1908,7 @@ class UserProfileSearchAPI(APIView, GenericPagination):
 class SubmitPollData(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PollDataSerializer
+    allowed_methods = ("POST",)
 
     def post(self, request):
         user = request.user
