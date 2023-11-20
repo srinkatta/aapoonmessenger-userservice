@@ -13,15 +13,15 @@ RUN pip install -r requirements.txt
 #RUN pre-commit install
 
 # Create and copy the entrypoint script
-COPY entrypoint.sh /code
-RUN chmod +x /code/entrypoint.sh
+#COPY entrypoint.sh /code
+#RUN chmod +x /code/entrypoint.sh
 
 # Apply database migrations
 #RUN python manage.py makemigrations
-RUN python manage.py migrate
+#RUN python manage.py migrate
 
 # Set the entrypoint to the entrypoint script
-ENTRYPOINT ["/code/entrypoint.sh"]
+#ENTRYPOINT ["/code/entrypoint.sh"]
 
 # RUN python manage.py makemigrations
 # RUN python manage.py migrate
