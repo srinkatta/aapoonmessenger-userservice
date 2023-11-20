@@ -35,6 +35,7 @@ from user.models import (
     UserLog,
     UserProfile,
     UserVerificationSetting,
+    PollData,
 )
 from user.utils import (
     calculate_age,
@@ -859,3 +860,17 @@ class DeletedUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeletedUser
         fields = ["id", "user", "is_deleted", "name", "country_code", "phone_number"]
+
+
+class PollDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PollData
+        fields = [
+            "id",
+            "user",
+            "phone_number",
+            "male_votes",
+            "female_votes",
+            "transgender_votes",
+            "challenging_votes",
+        ]
