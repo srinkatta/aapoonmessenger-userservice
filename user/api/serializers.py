@@ -236,7 +236,7 @@ class RegisterSerializer(serializers.Serializer):
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
             datetime_format = "%Y-%m-%d %H:%M:%S.%f"
-            now_utc = datetime.now(timezone.utc)
+            now_utc = datetime.now(tz=timezone.utc)
             dt = datetime.strptime(now_utc.strftime(datetime_format), datetime_format)
             diff = dt - datetime.strptime(str(updated_date), datetime_format)
             hours, remainder = divmod(diff.seconds, 3600)

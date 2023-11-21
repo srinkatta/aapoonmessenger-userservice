@@ -161,7 +161,7 @@ class BaseKYCSerializer(serializers.Serializer):
 
     def get_logs(self, user):
         log_message = "<br/><br/>"
-        log_message = info_message(user, log_message, datetime.now(timezone.utc))
+        log_message = info_message(user, log_message, datetime.now(tz=timezone.utc))
         if self.data.get("source_key"):
             log_message = info_message(
                 user, log_message, self.data["source_key"], "Source Image"
