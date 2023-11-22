@@ -56,7 +56,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "epoch_time": int(
                 (datetime.now(timezone.utc) + self.expires_after).timestamp()
             ),
-            "s3:x-amz-server-side-encryption": "aws:kms",
+            "x-amz-server-side-encryption-customer-key-MD5": "SSECustomerKeyMD5",
             "x-amz-server-side-encryption": "aws:kms",
             "x-amz-server-side-encryption-aws-kms-key-id": settings.KMS_KEY_ARN,
         }
