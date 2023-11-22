@@ -40,7 +40,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
     def to_native(self, obj={}):
         policy = base64.b64encode(bytes(self.calculate_policy(), encoding="utf-8"))
         signature = self.sign_policy(policy)
-        expiry_utc = datetime.now(timezone.utc) + self.expires_after
+        expiry_utc = datetime.now(tz=timezone.utc) + self.expires_after
         expiry_str = expiry_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
         obj = {
@@ -54,7 +54,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "signature": signature,
             "expiry": expiry_str,
             "epoch_time": int(
-                (datetime.now(timezone.utc) + self.expires_after).timestamp()
+                (datetime.now(tz=timezone.utc) + self.expires_after).timestamp()
             ),
             "x-amz-server-side-encryption-customer-key-MD5": "SSECustomerKeyMD5",
             "x-amz-server-side-encryption": "aws:kms",
@@ -93,7 +93,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
                     ["starts-with", "$Content-Type", "%s" % self.content_type]
                 )
 
-        expiry_utc = datetime.now(timezone.utc) + self.expires_after
+        expiry_utc = datetime.now(tz=timezone.utc) + self.expires_after
         expiry_str = expiry_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
         policy_document = {
             "expiration": expiry_str,
