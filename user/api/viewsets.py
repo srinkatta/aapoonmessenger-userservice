@@ -1822,20 +1822,22 @@ class UserCheckAPIView(APIView):
                 phone_number=phone_number.national_number,
             ).first()
             if user and user.phone_number_verified:
-                result["appUser"] = True
-                result["contactUserName"] = user.name
-                result["contactUserprofilepicture"] = (
-                    user.secondary_picture if user else ""
-                )
-                result["contactUserJID"] = user.jid if user else ""
-                result["contactUserFcmToken"] = user.fcm_token
-                result["contactUserID"] = user.id
-                user_settings = user.settings.filter().first()
-                kyc_done = user_settings.kyc_done if user_settings else None
-                if kyc_done:
-                    result["contactUserProfileStatus"] = "completed"
-                else:
-                    result["contactUserProfileStatus"] = "basic"
+                user_status = user_kyc_status(user)
+                if user_status in ["Basic Verified", "Fully Verified", "Pending"]:
+                    result["appUser"] = True
+                    result["contactUserName"] = user.name
+                    result["contactUserprofilepicture"] = (
+                        user.secondary_picture if user else ""
+                    )
+                    result["contactUserJID"] = user.jid if user else ""
+                    result["contactUserFcmToken"] = user.fcm_token
+                    result["contactUserID"] = user.id
+                    user_settings = user.settings.filter().first()
+                    kyc_done = user_settings.kyc_done if user_settings else None
+                    if kyc_done:
+                        result["contactUserProfileStatus"] = "completed"
+                    else:
+                        result["contactUserProfileStatus"] = "basic"
             else:
                 result["appUser"] = False
             result["contactName"] = contact["contactName"]
