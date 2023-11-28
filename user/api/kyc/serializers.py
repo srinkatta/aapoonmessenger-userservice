@@ -18,6 +18,9 @@ MESSAGES = {
     verification team will respond within 12 hrs. Thanks for your patience. """,
 }
 
+MAX_IMAGE_SIZE: int = 4 * 1024 * 1024  # 4MB
+SUPPORTED_IMAGE_FORMATS = ["jpeg", "png", "bmp", "jpg"]
+
 
 def failure_attempt_check(self, verification, user):
     user_kyc_setting = user.settings.filter().first()
@@ -651,6 +654,20 @@ class BaseKYCSerializer(serializers.Serializer):
 class SelfieSerializer(BaseKYCSerializer):
     url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
+    def validate(self, attrs):
+        # Target key validate image size
+        image_size = get_image_size(attrs.get("url"))
+        if image_size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError(f"selfie image size exceeds 4MB.")
+
+        image_extension = validate_image_extension(attrs.get("url"))
+        if not image_extension:
+            raise serializers.ValidationError(
+                f"Supported Image formats are JPEG, PNG, or BMP format."
+            )
+
+        return attrs
+
     def selfie(self, user):
         user_kyc_setting = user.settings.filter().first()
         verification = {
@@ -668,6 +685,20 @@ class SelfieSerializer(BaseKYCSerializer):
 
 class PhotoIDSerializer(BaseKYCSerializer):
     source_key = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        # source key validate image
+        image_extension = validate_image_extension(attrs.get("source_key"))
+        if not image_extension:
+            raise serializers.ValidationError(
+                f"Supported Image formats are JPEG, PNG, or BMP format."
+            )
+
+        image_size = get_image_size(attrs.get("source_key"))
+        if image_size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError(f"source_key image size exceeds 4MB.")
+
+        return attrs
 
     def photo_id_verification(self, user):
         user_kyc_setting = user.settings.filter().first()
@@ -848,6 +879,20 @@ class ProfileSerializer(BaseKYCSerializer):
         required=False, allow_blank=True, allow_null=True
     )
 
+    def validate(self, attrs):
+        # Target key validate image size
+        image_extension = validate_image_extension(attrs.get("target_key"))
+        if not image_extension:
+            raise serializers.ValidationError(
+                f"Supported Image formats are JPEG, PNG, or BMP format."
+            )
+
+        image_size = get_image_size(attrs.get("target_key"))
+        if image_size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError(f"target_key image size exceeds 4MB.")
+
+        return attrs
+
     def profile(self, user):
         user_kyc_setting = user.settings.filter().first()
         verification = {
@@ -873,6 +918,47 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
     source_key_back_side = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
+
+    def validate(self, attrs):
+        # Source key validate image size
+        source_key_image_extension = validate_image_extension(attrs.get("source_key"))
+        if not source_key_image_extension:
+            raise serializers.ValidationError(
+                f"Supported Image formats are JPEG, PNG, or BMP format."
+            )
+
+        target_key_image_extension = validate_image_extension(attrs.get("target_key"))
+        if not target_key_image_extension:
+            raise serializers.ValidationError(
+                f"Supported Image formats are JPEG, PNG, or BMP format."
+            )
+
+        image_size = get_image_size(attrs.get("source_key"))
+        if image_size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError(f"source_key image size exceeds 4MB.")
+
+        # Target key validate image size
+        image_size = get_image_size(attrs.get("target_key"))
+        if image_size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError(f"target_key image size exceeds 4MB.")
+
+        # source_key_back_side image size
+        if attrs.get("source_key_back_side"):
+            image_extension = validate_image_extension(
+                attrs.get("source_key_back_side")
+            )
+            if not image_extension:
+                raise serializers.ValidationError(
+                    f"Supported Image formats are JPEG, PNG, or BMP format."
+                )
+
+            image_size = get_image_size(attrs.get("source_key_back_side"))
+            if image_size > MAX_IMAGE_SIZE:
+                raise serializers.ValidationError(
+                    f"source_key_back_side image size exceeds 4MB."
+                )
+
+        return attrs
 
     def compare_faces(self, user):
         user_kyc_setting = user.settings.filter().first()
@@ -1021,3 +1107,21 @@ class CompareFacesV2Serializer(BaseKYCSerializer):
                     user, log_message, verification, logs
                 )
         return verification
+
+
+def get_image_size(image_url):
+    try:
+        response = requests.head(image_url)
+        if response.status_code == 200:
+            return int(response.headers["Content-Length"])
+        else:
+            return 0
+    except requests.exceptions.RequestException:
+        return 0
+
+
+def validate_image_extension(image_url):
+    if image_url.split(".")[-1].lower() in SUPPORTED_IMAGE_FORMATS:
+        return True
+    else:
+        return False
