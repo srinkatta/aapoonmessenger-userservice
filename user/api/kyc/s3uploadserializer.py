@@ -1,9 +1,10 @@
+import base64
 import uuid
+from datetime import datetime, timedelta, timezone
+
+from rest_framework import serializers
 
 from user_service import settings
-import base64
-from datetime import datetime, timedelta, timezone
-from rest_framework import serializers
 
 
 class S3UploadPolicySerializer(serializers.Serializer):
@@ -24,6 +25,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
         self.aws_access_key = settings.S3_AWS_ACCESS_KEY_ID
         self.aws_secret_key = settings.S3_AWS_SECRET_ACCESS_KEY
         self.bucket = settings.AWS_S3_BUCKET_NAME
+        self.region = settings.AWS_S3_BUCKET_REGION_NAME
         self.key = key
         self.expires_after = expires_after
         self.acl = acl
@@ -45,7 +47,8 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "key": self.key,
             "AWSAccessKeyId": self.aws_access_key,
             "AWSSecretKey": self.aws_secret_key,
-            "AWSS3BucketName": settings.AWS_S3_BUCKET_NAME,
+            "AWSS3BucketName": self.bucket,
+            "AWSS3RegionName": self.region,
             "acl": self.acl,
             "policy": policy,
             "signature": signature,
@@ -53,6 +56,9 @@ class S3UploadPolicySerializer(serializers.Serializer):
             "epoch_time": int(
                 (datetime.now(timezone.utc) + self.expires_after).timestamp()
             ),
+            "x-amz-server-side-encryption-customer-key-MD5": "SSECustomerKeyMD5",
+            "x-amz-server-side-encryption": "aws:kms",
+            "x-amz-server-side-encryption-aws-kms-key-id": settings.KMS_KEY_ARN,
         }
         if self.success_action_redirect:
             obj["success_action_redirect"] = self.success_action_redirect
@@ -68,6 +74,7 @@ class S3UploadPolicySerializer(serializers.Serializer):
         conditions = [
             {"bucket": self.bucket},
             {"acl": self.acl},
+            {"region": self.region},
             {"success_action_status": "201"},
         ]
         if self.success_action_redirect:
@@ -99,10 +106,11 @@ class S3UploadPolicySerializer(serializers.Serializer):
         import hmac
 
         signature = hmac.new(
-            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha1
-        ).digest()
+            (bytes(self.aws_secret_key, encoding="utf-8")), policy, hashlib.sha256
+        ).hexdigest()
+        signature_bytes = bytes.fromhex(signature)
 
-        return base64.b64encode(signature)
+        return base64.b64encode(signature_bytes)
 
     def post_action(self):
         return "https://%s.s3-accelerate.amazonaws.com/" % settings.AWS_S3_BUCKET_NAME

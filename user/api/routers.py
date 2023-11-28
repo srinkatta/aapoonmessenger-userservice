@@ -1,39 +1,41 @@
-from rest_framework import routers
-from django.urls import path, include
 from django.contrib import admin
+from django.urls import include, path
+from rest_framework import routers
 from rest_framework_simplejwt import views as jwt_views
+
+from user.api.admin import viewsets as admin_viewsets
+from user.api.direct_messages.viewsets import (
+    MuteMessageView,
+    NotifyRedirectDmViewSet,
+    UserChatDeleteView,
+    XMPPMonthlyChatViewSet,
+)
+from user.api.kyc import viewsets as kyc_viewsets
 from user.api.viewsets import (
-    AuthUserRegistrationView,
+    AppPolicyView,
     AuthUserLoginView,
-    UserLogsViewSet,
-    UserDeviceViewSet,
-    UserInviteViewSet,
-    UserProfileViewSet,
-    UserViewSet,
+    AuthUserRegistrationView,
+    DeviceInfoView,
+    FeedbackView,
+    InviteListView,
     PushNotificationSettings,
     SendOTPView,
-    VerifyPhoneView,
-    DeviceInfoView,
-    AppPolicyView,
-    FeedbackView,
-    UserDeleteView,
-    UserDeleteRevokeView,
+    UserCheckAPIView,
     UserDeleteCronView,
-    InviteListView,
+    UserDeleteRevokeView,
+    UserDeleteRequestView,
+    UserDeleteRequestList,
     UserDetailsAPI,
     UserDetailsPhoneAPI,
-    UserCheckAPIView,
+    UserDeviceViewSet,
+    UserInviteViewSet,
+    UserLogsViewSet,
     UserProfileSearchAPI,
+    UserProfileViewSet,
+    UserViewSet,
+    VerifyPhoneView,
+    SubmitPollData,
 )
-from user.api.direct_messages.viewsets import (
-    NotifyRedirectDmViewSet,
-    MuteMessageView,
-    XMPPMonthlyChatViewSet,
-    UserChatDeleteView,
-)
-
-from user.api.kyc import viewsets as kyc_viewsets
-from user.api.admin import viewsets as admin_viewsets
 
 router = routers.SimpleRouter()
 router.register(r"user", UserViewSet, basename="user"),
@@ -69,7 +71,10 @@ urlpatterns = [
     path("auth/send_otp/", SendOTPView.as_view(), name="send_otp"),
     path("auth/verify_otp/", VerifyPhoneView.as_view(), name="verify_otp"),
     path("device_info/", DeviceInfoView.as_view(), name="device_info"),
-    path("user_delete/", UserDeleteView.as_view(), name="user_delete"),
+    path("user_delete/", UserDeleteRequestView.as_view(), name="user_delete"),
+    path(
+        "delete-requests/", UserDeleteRequestList.as_view(), name="deleted_users_list"
+    ),
     path(
         "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
     ),
@@ -92,6 +97,7 @@ urlpatterns = [
         UserProfileSearchAPI.as_view(),
         name="user_profile_search",
     ),
+    path("poll_data/", SubmitPollData.as_view(), name="submit_poll_data"),
     # Direct message urls
     path("notify_dm/", NotifyRedirectDmViewSet.as_view(), name="notify_redirect_dm"),
     path("mute_messages/", MuteMessageView.as_view(), name="mute_messages"),

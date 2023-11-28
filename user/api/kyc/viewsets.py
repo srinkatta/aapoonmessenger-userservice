@@ -7,10 +7,10 @@ from rest_framework.viewsets import GenericViewSet
 
 from user.api.kyc.s3uploadserializer import S3UploadPolicySerializer
 from user.api.kyc.serializers import (
-    SelfieSerializer,
+    CompareFacesV2Serializer,
     PhotoIDSerializer,
     ProfileSerializer,
-    CompareFacesV2Serializer,
+    SelfieSerializer,
 )
 from user.utils import s3_url_extract, clear_bucket_from_path
 from user.api.kyc import services as kyc_service

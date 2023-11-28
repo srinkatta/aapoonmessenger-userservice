@@ -1,22 +1,21 @@
-from rest_framework.test import APITestCase
-from user.utils import *
-import json
-import re
-from requests.exceptions import HTTPError
-from unittest.mock import patch, MagicMock
-from django.conf import settings
-from rest_framework import status
 import json
 import logging
-from requests.exceptions import HTTPError
+import re
+from unittest.mock import MagicMock, patch
+
+from django.conf import settings
 from django.core import mail
-from django.utils.translation import gettext as _
-from django.core import mail
-from django.test import override_settings
-from django.utils.translation import gettext as _
 from django.template.loader import render_to_string
+from django.test import override_settings
 from django.utils.html import strip_tags
+from django.utils.translation import gettext as _
+from requests.exceptions import HTTPError
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from user.models import *
+from user.utils import *
+
 
 class S3UrlExtractAPITestCase(APITestCase):
 
@@ -62,6 +61,7 @@ class S3UrlExtractAPITestCase(APITestCase):
         # Assert that the result matches the expected result
         self.assertEqual(result, expected_result)
 
+
 class ClearBucketFromPathAPITestCase(APITestCase):
 
     # Test case to clear bucket from path in the dev environment
@@ -105,6 +105,7 @@ class ClearBucketFromPathAPITestCase(APITestCase):
 
         # Check if the result matches the expected result
         self.assertEqual(result, expected_result)
+
 
 class MakeRequestAPITestCase(APITestCase):
 
@@ -158,6 +159,7 @@ class MakeRequestAPITestCase(APITestCase):
         # Check if the response status code matches the expected HTTP 200 OK status
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+
 class MakeRequestAPITestCase(APITestCase):
 
     # Function to create a mock response
@@ -180,7 +182,7 @@ class MakeRequestAPITestCase(APITestCase):
         params = {"param": "value"}
 
         # Mock the response from requests.request
-        with patch('user.utils.requests.request') as mock_request:
+        with patch("user.utils.requests.request") as mock_request:
             # Create a mock response with status code 200
             mock_response = self.create_mock_response(status_code=200)
             mock_request.return_value = mock_response
@@ -197,7 +199,7 @@ class MakeRequestAPITestCase(APITestCase):
                 headers={
                     "content-type": "application/json",
                     "Authorization": settings.XMPP_AUTHORIZATION,
-                }
+                },
             )
 
         # Verify that the response matches the mocked response
@@ -210,7 +212,7 @@ class MakeRequestAPITestCase(APITestCase):
         method = "GET"
 
         # Mock the exception raised by requests.request
-        with patch('user.utils.requests.request') as mock_request:
+        with patch("user.utils.requests.request") as mock_request:
             mock_request.side_effect = HTTPError("Internal Server Error")
 
             # Make the request using make_request function and expect it to raise an exception
@@ -226,14 +228,14 @@ class MakeRequestAPITestCase(APITestCase):
                 headers={
                     "content-type": "application/json",
                     "Authorization": settings.XMPP_AUTHORIZATION,
-                }
+                },
             )
 
 
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class SendEmailNotificationAPITestCase(APITestCase):
     # Use mock to test send_email_notification function
-    @patch('user.utils.send_email_notification')
+    @patch("user.utils.send_email_notification")
     def test_send_email_notification(self, mock_send_mail):
         # Create a test user
         user = User.objects.create(
@@ -246,13 +248,17 @@ class SendEmailNotificationAPITestCase(APITestCase):
         # Use assertLogs context manager to capture log messages
         with self.assertLogs() as log:
             # Make a POST request to the specified API endpoint
-            response = self.client.post('/api/send-email-notification/', {
-                'user_id': user.id,
-                'subject': subject,
-            })
+            response = self.client.post(
+                "/api/send-email-notification/",
+                {
+                    "user_id": user.id,
+                    "subject": subject,
+                },
+            )
 
             # Assert the log message count
             self.assertEqual(len(log.output), 1)
+
 
 class CalculateAgeTestCase(APITestCase):
     def test_calculate_age(self):
@@ -266,9 +272,12 @@ class CalculateAgeTestCase(APITestCase):
         # Check the calculated age
         self.assertEqual(age, expected_age)
 
+
 class UserKycStatusAPITestCase(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='testpassword', phone_number_verified=True)
+        self.user = User.objects.create_user(
+            username="testuser", password="testpassword", phone_number_verified=True
+        )
 
     @patch("user.utils.user_kyc_status")
     def test_user_kyc_status_fully_verified(self, mock_re):
@@ -292,12 +301,13 @@ class UserKycStatusAPITestCase(APITestCase):
         status = user_kyc_status(self.user)
 
         # Assert the return value of the function
-        self.assertNotEqual(status, 'Fully Verified')
+        self.assertNotEqual(status, "Fully Verified")
+
 
 class MonthCheckerTestCase(APITestCase):
     def test_valid_month(self):
         # Call the month_checker function with a valid month abbreviation
-        month_number = month_checker('Mar')
+        month_number = month_checker("Mar")
 
         # Assert the return value of the function
         self.assertEqual(month_number, 3)
@@ -305,7 +315,4 @@ class MonthCheckerTestCase(APITestCase):
     def test_invalid_month(self):
         # Call the month_checker function with an invalid month abbreviation
         with self.assertRaises(KeyError):
-            month_checker('XYZ')
-
-
-    
+            month_checker("XYZ")

@@ -2,20 +2,19 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from multiselectfield import MultiSelectField
 
 from common.models import BaseTimeStampedModel
 from user.choices import (
     COUNTRY_CODE_CHOICES,
     EDUCATION_CHOICES,
-    INCOME_CHOICES,
-    MARITAL_STATUS_CHOICES,
-    INTEREST_CHOICES,
-    SPORTS_CHOICES,
     GENDER_CHOICES,
+    INCOME_CHOICES,
+    INTEREST_CHOICES,
+    MARITAL_STATUS_CHOICES,
     SECTORS_TYPE_CHOICES,
+    SPORTS_CHOICES,
 )
-
-from multiselectfield import MultiSelectField
 
 
 class User(AbstractUser):
@@ -313,6 +312,7 @@ class UserProfile(BaseTimeStampedModel):
         blank=True,
     )
     sports = MultiSelectField(
+        max_length=1024,
         choices=SPORTS_CHOICES,
         null=True,
         blank=True,
@@ -481,3 +481,18 @@ class MuteConversation(models.Model):
     recipient_id = models.CharField(max_length=200)
     mute = models.BooleanField(default=False)
     mute_time = models.BigIntegerField(default=0)
+
+
+class PollData(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="poll",
+    )
+    phone_number = models.CharField(
+        max_length=30, null=True, blank=True, verbose_name="Phone Number"
+    )
+    male_votes = models.IntegerField(default=0)
+    female_votes = models.IntegerField(default=0)
+    transgender_votes = models.IntegerField(default=0)
+    challenging_votes = models.IntegerField(default=0)

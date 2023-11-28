@@ -1,73 +1,75 @@
 import csv
-import os
-import logging
-import phonenumbers
 import datetime
+import logging
+import os
+from smtplib import SMTPAuthenticationError
+
+import phonenumbers
+from allauth.account.adapter import get_adapter
+from allauth.utils import email_address_exists
+from django.http import Http404, HttpResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
-from django.http import Http404, HttpResponse
-from smtplib import SMTPAuthenticationError
-
-from rest_framework import status, viewsets, permissions
-from rest_framework.generics import get_object_or_404, ListAPIView
+from rest_framework import permissions, status, viewsets
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_api_key.permissions import HasAPIKey
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.exceptions import ValidationError
 
 from user.api.serializers import (
-    UserLoginSerializer,
-    RegisterSerializer,
-    UserLogSerializer,
-    UserInviteSerializer,
-    UserDeviceSerializer,
-    UserProfileSerializer,
-    UserProfileInputSerializer,
-    UserSerializer,
-    SendOTPSerializer,
-    VerifyPhoneSerializer,
-    DeviceInfoSerializer,
     AppInfoSerializer,
     AppPolicySerializer,
+    DeletedUserSerializer,
+    DeviceInfoSerializer,
     FeedbackSerializer,
-    UserRemoveSerializer,
-    UserDetailsSerializer,
-    UserDetailsInputSerializer,
     NotificationSettingsSerializer,
-    UserPhoneDetailsInputSerializer,
+    RegisterSerializer,
+    SendOTPSerializer,
     UserCheckSerializer,
+    UserDetailsInputSerializer,
+    UserDetailsSerializer,
+    UserDeviceSerializer,
+    UserInviteSerializer,
+    UserLoginSerializer,
+    UserLogSerializer,
+    UserPhoneDetailsInputSerializer,
+    UserProfileInputSerializer,
     UserProfileSearchSerializer,
-)
-from user.models import (
-    UserLog,
-    UserInvite,
-    UserDevice,
-    UserProfile,
-    User,
-    DeviceInfo,
-    AppInfo,
-    Languages,
-    DeletedUser,
-)
-from user.utils import (
-    make_request,
-    phone_failure,
-    send_sms_message,
-    send_email_notification,
-    feedback_mail,
-    user_kyc_status,
-    GenericPagination,
+    UserProfileSerializer,
+    UserRemoveSerializer,
+    UserSerializer,
+    VerifyPhoneSerializer,
+    PollDataSerializer,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
+from user.models import (
+    AppInfo,
+    DeletedUser,
+    DeviceInfo,
+    Languages,
+    User,
+    UserDevice,
+    UserInvite,
+    UserLog,
+    UserProfile,
+    PollData,
+)
 from user.user_delete import UserDelete
+from user.utils import (
+    GenericPagination,
+    feedback_mail,
+    make_request,
+    phone_failure,
+    send_email_notification,
+    send_sms_message,
+    user_kyc_status,
+)
 from user_service import settings
-from rest_framework_api_key.permissions import HasAPIKey
-
-from allauth.account.adapter import get_adapter
-from allauth.utils import email_address_exists
 
 logger = logging.getLogger(__name__)
 
@@ -142,9 +144,16 @@ class AuthUserRegistrationView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        user = self.perform_create(serializer)
+
+        user_status = user_kyc_status(user)
+
+        # User registration status
+        is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
+
         return Response(
-            {"message": "Verification Code (OTP) sent"}, status=status.HTTP_200_OK
+            {"message": "Verification Code (OTP) sent", "is_registered": is_registered},
+            status=status.HTTP_200_OK,
         )
 
     def perform_create(self, serializer):
@@ -159,6 +168,10 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
+        logger.info(
+            "Triggered perform create method.(via logs)"
+        )  # todo: remove debugging statements
+        print("Triggered perform create method.")
         user = serializer.save(self.request)
         return user
 
@@ -1256,7 +1269,7 @@ class FeedbackView(APIView):
             return Response(serializer.errors, status=400)
 
 
-class UserDeleteView(APIView):
+class UserDeleteRequestView(APIView):
     """
     API View to request user account deletion.
 
@@ -1363,6 +1376,41 @@ class UserDeleteView(APIView):
             print("User successfully unregistered at websocket server")
         except Exception as e:
             print("Error unregistering user at websocket server %s" % e)
+
+
+class UserDeleteRequestList(ListAPIView):
+    """
+    API view for listing deleted user objects.
+
+    This view allows authenticated users to retrieve a list of deleted user objects.
+
+    Authentication:
+    - IsAuthenticated: Users must be authenticated to access this view.
+
+    HTTP Methods:
+    - GET: Retrieve a list of deleted user objects.
+
+    Returns:
+    - Response: A response containing the serialized data of deleted user objects.
+    """
+
+    queryset = DeletedUser.objects.all()
+    serializer_class = DeletedUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        """
+        Handle GET requests to retrieve a list of deleted user objects.
+
+        Args:
+            request (Request): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Response: A response containing the serialized data of deleted user objects.
+        """
+        return super().list(request, *args, **kwargs)
 
 
 class UserDeleteRevokeView(APIView):
@@ -1855,3 +1903,39 @@ class UserProfileSearchAPI(APIView, GenericPagination):
         return Response(
             {"detail": "No jid provided"}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class SubmitPollData(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PollDataSerializer
+    allowed_methods = ("POST",)
+
+    def post(self, request):
+        user = request.user
+
+        # If the user has previously submitted poll data, update it with the new data
+        existing_poll_data = PollData.objects.filter(user=user)
+        if existing_poll_data.exists():
+            serializer = self.serializer_class(
+                existing_poll_data[0], data=request.data, partial=True
+            )
+
+        else:
+            serializer = self.serializer_class(
+                data={
+                    "user": user.id,
+                    "phone_number": user.phone_number,
+                    "male_votes": request.data.get("male_votes"),
+                    "female_votes": request.data.get("female_votes"),
+                    "transgender_votes": request.data.get("transgender_votes"),
+                    "challenging_votes": request.data.get("challenging_votes"),
+                }
+            )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Poll data has been submitted successfully."},
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -1,35 +1,32 @@
-import re
 import logging
-
+import re
 from datetime import timedelta
-from django.utils import timezone
+
+import pandas as pd
 from django.contrib import admin
 from django.db import connections
+from django.utils import timezone
 from django.utils.safestring import mark_safe
-
 from django_admin_listfilter_dropdown.filters import DropdownFilter
-
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.fields import Field
-
 from rangefilter.filter import DateRangeFilter
-import pandas as pd
 
-from user_service import settings
-from user.utils import make_request
 from user.models import (
-    User,
-    UserLog,
-    UserInvite,
-    UserDevice,
-    UserVerificationSetting,
-    UserProfile,
-    DeviceInfo,
     AppInfo,
-    Languages,
     DeletedUser,
+    DeviceInfo,
+    Languages,
+    User,
+    UserDevice,
+    UserInvite,
+    UserLog,
+    UserProfile,
+    UserVerificationSetting,
 )
+from user.utils import make_request
+from user_service import settings
 
 admin.site.register(UserDevice)
 admin.site.register(UserProfile)
