@@ -34,7 +34,6 @@ from user.api.viewsets import (
     UserProfileViewSet,
     UserViewSet,
     VerifyPhoneView,
-    SubmitPollData,
 )
 
 router = routers.SimpleRouter()
@@ -97,7 +96,6 @@ urlpatterns = [
         UserProfileSearchAPI.as_view(),
         name="user_profile_search",
     ),
-    path("poll_data/", SubmitPollData.as_view(), name="submit_poll_data"),
     # Direct message urls
     path("notify_dm/", NotifyRedirectDmViewSet.as_view(), name="notify_redirect_dm"),
     path("mute_messages/", MuteMessageView.as_view(), name="mute_messages"),
