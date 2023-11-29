@@ -68,7 +68,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "user_service.urls"
 
-CSRF_TRUSTED_ORIGINS = os.environ["CSRF_TRUSTED_ORIGINS"]
+CSRF_TRUSTED_ORIGINS = os.environ["CSRF_TRUSTED_ORIGINS"].split(",")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
