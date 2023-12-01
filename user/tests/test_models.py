@@ -1,27 +1,32 @@
 from datetime import datetime
-from django.db import IntegrityError
-from django.test import TestCase
-from django.db.models.signals import post_save
-from django.core.exceptions import ValidationError
 
-from user.models import (
-    User,
-    UserLog,
-    UserVerificationSetting,
-    UserProfile,
-    MuteConversation,
-)
-from user.models import DeviceInfo, UserInvite, UserDevice, AppInfo, Languages
-from user.signals import user_kyc_profile_settings
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.db.models.signals import post_save
+from django.test import TestCase
+
 from user.choices import (
     EDUCATION_CHOICES,
-    INCOME_CHOICES,
-    MARITAL_STATUS_CHOICES,
-    INTEREST_CHOICES,
-    SPORTS_CHOICES,
     GENDER_CHOICES,
+    INCOME_CHOICES,
+    INTEREST_CHOICES,
+    MARITAL_STATUS_CHOICES,
     SECTORS_TYPE_CHOICES,
+    SPORTS_CHOICES,
 )
+from user.models import (
+    AppInfo,
+    DeviceInfo,
+    Languages,
+    MuteConversation,
+    User,
+    UserDevice,
+    UserInvite,
+    UserLog,
+    UserProfile,
+    UserVerificationSetting,
+)
+from user.signals import user_kyc_profile_settings
 
 """Testing all the CRUD operations"""
 

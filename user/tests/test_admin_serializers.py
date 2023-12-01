@@ -1,9 +1,10 @@
-from rest_framework.test import APITestCase
 from unittest.mock import MagicMock, patch
+
+from rest_framework.exceptions import ValidationError
+from rest_framework.test import APITestCase
+
 from user.api.admin.serializers import *
 from user.models import *
-from rest_framework.exceptions import ValidationError
-
 
 
 class UserListSerializerTestCase(APITestCase):
@@ -23,7 +24,6 @@ class UserListSerializerTestCase(APITestCase):
         # Create a user using the sample user data
         self.user = User.objects.create(**self.user_data)
 
-
     def test_user_list_serializer(self):
         # Serialize the user instance using UserListSerializer
         serializer = UserListSerializer(instance=self.user)
@@ -36,13 +36,18 @@ class UserListSerializerTestCase(APITestCase):
             "date_joined": self.user_data["date_joined"],  # Date user joined
             "country": self.user_data["country_code"],  # User's country code
             "phone_number": self.user_data["phone_number"],  # User's phone number
-            "phone_verified": self.user_data["phone_number_verified"],  # Phone verification status
+            "phone_verified": self.user_data[
+                "phone_number_verified"
+            ],  # Phone verification status
             "kyc_verified": False,  # Replace with the expected value for KYC verification
-            "user_type": self.user_data["user_type"],  # User's type (e.g., regular, admin)
+            "user_type": self.user_data[
+                "user_type"
+            ],  # User's type (e.g., regular, admin)
         }
 
         # Assert that the serialized data matches the expected data
         self.assertEqual(serializer.data, expected_data)
+
 
 class UserDetailSerializerTestCase(APITestCase):
     def setUp(self):
@@ -75,7 +80,6 @@ class UserDetailSerializerTestCase(APITestCase):
 
         # Assert that the serialized data matches the expected data
         self.assertEqual(serializer.data, expected_data)
-
 
 
 class UserVerificationSerializerTestCase(APITestCase):
@@ -123,7 +127,9 @@ class UserVerificationUpdateSerializerTestCase(APITestCase):
 
     def test_user_verification_update_serializer(self):
         # Serialize the user verification setting using UserVerificationUpdateSerializer
-        serializer = UserVerificationUpdateSerializer(instance=self.user_verification_setting)
+        serializer = UserVerificationUpdateSerializer(
+            instance=self.user_verification_setting
+        )
 
         # Define the expected data structure for user verification update
         expected_data = {
@@ -153,7 +159,9 @@ class UserFilterSerializerTestCase(APITestCase):
         # Define the expected data structure for filtered user serialization
         expected_data = {
             "id": self.user.id,  # User ID
-            "date_joined": self.user.date_joined.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),  # Joined date
+            "date_joined": self.user.date_joined.strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),  # Joined date
             "country_code": self.user.country_code,  # User's country code
             "phone_number": self.user.phone_number,  # User's phone number
             "phone_number_verified": self.user.phone_number_verified,  # Phone number verification status
@@ -192,7 +200,6 @@ class DeletedUserSerializerTest(APITestCase):
 
         # Assert that the serializer is not valid (as expected)
         self.assertFalse(serializer.is_valid())
-
 
 
 class CreateSuperUserSerializerTest(APITestCase):
@@ -259,22 +266,12 @@ class SuperUserLoginSerializerTest(APITestCase):
     def test_superuser_login_deserialization(self):
         # Create a serializer instance using the superuser_data
         serializer = SuperUserLoginSerializer(data=self.superuser_data)
-        
+
         # Validate the serializer
         serializer.is_valid()
-        
+
         # Get the validated user_instance
         user_instance = serializer.validated_data
 
         # Assert that the username matches the expected value
         self.assertEqual(user_instance["username"], "admin")
-
-
-
-
-
-
-
-
-
-

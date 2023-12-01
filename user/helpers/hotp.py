@@ -7,8 +7,8 @@ Parameter and function names kept inline with the RFC
 (e.g. HOTP, Truncate, K, C etc)
 """
 
-import hmac
 import hashlib
+import hmac
 import struct
 import time
 import unittest

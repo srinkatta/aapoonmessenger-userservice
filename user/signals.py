@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from user.models import User, UserVerificationSetting, UserProfile, UserLog
+from user.models import User, UserLog, UserProfile, UserVerificationSetting
 
 
 @receiver(post_save, sender=User)

@@ -1,12 +1,12 @@
 from unittest import mock
-from parameterized import parameterized
 
 from django.test import SimpleTestCase, TestCase
+from parameterized import parameterized
 
-from user.helpers.aadhar import AadharValidate
 from user.helpers import notification
+from user.helpers.aadhar import AadharValidate
+from user.helpers.sms import FAST_SMS, SMS
 from user.models import User
-from user.helpers.sms import SMS, FAST_SMS
 from user_service import settings
 
 

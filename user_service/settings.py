@@ -11,8 +11,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import json
 import os
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "drf_spectacular",
+    "storages",
     # Custom App
     "user",
 ]
@@ -67,7 +68,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "user_service.urls"
 
-CSRF_TRUSTED_ORIGINS = os.environ["CSRF_TRUSTED_ORIGINS"]
+CSRF_TRUSTED_ORIGINS = os.environ["CSRF_TRUSTED_ORIGINS"].split(",")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -167,15 +168,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.0/howto/static-files/
-
-STATIC_URL = "static/"
-
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
@@ -235,6 +227,7 @@ SPECTACULAR_SETTINGS = {
 DEFAULT_FROM_EMAIL = "support@aapoon.net"
 SUPPORT_EMAIL = "support@aapoon.net"
 
+
 FCM_API_KEY = os.environ["FCM_API_KEY"]
 
 FAST_API_KEY = os.environ["FAST_API_KEY"]
@@ -266,12 +259,22 @@ XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "postmarker.django.EmailBackend"
 EMAIL_HOST = os.environ["EMAIL_HOST"]
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ["EMAIL_HOST_USER"]
 EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
+
+# postmark
+POSTMARK_SERVER_TOKEN = os.environ["POSTMARK_SERVER_TOKEN"]
+POSTMARK = {
+    "TOKEN": POSTMARK_SERVER_TOKEN,
+    "TEST_MODE": False,
+    "VERBOSITY": 0,
+}
+
 
 # twilio
 TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
@@ -281,3 +284,23 @@ TWILIO_FROM_NUMBER = os.environ["TWILIO_FROM_NUMBER"]
 # AWS Pinpoint
 AWS_PINPOINT_APP_ID = os.environ["AWS_PINPOINT_APP_ID"]
 AWS_PINPOINT_FROM_NUMBER = os.environ["AWS_PINPOINT_FROM_NUMBER"]
+
+
+AWS_ACCESS_KEY_ID = os.environ["STATIC_AWS_ACCESS_KEY_ID"]
+AWS_SECRET_ACCESS_KEY = os.environ["STATIC_AWS_SECRET_ACCESS_KEY"]
+AWS_STORAGE_BUCKET_NAME = os.environ["STATIC_AWS_STORAGE_BUCKET_NAME"]
+AWS_S3_REGION_NAME = os.environ["STATIC_AWS_S3_REGION_NAME"]
+AWS_S3_CUSTOM_DOMAIN = os.environ["STATIC_AWS_S3_CUSTOM_DOMAIN"]
+
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=86400",  # cache static files for 1 day
+}
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.0/howto/static-files/
+
+AWS_LOCATION = "static"
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
+STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+KMS_KEY_ARN = os.environ["KMS_KEY_ARN"]

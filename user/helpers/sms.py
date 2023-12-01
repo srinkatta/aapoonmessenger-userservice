@@ -1,7 +1,8 @@
-import boto3
-from botocore.exceptions import ClientError
 import hashlib
+from loguru import logger
+import boto3
 import requests
+from botocore.exceptions import ClientError
 from django.conf import settings
 
 from twilio.rest import Client
@@ -165,9 +166,9 @@ class FAST_SMS:
                 print(response.json())
                 return True
             else:
-                print(response.json())
                 return response.json()
         except Exception as exc:
+            logger.error(exc)
             print(exc)
             return False
 

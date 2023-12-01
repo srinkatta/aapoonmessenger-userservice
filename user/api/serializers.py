@@ -1,52 +1,53 @@
-import uuid
 import logging
-import phonenumbers
-from phonenumbers.phonenumberutil import region_code_for_number
+import uuid
+from datetime import datetime, timezone
+from urllib.parse import urlparse
 
+import phonenumbers
 from allauth.account.adapter import get_adapter
 from allauth.utils import email_address_exists
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from django.db import IntegrityError
 from django.utils.translation import gettext_lazy as _
+from phonenumbers.phonenumberutil import region_code_for_number
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.choices import (
-    SPORTS_CHOICES,
+    COUNTRY_CODE_CHOICES,
+    EDUCATION_CHOICES,
     INTEREST_CHOICES,
     SECTORS_TYPE_CHOICES,
-    EDUCATION_CHOICES,
-    COUNTRY_CODE_CHOICES,
+    SPORTS_CHOICES,
 )
-from user.helpers import sms, hotp
+from user.helpers import hotp, sms
 from user.helpers.otp import generate_otp
 from user.models import (
-    User,
-    UserLog,
-    UserInvite,
-    UserDevice,
-    UserProfile,
-    DeviceInfo,
     AppInfo,
+    DeletedUser,
+    DeviceInfo,
+    User,
+    UserDevice,
+    UserInvite,
+    UserLog,
+    UserProfile,
     UserVerificationSetting,
 )
 from user.utils import (
-    s3_url_extract,
-    clear_bucket_from_path,
-    make_request,
     calculate_age,
     check_special,
-    is_english,
-    user_kyc_status,
-    get_dob,
-    phone_failure,
+    clear_bucket_from_path,
     get_data_from_choices,
+    get_dob,
+    is_english,
+    make_request,
+    phone_failure,
+    s3_url_extract,
+    user_kyc_status,
 )
-from datetime import datetime, timezone
-from urllib.parse import urlparse
 from user_service import settings
 
 logger = logging.getLogger(__name__)
@@ -89,6 +90,10 @@ class RegisterSerializer(serializers.Serializer):
     hash_tag = serializers.CharField(required=False)
 
     def validate_email(self, email):
+        logger.info(
+            "Triggered validate_email.(via logs)"
+        )  # todo: remove debugging statements
+        print("Triggered validate_email method.")
         email = get_adapter().clean_email(email)
         if email:
             if email and email_address_exists(email):
@@ -126,6 +131,8 @@ class RegisterSerializer(serializers.Serializer):
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
+        logger.info(f"User exists: {user}.")  # todo: remove debugging statements
+        print(f"User exists: {user}")
 
         phone = f"{country_code}{phone_number}"
         phone_parse = phonenumbers.parse("+" + phone)
@@ -180,6 +187,10 @@ class RegisterSerializer(serializers.Serializer):
     def post_flow_actions(
         self, user, country_code, phone_number, device_model, device_os_version
     ):
+        logger.info(
+            "Triggered Post flow actions method."
+        )  # todo: remove debugging statements
+        print(f"Triggered Post flow actions method.")
         otp = generate_otp()
         print(f"Generated otp: {otp}")
         phone = f"{country_code}{phone_number}"
@@ -216,6 +227,10 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": msg})
 
     def login_attempts_reset(self, user):
+        logger.info(
+            "Triggered login attempts reset method."
+        )  # todo: remove debugging statements
+        print(f"Triggered login attempts reset method.")
         if user and user.login_attempts >= 3 and user.last_login_time:
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
@@ -299,7 +314,6 @@ class UserLoginSerializer(serializers.Serializer):
             user.save()
 
             user_status = user_kyc_status(user)
-
             if not user.second_last_login:
                 second_last_login = 0
 
@@ -839,3 +853,9 @@ class UserProfileSearchSerializer(serializers.Serializer):
 
     def get_user_profile(self, obj):
         return user_kyc_status(obj)
+
+
+class DeletedUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeletedUser
+        fields = ["id", "user", "is_deleted", "name", "country_code", "phone_number"]
