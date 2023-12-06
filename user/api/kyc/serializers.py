@@ -1121,7 +1121,8 @@ def get_image_size(image_url):
 
 
 def validate_image_extension(image_url):
-    if image_url.split(".")[-1].lower() in SUPPORTED_IMAGE_FORMATS:
+    if image_url.split(".")[-1].lower() in SUPPORTED_IMAGE_FORMATS \
+            or image_url == "":  # Empty url allows removing user's profile picture
         return True
     else:
         return False
