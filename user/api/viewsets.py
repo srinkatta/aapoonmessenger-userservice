@@ -6,7 +6,6 @@ from smtplib import SMTPAuthenticationError
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
-from allauth.utils import email_address_exists
 from django.http import Http404, HttpResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -136,7 +135,7 @@ class AuthUserRegistrationView(APIView):
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
             if email:
-                if email and email_address_exists(email):
+                if email and User.objects.filter(email=email).exists:
                     return Response(
                         {
                             "detail": "A user is already registered with this e-mail address."

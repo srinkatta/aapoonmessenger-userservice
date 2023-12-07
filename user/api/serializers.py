@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
-from allauth.utils import email_address_exists
+from allauth.account.models import EmailAddress
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from django.db import IntegrityError
@@ -91,13 +91,12 @@ class RegisterSerializer(serializers.Serializer):
     hash_tag = serializers.CharField(required=False)
 
     def validate_email(self, email):
-        logger.info(
-            "Triggered validate_email.(via logs)"
-        )  # todo: remove debugging statements
-        print("Triggered validate_email method.")
         email = get_adapter().clean_email(email)
         if email:
-            if email and email_address_exists(email):
+            if (
+                email
+                and EmailAddress.objects.filter(email=email, verified=True).exists()
+            ):
                 raise serializers.ValidationError(
                     "A user is already registered with this e-mail address."
                 )
@@ -132,8 +131,6 @@ class RegisterSerializer(serializers.Serializer):
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
-        logger.info(f"User exists: {user}.")  # todo: remove debugging statements
-        print(f"User exists: {user}")
 
         phone = f"{country_code}{phone_number}"
         phone_parse = phonenumbers.parse("+" + phone)
@@ -188,10 +185,6 @@ class RegisterSerializer(serializers.Serializer):
     def post_flow_actions(
         self, user, country_code, phone_number, device_model, device_os_version
     ):
-        logger.info(
-            "Triggered Post flow actions method."
-        )  # todo: remove debugging statements
-        print(f"Triggered Post flow actions method.")
         otp = generate_otp()
         print(f"Generated otp: {otp}")
         phone = f"{country_code}{phone_number}"
@@ -228,10 +221,6 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": msg})
 
     def login_attempts_reset(self, user):
-        logger.info(
-            "Triggered login attempts reset method."
-        )  # todo: remove debugging statements
-        print(f"Triggered login attempts reset method.")
         if user and user.login_attempts >= 3 and user.last_login_time:
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
