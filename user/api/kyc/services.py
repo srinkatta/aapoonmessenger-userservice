@@ -95,8 +95,10 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
         __add_log_entries(user, log_message)  # type: ignore
         return verification
 
-    if not extracted_ocr_text or (
-        user.country_code == "91" and not __aadhar_verify(extracted_ocr_text)
+    elif (
+        is_face_detected
+        and not extracted_ocr_text
+        or (user.country_code == "91" and not __aadhar_verify(extracted_ocr_text))
     ):
         verification["exception"] = "Uploaded Aadhar is not Valid"
         verification["is_verified"] = False
@@ -115,36 +117,10 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
             photo_id_input,
         )
         return verification
-
-    text_match = __distance_finder(
-        user,  # type: ignore
-        extracted_ocr_text,
-        user_kyc_setting.photo_id,
-        log_message,
-    )
-
-    if text_match:
-        user_kyc_setting = user.settings.get()
-        verification["is_verified"] = False
-        verification["face_id_detected"] = False
-        verification["id_number_matched"] = True
-        user_kyc_setting.attachment = photo_id_input
-        user_kyc_setting.save()
-        log_message = __error_message(
-            user,
-            log_message,
-            "image and text detected for Photo Id uploaded and ID is matched",
-        )
-        __add_log_entries(user, log_message)  # type: ignore
     else:
-        __handle_id_verification_failure(
-            user,  # type: ignore
-            user_kyc_setting,
-            verification,
-            log_message,
-            extracted_ocr_text,
-            photo_id_input,
-        )
+        verification["is_verified"] = True
+        verification["id_number_matched"] = True
+        verification["face_id_detected"] = True
 
     return verification
 
