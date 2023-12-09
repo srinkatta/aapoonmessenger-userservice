@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "drf_spectacular",
+    "corsheaders",
     "storages",
     # Custom App
     "user",
@@ -72,7 +73,7 @@ CSRF_TRUSTED_ORIGINS = os.environ["CSRF_TRUSTED_ORIGINS"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://aapoon.com"
+    "https://aapoon.com",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
