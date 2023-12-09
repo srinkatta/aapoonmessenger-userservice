@@ -118,9 +118,9 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
         )
         return verification
     else:
-        verification["is_verified"] = True
+        verification["is_verified"] = False
         verification["id_number_matched"] = True
-        verification["face_id_detected"] = True
+        verification["face_id_detected"] = False
 
     return verification
 
