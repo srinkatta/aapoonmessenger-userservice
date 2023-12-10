@@ -83,6 +83,7 @@ CORS_ALLOW_METHODS = (*default_methods,)
 CORS_ALLOW_HEADERS = (
     *default_headers,
     "origin",
+    "x-api-key",
 )
 
 
