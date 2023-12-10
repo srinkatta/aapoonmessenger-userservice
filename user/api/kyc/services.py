@@ -247,6 +247,10 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
                         log_message,
                         "face id is not detected for target image. Hence verification stopped",
                     )
+                    user_kyc_setting.id_match_attempts = (
+                        user_kyc_setting.id_match_attempts + 1
+                    )
+                    user_kyc_setting.save()
                 else:
                     verification["is_verified"] = False
                     verification["pictures_match"] = False
@@ -311,6 +315,7 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
                 "Verification stopped ",
             )
             verification["status"] = False
+            verification["confidence"] = face_match[0]["Similarity"]
             __add_log_entries(user, log_message)  # type: ignore
         else:
             if len(face_match) > 2:
@@ -336,6 +341,7 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
             verification["manual_verify"] = False
             verification["id_number_matched"] = False
             user_kyc_setting.manual_verify = False
+            user_kyc_setting.id_match_attempts = 0
             user_kyc_setting.save()
             log_message = __info_message(
                 log_message,
