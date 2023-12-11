@@ -155,7 +155,7 @@ def __handle_exception_message_on_logs(
     user_kyc_setting,
     log_message,
 ):
-    attempts = re.findall(r"<b>Target Image: https://", logs)
+    attempts = re.findall(r"<b>Target Image: https://", logs) or []
     if not attempts:
         verification["is_verified"] = False
         verification["exception"] = (
@@ -254,7 +254,17 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
     else:
         verification["is_verified"] = False
         verification["id_number_matched"] = True
-        verification["face_id_detected"] = False
+        verification["exception"] = (
+            "aapoon is unable to verify your selfie due to poor lighting or "
+            "resolution. Please try again."
+        )
+        log_message = __error_message(
+            log_message,
+            "face id is not detected for target image. Hence verification stopped",
+        )
+        __add_log_entries(user, log_message)  # type: ignore
+        user_kyc_setting.id_match_attempts = user_kyc_setting.id_match_attempts + 1
+        user_kyc_setting.save()
 
     logs = user.logs.get().kyc_logs
 
@@ -278,13 +288,12 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
         )
 
         if not is_target_face_detected:
-            if logs:
-                verification, log_message = __handle_exception_message_on_logs(
-                    logs=logs,
-                    verification=verification,
-                    user_kyc_setting=user_kyc_setting,
-                    log_message=log_message,
-                )
+            verification, log_message = __handle_exception_message_on_logs(
+                logs=logs,
+                verification=verification,
+                user_kyc_setting=user_kyc_setting,
+                log_message=log_message,
+            )
             log_message = __error_message(user, log_message, verification)
             __add_log_entries(user, log_message)  # type: ignore
             return verification
