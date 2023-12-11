@@ -155,7 +155,7 @@ def __handle_exception_message_on_logs(
     user_kyc_setting,
     log_message,
 ):
-    attempts = re.findall(r"<b>Target Image: https://", logs) or []
+    attempts = re.findall(r"<b>Target Image: https://", logs) if logs else ""
     if not attempts:
         verification["is_verified"] = False
         verification["exception"] = (
