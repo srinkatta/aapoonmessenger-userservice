@@ -14,12 +14,11 @@ djangorestframework==3.14.0
 drf-flex-fields==1.0.2
 drf-spectacular==0.26.5
 gunicorn==21.2.0
-mysqlclient==2.2.0
-pandas==2.1.2
+jmespath==1.0.1
 phonenumbers==8.13.24
 psycopg2-binary==2.9.9
-pycountry==22.3.5
 pyfcm==1.5.4
+python-dateutil==2.8.2
 python-dotenv==1.0.0
 black==23.10.1
 pre-commit==3.5.0
