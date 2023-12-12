@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -288,30 +290,15 @@ class UserProfile(BaseTimeStampedModel):
     :param User user: The user associated with this profile.
     """
 
-    education = models.CharField(
-        max_length=1024,
-        choices=EDUCATION_CHOICES,
-        null=True,
-        blank=True,
-    )
+    education = models.TextField(null=True, blank=True)
     income = models.CharField(
         max_length=200, choices=INCOME_CHOICES, null=True, blank=True
     )
     relationship_status = models.CharField(
         max_length=200, choices=MARITAL_STATUS_CHOICES, null=True, blank=True
     )
-    interests = models.CharField(
-        max_length=1024,
-        choices=INTEREST_CHOICES,
-        null=True,
-        blank=True,
-    )
-    sports = models.CharField(
-        max_length=1024,
-        choices=SPORTS_CHOICES,
-        null=True,
-        blank=True,
-    )
+    interests = models.TextField(null=True, blank=True)
+    sports = models.TextField(null=True, blank=True)
     about_me = models.TextField(blank=True, null=True)
     skillset = models.CharField(max_length=250, null=True, blank=True)
     experience = models.CharField(max_length=250, null=True, blank=True)
@@ -343,6 +330,16 @@ class UserProfile(BaseTimeStampedModel):
 
     def __str__(self):
         return f"{self.user} Profile"
+
+    def set_field_value(self, field, value):
+        if field in ["interests", "education", "sports"]:
+            setattr(self, field, json.dumps(value))
+
+    def get_field_value(self, field):
+        value = getattr(self, field, None)
+        if value:
+            return json.loads(value)
+        return None
 
     class Meta:
         verbose_name = "User Profile"

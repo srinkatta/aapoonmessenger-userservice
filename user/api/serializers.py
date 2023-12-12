@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
-from allauth.account.models import EmailAddress
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from django.db import IntegrityError
@@ -701,14 +700,24 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     def get_email(self, instance):
         return instance.user.email
 
+    def parse_field_value(self, value):
+        if isinstance(value, list):
+            return value
+
+        if isinstance(value, str) and value not in ["None", "", "[]"]:
+            values = value.split(",")
+            values = [value.strip() for value in values if value]
+            return values
+        return []
+
     def get_sports(self, instance):
-        return instance.sports.split(",")
+        return self.parse_field_value(instance.sports)
 
     def get_interests(self, instance):
-        return instance.interests.split(",")
+        return self.parse_field_value(instance.interests)
 
     def get_education(self, instance):
-        return instance.education.split(",")
+        return self.parse_field_value(instance.education)
 
     def get_country_iso_code(self, instance):
         return instance.user.country_iso_code
