@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
-from allauth.utils import email_address_exists
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from django.db import IntegrityError
@@ -91,13 +90,9 @@ class RegisterSerializer(serializers.Serializer):
     hash_tag = serializers.CharField(required=False)
 
     def validate_email(self, email):
-        logger.info(
-            "Triggered validate_email.(via logs)"
-        )  # todo: remove debugging statements
-        print("Triggered validate_email method.")
         email = get_adapter().clean_email(email)
         if email:
-            if email and email_address_exists(email):
+            if email and User.objects.filter(email=email).exists():
                 raise serializers.ValidationError(
                     "A user is already registered with this e-mail address."
                 )
@@ -132,8 +127,6 @@ class RegisterSerializer(serializers.Serializer):
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
-        logger.info(f"User exists: {user}.")  # todo: remove debugging statements
-        print(f"User exists: {user}")
 
         phone = f"{country_code}{phone_number}"
         phone_parse = phonenumbers.parse("+" + phone)
@@ -188,10 +181,6 @@ class RegisterSerializer(serializers.Serializer):
     def post_flow_actions(
         self, user, country_code, phone_number, device_model, device_os_version
     ):
-        logger.info(
-            "Triggered Post flow actions method."
-        )  # todo: remove debugging statements
-        print(f"Triggered Post flow actions method.")
         otp = generate_otp()
         print(f"Generated otp: {otp}")
         phone = f"{country_code}{phone_number}"
@@ -228,15 +217,11 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": msg})
 
     def login_attempts_reset(self, user):
-        logger.info(
-            "Triggered login attempts reset method."
-        )  # todo: remove debugging statements
-        print(f"Triggered login attempts reset method.")
         if user and user.login_attempts >= 3 and user.last_login_time:
             updated = str(user.last_login_time)
             updated_date = updated.split("+")[0]
             datetime_format = "%Y-%m-%d %H:%M:%S.%f"
-            now_utc = datetime.now(timezone.utc)
+            now_utc = datetime.now(tz=timezone.utc)
             dt = datetime.strptime(now_utc.strftime(datetime_format), datetime_format)
             diff = dt - datetime.strptime(str(updated_date), datetime_format)
             hours, remainder = divmod(diff.seconds, 3600)
@@ -536,13 +521,9 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         required=False, allow_null=True, allow_blank=True
     )
     photo_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
-    interests = serializers.MultipleChoiceField(
-        choices=INTEREST_CHOICES, required=False
-    )
-    education = serializers.MultipleChoiceField(
-        choices=EDUCATION_CHOICES, required=False
-    )
+    sports = serializers.ListField(required=False)
+    interests = serializers.ListField(required=False)
+    education = serializers.ListField(required=False)
     date_of_birth = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
@@ -685,13 +666,9 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     email = serializers.SerializerMethodField()
     photo_id = serializers.SerializerMethodField()
     country_iso_code = serializers.SerializerMethodField()
-    sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
-    interests = serializers.MultipleChoiceField(
-        choices=INTEREST_CHOICES, required=False
-    )
-    education = serializers.MultipleChoiceField(
-        choices=EDUCATION_CHOICES, required=False
-    )
+    sports = serializers.SerializerMethodField()
+    interests = serializers.SerializerMethodField()
+    education = serializers.SerializerMethodField()
     invited_by = serializers.SerializerMethodField()
     is_business = serializers.SerializerMethodField()
 
@@ -722,6 +699,25 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
 
     def get_email(self, instance):
         return instance.user.email
+
+    def parse_field_value(self, value):
+        if isinstance(value, list):
+            return value
+
+        if isinstance(value, str) and value not in ["None", "", "[]"]:
+            values = value.split(",")
+            values = [value.strip() for value in values if value]
+            return values
+        return []
+
+    def get_sports(self, instance):
+        return self.parse_field_value(instance.sports)
+
+    def get_interests(self, instance):
+        return self.parse_field_value(instance.interests)
+
+    def get_education(self, instance):
+        return self.parse_field_value(instance.education)
 
     def get_country_iso_code(self, instance):
         return instance.user.country_iso_code

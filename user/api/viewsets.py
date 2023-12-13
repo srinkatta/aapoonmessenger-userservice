@@ -6,7 +6,6 @@ from smtplib import SMTPAuthenticationError
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
-from allauth.utils import email_address_exists
 from django.http import Http404, HttpResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -136,7 +135,7 @@ class AuthUserRegistrationView(APIView):
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
             if email:
-                if email and email_address_exists(email):
+                if email and User.objects.filter(email=email).exists:
                     return Response(
                         {
                             "detail": "A user is already registered with this e-mail address."
@@ -168,10 +167,6 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
-        logger.info(
-            "Triggered perform create method.(via logs)"
-        )  # todo: remove debugging statements
-        print("Triggered perform create method.")
         user = serializer.save(self.request)
         return user
 
@@ -315,11 +310,8 @@ class SendOTPView(APIView):
         else:
             sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
-        user_settings = user.settings.filter().first()
-        user_settings.verify_attempts += 1
-        user_settings.save()
 
-    def max_phone_attempts(self, request):
+    def max_phone_attempts(self, user):
         """
         Check and handle maximum phone verification attempts.
 
@@ -329,10 +321,10 @@ class SendOTPView(APIView):
         Args:
         - request (Request): The HTTP request.
         """
-        user_settings = request.user.settings.filter().first()
-        if user_settings.verify_attempts >= 2:
+        user_settings = user.settings.filter().first()
+        if user_settings.verify_attempts >= 3:
             subject = _("Max Attempts Reached on updated Phone Verification")
-            phone_failure(request.user, subject)
+            phone_failure(user, subject)
             msg = {
                 "detail": "You have reached the maximum attempts to log in. Please try again after 10 minutes."
             }
@@ -352,7 +344,7 @@ class SendOTPView(APIView):
         """
         user = request.user
         user_settings = request.user.settings.filter().first()
-        self.max_phone_attempts(request)
+        self.max_phone_attempts(user)
         if user_settings.phone_number:
             phone = f"{user_settings.country_code}{user_settings.phone_number}"
             phone_number = user_settings.phone_number
@@ -395,9 +387,8 @@ class SendOTPView(APIView):
                 {"detail": "Mobile number already exists"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         user_settings = request.user.settings.filter().first()
-        self.max_phone_attempts(request)
+        self.max_phone_attempts(user)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -408,6 +399,7 @@ class SendOTPView(APIView):
             user.otp_requested = otp
             user_settings.phone_number = phone_number
             user_settings.country_code = country_code
+            user_settings.verify_attempts += 1
             user_settings.save()
             user.save()
             return Response(
@@ -957,21 +949,31 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance.skillset = data.get("skillset")
         instance.experience = data.get("experience")
         instance.profession = data.get("profession")
-        instance.education = data.get("education")
         instance.income = data.get("income")
         instance.relationship_status = data.get("relationship_status")
-        instance.sports = data.get("sports")
-        instance.interests = data.get("interests")
         instance.about_me = data.get("about_me")
         instance.political_interests = data.get("political_interests")
         instance.iam_looking_for = data.get("iam_looking_for")
         instance.name = data.get("name")
         instance.chat_theme = data.get("chat_theme")
 
+        self.save_user_profile_choices(instance, data)
+
         user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
             user_settings.profile_details = True
             user_settings.save()
+
+        instance.save()
+
+    def save_user_profile_choices(self, instance, data):
+        sports = data.get("sports", [])
+        interests = data.get("interests", [])
+        education = data.get("education", [])
+
+        instance.sports = ",".join(sports) if sports else None
+        instance.interests = ",".join(interests) if interests else None
+        instance.education = ",".join(education) if education else None
 
         instance.save()
 
@@ -1825,20 +1827,22 @@ class UserCheckAPIView(APIView):
                 phone_number=phone_number.national_number,
             ).first()
             if user and user.phone_number_verified:
-                result["appUser"] = True
-                result["contactUserName"] = user.name
-                result["contactUserprofilepicture"] = (
-                    user.secondary_picture if user else ""
-                )
-                result["contactUserJID"] = user.jid if user else ""
-                result["contactUserFcmToken"] = user.fcm_token
-                result["contactUserID"] = user.id
-                user_settings = user.settings.filter().first()
-                kyc_done = user_settings.kyc_done if user_settings else None
-                if kyc_done:
-                    result["contactUserProfileStatus"] = "completed"
-                else:
-                    result["contactUserProfileStatus"] = "basic"
+                user_status = user_kyc_status(user)
+                if user_status in ["Basic Verified", "Fully Verified", "Pending"]:
+                    result["appUser"] = True
+                    result["contactUserName"] = user.name
+                    result["contactUserprofilepicture"] = (
+                        user.secondary_picture if user else ""
+                    )
+                    result["contactUserJID"] = user.jid if user else ""
+                    result["contactUserFcmToken"] = user.fcm_token
+                    result["contactUserID"] = user.id
+                    user_settings = user.settings.filter().first()
+                    kyc_done = user_settings.kyc_done if user_settings else None
+                    if kyc_done:
+                        result["contactUserProfileStatus"] = "completed"
+                    else:
+                        result["contactUserProfileStatus"] = "basic"
             else:
                 result["appUser"] = False
             result["contactName"] = contact["contactName"]

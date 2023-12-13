@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 
-FROM python:3.11
+FROM python:3.12
 ENV PYTHONUNBUFFERED=1
 
 

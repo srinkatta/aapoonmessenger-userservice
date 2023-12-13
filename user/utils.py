@@ -25,6 +25,19 @@ from user_service import settings
 
 logging = logging.getLogger(__name__)
 
+DATE_FORMATS = [
+    "%Y-%m-%d",
+    "%d-%m-%Y",
+    "%d%m%Y",
+    "%m%d%Y",
+    "%d %m %Y",
+    "%Y %m %d",
+    "%Y/%m/%d",
+    "%m/%d/%Y",
+    "%Y%m%d",
+    "%d/%m/%Y",
+]
+
 
 def s3_url_extract(url):
     """
@@ -288,32 +301,26 @@ def get_month(dob):
     Returns:
         str or None: The abbreviated month name ('Jan', 'Feb', ..., 'Dec') if found, or None if not found.
     """
-    if "Jan" in dob:
-        return "Jan"
-    elif "Feb" in dob:
-        return "Feb"
-    elif "Mar" in dob:
-        return "Mar"
-    elif "Apr" in dob:
-        return "Apr"
-    elif "May" in dob:
-        return "May"
-    elif "Jun" in dob:
-        return "Jun"
-    elif "Jul" in dob:
-        return "Jul"
-    elif "Aug" in dob:
-        return "Aug"
-    elif "Sep" in dob:
-        return "Sep"
-    elif "Oct" in dob:
-        return "Oct"
-    elif "Nov" in dob:
-        return "Nov"
-    elif "Dec" in dob:
-        return "Dec"
-    else:
-        pass
+    months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
+
+    for month in months:
+        if month in dob:
+            return month
+
+    return None
 
 
 def month_checker(month):
@@ -326,10 +333,21 @@ def month_checker(month):
     Returns:
         int: The numeric representation of the month (1 for Jan, 2 for Feb, ..., 12 for Dec).
     """
-    import calendar
-
-    months = dict((v, k) for k, v in enumerate(calendar.month_abbr))
-    return months[month]
+    month_dict = {
+        "Jan": 1,
+        "Feb": 2,
+        "Mar": 3,
+        "Apr": 4,
+        "May": 5,
+        "Jun": 6,
+        "Jul": 7,
+        "Aug": 8,
+        "Sep": 9,
+        "Oct": 10,
+        "Nov": 11,
+        "Dec": 12,
+    }
+    return month_dict.get(month, 1)
 
 
 def get_dob(dateofbirth):
@@ -343,144 +361,32 @@ def get_dob(dateofbirth):
         str: A standardized date of birth string.
     """
 
-    months = [
-        "Jan",
-        "Jun",
-        "Feb",
-        "Apr",
-        "Nov",
-        "Oct",
-        "Mar",
-        "Sep",
-        "Jul",
-        "Aug",
-        "May",
-        "Dec",
-    ]
-    try:
-        month = get_month(dateofbirth)
-        if any(x in month for x in months):
-            numeric_month = month_checker(month)
-            dateofbirth = dateofbirth.replace(month, str(numeric_month))
-            date_of_birth = dob_format_check_1(dateofbirth)
+    month = get_month(dateofbirth)
+    if month:
+        numeric_month = month_checker(month)
+        dateofbirth = dateofbirth.replace(month, f"{numeric_month:02d}")
 
-    except:
-        date_of_birth = dob_format_check_2(dateofbirth)
-
-    return date_of_birth
+    return dob_format(dateofbirth)
 
 
-def dob_format_check_1(dateofbirth):
+def dob_format(dateofbirth):
     """
-    Attempt to parse and standardize a date of birth string using various date formats.
+    Process a date of birth (DOB) string, attempting to standardize its format.
 
     Args:
         dateofbirth (str): The date of birth string in various formats.
 
     Returns:
-        str: A standardized date of birth string in the format 'YYYY-MM-DD'.
+        str: A standardized date of birth string.
     """
-    try:
-        date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime("%Y-%m-%d")
-    except:
+
+    for format in DATE_FORMATS:
         try:
-            date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
-                "%Y-%m-%d"
-            )
-        except:
-            try:
-                date_of_birth = datetime.strptime(dateofbirth, "%d%m%Y").strftime(
-                    "%Y-%m-%d"
-                )
-            except:
-                try:
-                    date_of_birth = datetime.strptime(dateofbirth, "%m%d%Y").strftime(
-                        "%Y-%m-%d"
-                    )
-                except:
-                    try:
-                        date_of_birth = datetime.strptime(
-                            dateofbirth, "%d %m %Y"
-                        ).strftime("%Y-%m-%d")
-                    except:
-                        try:
-                            date_of_birth = datetime.strptime(
-                                dateofbirth, "%Y %m %d"
-                            ).strftime("%Y-%m-%d")
-                        except:
-                            try:
-                                date_of_birth = datetime.strptime(
-                                    dateofbirth, "%Y/%m/%d"
-                                ).strftime("%Y-%m-%d")
-                            except:
-                                try:
-                                    date_of_birth = datetime.strptime(
-                                        dateofbirth, "%m/%d/%Y"
-                                    ).strftime("%Y-%m-%d")
-                                except:
-                                    date_of_birth = datetime.strptime(
-                                        dateofbirth, "%d/%m/%Y"
-                                    ).strftime("%Y-%m-%d")
-    return date_of_birth
+            return datetime.strptime(dateofbirth, format).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
 
-
-def dob_format_check_2(dateofbirth):
-    """
-    Attempt to parse and standardize a date of birth string using various date formats.
-
-    Args:
-        dateofbirth (str): The date of birth string in various formats.
-
-    Returns:
-        str: A standardized date of birth string in the format 'YYYY-MM-DD'.
-    """
-    try:
-        date_of_birth = datetime.strptime(dateofbirth, "%Y-%m-%d").strftime("%Y-%m-%d")
-    except:
-        try:
-            date_of_birth = datetime.strptime(dateofbirth, "%d-%m-%Y").strftime(
-                "%Y-%m-%d"
-            )
-        except:
-            try:
-                date_of_birth = datetime.strptime(dateofbirth, "%d%m%Y").strftime(
-                    "%Y-%m-%d"
-                )
-            except:
-                try:
-                    date_of_birth = datetime.strptime(dateofbirth, "%m%d%Y").strftime(
-                        "%Y-%m-%d"
-                    )
-                except:
-                    try:
-                        date_of_birth = datetime.strptime(
-                            dateofbirth, "%d %m %Y"
-                        ).strftime("%Y-%m-%d")
-                    except:
-                        try:
-                            date_of_birth = datetime.strptime(
-                                dateofbirth, "%Y %m %d"
-                            ).strftime("%Y-%m-%d")
-                        except:
-                            try:
-                                date_of_birth = datetime.strptime(
-                                    dateofbirth, "%Y/%m/%d"
-                                ).strftime("%Y-%m-%d")
-                            except:
-                                try:
-                                    date_of_birth = datetime.strptime(
-                                        dateofbirth, "%m/%d/%Y"
-                                    ).strftime("%Y-%m-%d")
-                                except:
-                                    try:
-                                        date_of_birth = datetime.strptime(
-                                            dateofbirth, "%Y%m%d"
-                                        ).strftime("%Y-%m-%d")
-                                    except:
-                                        date_of_birth = datetime.strptime(
-                                            dateofbirth, "%d/%m/%Y"
-                                        ).strftime("%Y-%m-%d")
-    return date_of_birth
+    raise ValueError("Invalid date format provided for dateofbirth")
 
 
 def get_key_from_choices(data, CHOICES):

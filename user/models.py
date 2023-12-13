@@ -1,8 +1,7 @@
-import uuid
+import json
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from multiselectfield import MultiSelectField
 
 from common.models import BaseTimeStampedModel
 from user.choices import (
@@ -67,7 +66,7 @@ class User(AbstractUser):
     id_xmpp_register = models.BooleanField(
         verbose_name="XMPP Registered", default=False
     )
-    unique_id = models.CharField(max_length=255, default=uuid.uuid4().hex)
+    unique_id = models.CharField(max_length=255)
     hash_tag = models.TextField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
@@ -291,33 +290,15 @@ class UserProfile(BaseTimeStampedModel):
     :param User user: The user associated with this profile.
     """
 
-    education = MultiSelectField(
-        choices=EDUCATION_CHOICES,
-        null=True,
-        blank=True,
-        max_choices=100,
-        max_length=100,
-    )
+    education = models.TextField(null=True, blank=True)
     income = models.CharField(
         max_length=200, choices=INCOME_CHOICES, null=True, blank=True
     )
     relationship_status = models.CharField(
         max_length=200, choices=MARITAL_STATUS_CHOICES, null=True, blank=True
     )
-    interests = MultiSelectField(
-        max_length=1024,
-        max_choices=150,
-        choices=INTEREST_CHOICES,
-        null=True,
-        blank=True,
-    )
-    sports = MultiSelectField(
-        max_length=1024,
-        choices=SPORTS_CHOICES,
-        null=True,
-        blank=True,
-        max_choices=100,
-    )
+    interests = models.TextField(null=True, blank=True)
+    sports = models.TextField(null=True, blank=True)
     about_me = models.TextField(blank=True, null=True)
     skillset = models.CharField(max_length=250, null=True, blank=True)
     experience = models.CharField(max_length=250, null=True, blank=True)
@@ -349,6 +330,16 @@ class UserProfile(BaseTimeStampedModel):
 
     def __str__(self):
         return f"{self.user} Profile"
+
+    def set_field_value(self, field, value):
+        if field in ["interests", "education", "sports"]:
+            setattr(self, field, json.dumps(value))
+
+    def get_field_value(self, field):
+        value = getattr(self, field, None)
+        if value:
+            return json.loads(value)
+        return None
 
     class Meta:
         verbose_name = "User Profile"
