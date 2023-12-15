@@ -339,7 +339,10 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
                 "Verification stopped ",
             )
             verification["status"] = False
-            verification["confidence"] = face_match[0]["Similarity"]
+            if face_match:
+                verification["confidence"] = face_match[0]["Similarity"]
+            else:
+                verification["confidence"] = 0
             __add_log_entries(user, log_message)  # type: ignore
         else:
             if len(face_match) > 2:
