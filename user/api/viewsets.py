@@ -131,6 +131,7 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
+        import sys
         python_version = sys.version   # Todo remove after python version verify
         logger.info(f"Python Version from logger: {python_version}")
         serializer = self.serializer_class(data=request.data)
