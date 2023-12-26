@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 from smtplib import SMTPAuthenticationError
+from datetime import datetime, timezone
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
@@ -315,7 +316,18 @@ class SendOTPView(APIView):
             sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
 
-    def max_phone_attempts(self, user):
+    def login_attempts_reset(self, user, user_settings):
+        if user and user_settings.verify_attempts >= 3:
+            updated = user.last_login_time.replace(tzinfo=timezone.utc)
+            diff = datetime.now(tz=timezone.utc) - updated
+            minutes_since_last_login = diff.total_seconds() // 60
+            if minutes_since_last_login >= 10:
+                user_settings.verify_attempts = 0
+                user.save()
+            else:
+                self.max_phone_attempts(user, user_settings)
+
+    def max_phone_attempts(self, user, user_settings):
         """
         Check and handle maximum phone verification attempts.
 
@@ -325,7 +337,6 @@ class SendOTPView(APIView):
         Args:
         - request (Request): The HTTP request.
         """
-        user_settings = user.settings.filter().first()
         if user_settings.verify_attempts >= 3:
             subject = _("Max Attempts Reached on updated Phone Verification")
             phone_failure(user, subject)
@@ -348,7 +359,7 @@ class SendOTPView(APIView):
         """
         user = request.user
         user_settings = request.user.settings.filter().first()
-        self.max_phone_attempts(user)
+        self.login_attempts_reset(user, user_settings)
         if user_settings.phone_number:
             phone = f"{user_settings.country_code}{user_settings.phone_number}"
             phone_number = user_settings.phone_number
@@ -392,7 +403,7 @@ class SendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user_settings = request.user.settings.filter().first()
-        self.max_phone_attempts(user)
+        self.login_attempts_reset(user, user_settings)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
