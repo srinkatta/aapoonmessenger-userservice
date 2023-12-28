@@ -1121,7 +1121,7 @@ def get_image_size(image_url):
 
 
 def validate_image_extension(image_url):
-    if image_url.split(".")[-1].lower() in SUPPORTED_IMAGE_FORMATS:
+    if not image_url or image_url.split(".")[-1].lower() in SUPPORTED_IMAGE_FORMATS:
         return True
     else:
         return False

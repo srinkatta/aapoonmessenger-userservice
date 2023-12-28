@@ -132,6 +132,9 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
+        import sys
+        python_version = sys.version   # Todo remove after python version verify
+        logger.info(f"Python Version from logger: {python_version}")
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
@@ -168,10 +171,6 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
-        logger.info(
-            "Triggered perform create method.(via logs)"
-        )  # todo: remove debugging statements
-        print("Triggered perform create method.")
         user = serializer.save(self.request)
         return user
 
@@ -964,21 +963,31 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance.skillset = data.get("skillset")
         instance.experience = data.get("experience")
         instance.profession = data.get("profession")
-        instance.education = data.get("education")
         instance.income = data.get("income")
         instance.relationship_status = data.get("relationship_status")
-        instance.sports = data.get("sports")
-        instance.interests = data.get("interests")
         instance.about_me = data.get("about_me")
         instance.political_interests = data.get("political_interests")
         instance.iam_looking_for = data.get("iam_looking_for")
         instance.name = data.get("name")
         instance.chat_theme = data.get("chat_theme")
 
+        self.save_user_profile_choices(instance, data)
+
         user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
             user_settings.profile_details = True
             user_settings.save()
+
+        instance.save()
+
+    def save_user_profile_choices(self, instance, data):
+        sports = data.get("sports", [])
+        interests = data.get("interests", [])
+        education = data.get("education", [])
+
+        instance.sports = ",".join(sports) if sports else None
+        instance.interests = ",".join(interests) if interests else None
+        instance.education = ",".join(education) if education else None
 
         instance.save()
 

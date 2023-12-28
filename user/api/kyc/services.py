@@ -80,23 +80,49 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
     )
 
     if not is_face_detected:
-        verification["face_id_detected"] = False
-        verification["exception"] = "Please upload the side of the ID with photo"
-        log_message = __error_message(
-            log_message, "Text reading is successful from AWS"
-        )
-        log_message = __error_message(
-            log_message, "Text is detected for photo id uploaded"
-        )
-        log_message = __error_message(
-            log_message,
-            "face id is not detected for source image. Hence verification stopped",
-        )
-        __add_log_entries(user, log_message)  # type: ignore
+        if user_kyc_setting.id_match_attempts == 1:
+            verification["face_id_detected"] = False
+            verification["exception"] = "Please upload the side of the ID with photo"
+            log_message = __error_message(
+                log_message, "Text reading is successful from AWS"
+            )
+            log_message = __error_message(
+                log_message, "Text is detected for photo id uploaded"
+            )
+            log_message = __error_message(
+                log_message,
+                "face id is not detected for source image. Hence verification stopped",
+            )
+            __add_log_entries(user, log_message)  # type: ignore
+            user_kyc_setting.id_match_attempts = user_kyc_setting.id_match_attempts + 1
+            user_kyc_setting.save()
+        else:
+            verification["face_id_detected"] = False
+            verification["id_number_matched"] = False
+            verification["code"] = 3
+            verification["attempts"] = user_kyc_setting.id_match_attempts
+            verification["back"] = False
+            verification["is_verified"] = False
+            verification["exception"] = "Uploaded Aadhar is not Valid"
+            log_message = __error_message(
+                log_message, "Text reading is successful from AWS"
+            )
+            log_message = __error_message(
+                log_message, "Text is detected for photo id uploaded"
+            )
+            log_message = __error_message(
+                log_message,
+                "face id is not detected for source image. Hence verification stopped",
+            )
+            __add_log_entries(user, log_message)  # type: ignore
+            user_kyc_setting.id_match_attempts = user_kyc_setting.id_match_attempts + 1
+            user_kyc_setting.save()
         return verification
 
-    if not extracted_ocr_text or (
-        user.country_code == "91" and not __aadhar_verify(extracted_ocr_text)
+    elif (
+        is_face_detected
+        and not extracted_ocr_text
+        or (user.country_code == "91" and not __aadhar_verify(extracted_ocr_text))
     ):
         verification["exception"] = "Uploaded Aadhar is not Valid"
         verification["is_verified"] = False
@@ -115,38 +141,48 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
             photo_id_input,
         )
         return verification
-
-    text_match = __distance_finder(
-        user,  # type: ignore
-        extracted_ocr_text,
-        user_kyc_setting.photo_id,
-        log_message,
-    )
-
-    if text_match:
-        user_kyc_setting = user.settings.get()
-        verification["is_verified"] = False
-        verification["face_id_detected"] = False
-        verification["id_number_matched"] = True
-        user_kyc_setting.attachment = photo_id_input
-        user_kyc_setting.save()
-        log_message = __error_message(
-            user,
-            log_message,
-            "image and text detected for Photo Id uploaded and ID is matched",
-        )
-        __add_log_entries(user, log_message)  # type: ignore
     else:
-        __handle_id_verification_failure(
-            user,  # type: ignore
-            user_kyc_setting,
-            verification,
-            log_message,
-            extracted_ocr_text,
-            photo_id_input,
-        )
+        verification["is_verified"] = False
+        verification["id_number_matched"] = True
+        verification["face_id_detected"] = False
 
     return verification
+
+
+def __handle_exception_message_on_logs(
+    logs,
+    verification,
+    user_kyc_setting,
+    log_message,
+):
+    attempts = re.findall(r"<b>Target Image: https://", logs) if logs else ""
+    if not attempts:
+        verification["is_verified"] = False
+        verification["exception"] = (
+            "aapoon is unable to verify your selfie due to poor lighting or "
+            "resolution. Please try again."
+        )
+        log_message = __error_message(
+            log_message,
+            "face id is not detected for target image. Hence verification stopped",
+        )
+        user_kyc_setting.id_match_attempts = user_kyc_setting.id_match_attempts + 1
+        user_kyc_setting.save()
+    else:
+        verification["is_verified"] = False
+        verification["pictures_match"] = False
+        verification["id_number_matched"] = user_kyc_setting.id_matched
+        log_message = __error_message(
+            log_message,
+            "face id is not detected for target image. Hence verification stopped",
+        )
+        verification["exception"] = MESSAGES["SECOND_ATTEMPTS_FAILURE"]
+        verification["error"] = MESSAGES["SECOND_ATTEMPTS_FAILURE"]
+        verification["code"] = 3
+        verification["manual_verify"] = True
+        user_kyc_setting.manual_verify = True
+        user_kyc_setting.save()
+    return verification, log_message
 
 
 def compare_faces(user: User, request_data: Dict[str, Any]):
@@ -192,8 +228,11 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
         )
         __add_log_entries(user, log_message)  # type: ignore
         return verification
-    if not extracted_ocr_text or (
-        user.country_code == "91" and not __aadhar_verify(extracted_ocr_text)
+
+    elif (
+        is_source_face_detected
+        and not extracted_ocr_text
+        or (user.country_code == "91" and not __aadhar_verify(extracted_ocr_text))
     ):
         verification["exception"] = "Uploaded Aadhar is not Valid"
         verification["is_verified"] = False
@@ -212,6 +251,20 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
             request_data.get("source_key"),
         )
         return verification
+    else:
+        verification["is_verified"] = False
+        verification["id_number_matched"] = True
+        verification["exception"] = (
+            "aapoon is unable to verify your selfie due to poor lighting or "
+            "resolution. Please try again."
+        )
+        log_message = __error_message(
+            log_message,
+            "face id is not detected for target image. Hence verification stopped",
+        )
+        __add_log_entries(user, log_message)  # type: ignore
+        user_kyc_setting.id_match_attempts = user_kyc_setting.id_match_attempts + 1
+        user_kyc_setting.save()
 
     logs = user.logs.get().kyc_logs
 
@@ -235,21 +288,17 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
         )
 
         if not is_target_face_detected:
-            verification["is_verified"] = False
-            verification["exception"] = (
-                "aapoon is unable to verify your selfie due to poor lighting or "
-                "resolution. Please try again."
+            verification, log_message = __handle_exception_message_on_logs(
+                logs=logs,
+                verification=verification,
+                user_kyc_setting=user_kyc_setting,
+                log_message=log_message,
             )
-            log_message = __error_message(
-                log_message,
-                "face id is not detected for target image. Hence verification stopped",
-            )
-
             log_message = __error_message(user, log_message, verification)
             __add_log_entries(user, log_message)  # type: ignore
             return verification
 
-        if (is_target_face_detected and target_text_extract_response) and (
+        elif (is_target_face_detected and target_text_extract_response) and (
             is_source_face_detected,
             source_face_detect_response,
         ):
@@ -290,6 +339,10 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
                 "Verification stopped ",
             )
             verification["status"] = False
+            if face_match:
+                verification["confidence"] = face_match[0]["Similarity"]
+            else:
+                verification["confidence"] = 0
             __add_log_entries(user, log_message)  # type: ignore
         else:
             if len(face_match) > 2:
@@ -309,10 +362,13 @@ def compare_faces(user: User, request_data: Dict[str, Any]):
                 verification["confidence"] = face_match[0]["Similarity"]
 
         if face_compare_status:
+            verification["message"] = "You have been Verified Successfully."
             verification["is_verified"] = True
             verification["code"] = 3
-            verification["manual_verify"] = True
-            user_kyc_setting.manual_verify = True
+            verification["manual_verify"] = False
+            verification["id_number_matched"] = True
+            user_kyc_setting.manual_verify = False
+            user_kyc_setting.id_match_attempts = 0
             user_kyc_setting.save()
             log_message = __info_message(
                 log_message,
