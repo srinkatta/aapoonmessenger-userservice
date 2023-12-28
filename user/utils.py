@@ -179,7 +179,7 @@ def feedback_mail(request, data):
     user = request.user
     subject = _("Feedback")
     from_email = settings.DEFAULT_FROM_EMAIL
-    toemail = settings.SUPPORT_EMAIL
+    to_email = settings.SUPPORT_EMAIL
     text = data.get("message")
     topic = data.get("topic")
     url = data.get("url")
@@ -202,9 +202,9 @@ def feedback_mail(request, data):
         "url": url,
     }
 
-    text_content = render_to_string("config/email/feedback.html", context)
-    Charset.add_charset("utf-8", Charset.SHORTEST, None, "utf-8")
-    send_mail(subject, text_content, from_email, [toemail])
+    html_message = render_to_string("config/email/feedback.html", context)
+    plain_message = strip_tags(html_message)
+    send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
 
 
 def calculate_age(dob):
