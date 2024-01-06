@@ -32,7 +32,6 @@ DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -95,7 +94,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "user_service.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
@@ -107,6 +105,9 @@ DATABASES = {
         "PASSWORD": os.environ["DB_PASSWORD"],
         "HOST": os.environ["DB_HOST"],
         "PORT": os.environ["DB_PORT"],
+        "OPTIONS": {
+            "options": f'-c search_path={os.environ.get("DB_SCHEMA_NAME", "public")}',
+        },
     },
     "xmpp_database": {
         "ENGINE": "django.db.backends.postgresql",
@@ -123,6 +124,9 @@ DATABASES = {
         "PASSWORD": os.environ["CIRCLE_DB_PASSWORD"],
         "HOST": os.environ["CIRCLE_DB_HOST"],
         "PORT": os.environ["CIRCLE_DB_PORT"],
+        "OPTIONS": {
+            "options": f'-c search_path={os.environ.get("CIRCLE_DB_SCHEMA_NAME", "public")}',
+        },
     },
     "slave1": {
         "ENGINE": "django.db.backends.postgresql",
@@ -131,12 +135,13 @@ DATABASES = {
         "PASSWORD": os.environ["DB_PASSWORD"],
         "HOST": os.environ["DB_READ_HOST"],
         "PORT": os.environ["DB_PORT"],
+        "OPTIONS": {
+            "options": f'-c search_path={os.environ.get("DB_SCHEMA_NAME", "public")}',
+        },
     },
 }
 
-
 DATABASE_ROUTERS = ["user_service.db_routers.MasterSlaveRouter"]
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -156,7 +161,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -167,7 +171,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -212,7 +215,6 @@ APPEND_SLASH = True
 
 SITE_ID = 1
 
-
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
@@ -228,7 +230,6 @@ SPECTACULAR_SETTINGS = {
 DEFAULT_FROM_EMAIL = "support@aapoon.net"
 SUPPORT_EMAIL = "support@aapoon.net"
 
-
 FCM_API_KEY = os.environ["FCM_API_KEY"]
 
 FAST_API_KEY = os.environ["FAST_API_KEY"]
@@ -239,10 +240,8 @@ SNS_AWS_ACCESS_KEY = os.environ["SNS_AWS_ACCESS_KEY"]
 SNS_AWS_SECRET_KEY = os.environ["SNS_AWS_SECRET_KEY"]
 AWS_PINPOINT_REGION_NAME = os.environ["AWS_PINPOINT_REGION_NAME"]
 
-
 S3_AWS_ACCESS_KEY_ID = os.environ["S3_MEDIA_AWS_ACCESS_KEY_ID"]
 S3_AWS_SECRET_ACCESS_KEY = os.environ["S3_MEDIA_AWS_SECRET_ACCESS_KEY"]
-
 
 AWS_S3_ACL = os.environ["AWS_S3_ACL"]
 AWS_S3_BUCKET_NAME = os.environ["AWS_S3_BUCKET_NAME"]
@@ -275,7 +274,6 @@ POSTMARK = {
     "TEST_MODE": False,
     "VERBOSITY": 0,
 }
-
 
 # twilio
 TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
