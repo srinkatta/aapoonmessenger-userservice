@@ -68,6 +68,7 @@ class User(AbstractUser):
     )
     unique_id = models.CharField(max_length=255)
     hash_tag = models.TextField(null=True, blank=True)
+    jwt_token = models.TextField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
