@@ -79,10 +79,15 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
         text_extract_response,
     )
 
+    # Check if face is not detected
     if not is_face_detected:
+        # Check if this is the first attempt to match ID
         if user_kyc_setting.id_match_attempts == 1:
+            # Successful text reading from AWS or Azure
+            verification["id_number_matched"] = True
             verification["face_id_detected"] = False
             verification["exception"] = "Please upload the side of the ID with photo"
+            # Log messages
             log_message = __error_message(
                 log_message, "Text reading is successful from AWS"
             )
@@ -93,10 +98,12 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
                 log_message,
                 "face id is not detected for source image. Hence verification stopped",
             )
+            # Add log entries and update attempts count
             __add_log_entries(user, log_message)  # type: ignore
             user_kyc_setting.id_match_attempts = user_kyc_setting.id_match_attempts + 1
             user_kyc_setting.save()
         else:
+            # Failed attempts after the first one
             verification["face_id_detected"] = False
             verification["id_number_matched"] = False
             verification["code"] = 3
@@ -114,16 +121,19 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
                 log_message,
                 "face id is not detected for source image. Hence verification stopped",
             )
+            # Add log entries and update attempts count
             __add_log_entries(user, log_message)  # type: ignore
             user_kyc_setting.id_match_attempts = user_kyc_setting.id_match_attempts + 1
             user_kyc_setting.save()
         return verification
 
-    elif (
-        is_face_detected
-        and not extracted_ocr_text
+    # Check if face is detected and conditions for Aadhar verification are not met
+    elif is_face_detected and (
+        not extracted_ocr_text
+        or extracted_ocr_text == [""]
         or (user.country_code == "91" and not __aadhar_verify(extracted_ocr_text))
     ):
+        # Aadhar verification failure
         verification["exception"] = "Uploaded Aadhar is not Valid"
         verification["is_verified"] = False
         verification["face_id_detected"] = False
@@ -132,6 +142,7 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
             log_message,
             "image and text detected for Photo Id uploaded but ID is not Aadhar",
         )
+        # Handle ID verification failure
         __handle_id_verification_failure(
             user,  # type: ignore
             user_kyc_setting,
@@ -158,6 +169,7 @@ def __handle_exception_message_on_logs(
     attempts = re.findall(r"<b>Target Image: https://", logs) if logs else ""
     if not attempts:
         verification["is_verified"] = False
+        verification["attempts"] = -1
         verification["exception"] = (
             "aapoon is unable to verify your selfie due to poor lighting or "
             "resolution. Please try again."
@@ -171,6 +183,7 @@ def __handle_exception_message_on_logs(
     else:
         verification["is_verified"] = False
         verification["pictures_match"] = False
+        verification["attempts"] = 0
         verification["id_number_matched"] = user_kyc_setting.id_matched
         log_message = __error_message(
             log_message,
@@ -642,6 +655,7 @@ def __failure_attempt_check(verification, user):
         user_kyc_setting.manual_verify = True
         user_kyc_setting.save()
 
+        verification["attempts"] = 0
         verification["error"] = (
             "Sorry, automatic verification is not possible with the information provided. Our verification "
             "team will respond within 12 hrs. Thanks for your patience. "
