@@ -275,6 +275,8 @@ class UserLoginSerializer(serializers.Serializer):
             refresh = RefreshToken.for_user(user)
             refresh_token = str(refresh)
             access_token = str(refresh.access_token)
+            if not user.jwt_token:
+                user.jwt_token = access_token
 
             user.second_last_login = user.last_login
             if user.second_last_login:
@@ -304,7 +306,7 @@ class UserLoginSerializer(serializers.Serializer):
                 second_last_login = 0
 
             validation = {
-                "access": access_token,
+                "access": user.jwt_token,
                 "refresh": refresh_token,
                 "id": user.id,
                 "name": user.name,
