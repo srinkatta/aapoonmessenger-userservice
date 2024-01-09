@@ -51,9 +51,9 @@ class SMS:
                 }
             )
             if self.user and self.user.hash_tag:
-                self.message = f"<#> One-Time Password(OTP) to activate aapoon account is {self.message} {self.user.hash_tag}"
+                self.message = f"<#> One-Time Password(OTP) to activate APSCHE Messenger account is {self.message} {self.user.hash_tag}"
             else:
-                self.message = f"{self.message} is the One-Time Password(OTP) to activate aapoon account."
+                self.message = f"{self.message} is the One-Time Password(OTP) to activate APSCHE Messenger account."
 
             sns_client.publish(PhoneNumber=self.phone_number, Message=self.message)
             return True
