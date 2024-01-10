@@ -56,7 +56,7 @@ def update_profile_picture(user: User, profile_pic_url: str):
 def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, any]:
     user_kyc_setting = user.settings.filter().first()
     verification = {
-        "id_number_matched": user_kyc_setting.id_matched,
+        "id_number_matched": False,
         "is_verified": False,
     }
 
@@ -84,7 +84,7 @@ def validate_and_compare_photo_id(user: User, photo_id_input: str) -> Dict[str, 
         # Check if this is the first attempt to match ID
         if user_kyc_setting.id_match_attempts == 1:
             # Successful text reading from AWS or Azure
-            verification["id_number_matched"] = True
+            verification["id_number_matched"] = False
             verification["face_id_detected"] = False
             verification["exception"] = "Please upload the side of the ID with photo"
             # Log messages
