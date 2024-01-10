@@ -76,6 +76,16 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+CORS_ALLOW_HEADERS = [
+    'x-api-key',
+    # Add other allowed headers as needed
+]
+
+CORS_EXPOSE_HEADERS = [
+    'x-api-key',
+    # Add other exposed headers as needed
+]
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
