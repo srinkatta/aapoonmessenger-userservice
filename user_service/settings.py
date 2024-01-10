@@ -79,13 +79,13 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_HEADERS = [
     'x-api-key',
     'content-type',
-    # Add other allowed headers as needed
+    'authorization',
 ]
 
 CORS_EXPOSE_HEADERS = [
     'x-api-key',
     'content-type',
-    # Add other exposed headers as needed
+    'authorization',
 ]
 
 TEMPLATES = [
