@@ -275,8 +275,8 @@ class UserLoginSerializer(serializers.Serializer):
             refresh = RefreshToken.for_user(user)
             refresh_token = str(refresh)
             access_token = str(refresh.access_token)
-            # if not user.jwt_token:
-            #     user.jwt_token = access_token
+            if not user.jwt_token:
+                user.jwt_token = access_token
 
             user.second_last_login = user.last_login
             if user.second_last_login:
@@ -319,7 +319,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "profile_pic": user.secondary_picture,
             }
 
-            self.xmpp_check_account(user, access_token)
+            self.xmpp_check_account(user, user.jwt_token)
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")
