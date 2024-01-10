@@ -77,15 +77,15 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_HEADERS = [
-    'x-api-key',
-    'content-type',
-    'authorization',
+    "x-api-key",
+    "content-type",
+    "authorization",
 ]
 
 CORS_EXPOSE_HEADERS = [
-    'x-api-key',
-    'content-type',
-    'authorization',
+    "x-api-key",
+    "content-type",
+    "authorization",
 ]
 
 TEMPLATES = [
@@ -271,13 +271,14 @@ XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
 
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_BACKEND = "postmarker.django.EmailBackend"
+# EMAIL_BACKEND = "postmarker.django.EmailBackend"
+EMAIL_BACKEND = os.environ["EMAIL_BACKEND"]
 EMAIL_HOST = os.environ["EMAIL_HOST"]
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ["EMAIL_HOST_USER"]
 EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
+EMAIL_PORT = os.environ["EMAIL_PORT"]
+EMAIL_USE_SSL = os.environ["EMAIL_USE_SSL"]
+
 
 # postmark
 POSTMARK_SERVER_TOKEN = os.environ["POSTMARK_SERVER_TOKEN"]
