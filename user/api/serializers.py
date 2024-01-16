@@ -92,7 +92,7 @@ class RegisterSerializer(serializers.Serializer):
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
         if email:
-            if email and User.objects.filter(email=email).exists():
+            if User.objects.filter(email=email).exists():
                 raise serializers.ValidationError(
                     "A user is already registered with this e-mail address."
                 )
