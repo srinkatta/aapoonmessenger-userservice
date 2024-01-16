@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
-from allauth.account.models import EmailAddress
 from django.contrib.auth import login
 from django.contrib.auth.models import update_last_login
 from django.db import IntegrityError
@@ -92,14 +91,10 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
-        if email:
-            if (
-                email
-                and EmailAddress.objects.filter(email=email, verified=True).exists()
-            ):
-                raise serializers.ValidationError(
-                    "A user is already registered with this e-mail address."
-                )
+        if email and User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                "A user is already registered with this e-mail address."
+            )
         return email
 
     def validate_password(self, password):
@@ -124,13 +119,17 @@ class RegisterSerializer(serializers.Serializer):
             "is_business": is_business,
         }
 
-    def save(self, request) -> User:
+    def save(self, request, source) -> User:
         name = self.get_cleaned_data()["name"]
         country_code = self.get_cleaned_data()["country_code"]
         phone_number = self.get_cleaned_data()["phone_number"]
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
+
+        user_exists = False
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
+        if user:
+            user_exists = True
 
         phone = f"{country_code}{phone_number}"
         phone_parse = phonenumbers.parse("+" + phone)
@@ -150,47 +149,65 @@ class RegisterSerializer(serializers.Serializer):
         if user.exists():
             user = user.first()
             self.post_flow_actions(
-                user, country_code, phone_number, device_model, device_os_version
+                user,
+                country_code,
+                phone_number,
+                device_model,
+                device_os_version,
+                source,
             )
             return user
 
-        user = self.create_user_auto_increment_validate()
+        user = self.create_user_auto_increment_validate(source, user_exists)
+        if user:
+            if request.data.get("password"):
+                user.set_password(request.data["password"])
+            self.post_flow_actions(
+                user,
+                country_code,
+                phone_number,
+                device_model,
+                device_os_version,
+                source,
+            )
 
-        if request.data.get("password"):
-            user.set_password(request.data["password"])
-        self.post_flow_actions(
-            user, country_code, phone_number, device_model, device_os_version
-        )
+            invited_by = request.data.get("invited_by", "")
+            if invited_by:
+                self.__invite_flow(user, invited_by)
+            return user
 
-        invited_by = request.data.get("invited_by", "")
-        if invited_by:
-            self.__invite_flow(user, invited_by)
-        return user
+    def create_user_auto_increment_validate(self, source, user_exists):
+        # Web-based user registration is currently restricted
+        if source and not user_exists:
+            pass
 
-    def create_user_auto_increment_validate(self):
-        cleaned_data = self.get_cleaned_data()
+        elif not source:
+            cleaned_data = self.get_cleaned_data()
 
-        while True:
-            try:
-                user, created = User.objects.get_or_create(**cleaned_data)
-                if created:
-                    return user
-            except IntegrityError:
-                pass
+            while True:
+                try:
+                    user, created = User.objects.get_or_create(**cleaned_data)
+                    if created:
+                        return user
+                except IntegrityError:
+                    pass
 
     def __invite_flow(self, user, invited_by):
         invited_by_user = User.objects.get(id=invited_by)
         UserInvite.objects.get_or_create(invited_user=user, invited_by=invited_by_user)
 
     def post_flow_actions(
-        self, user, country_code, phone_number, device_model, device_os_version
+        self, user, country_code, phone_number, device_model, device_os_version, source
     ):
-        otp = generate_otp()
-        print(f"Generated otp: {otp}")
-        phone = f"{country_code}{phone_number}"
-        self.login_attempts_reset(user)
-        self.send_otp(phone_number, otp, user, phone)
-        self.save_user_device(user, device_model, device_os_version)
+        user_status = user_kyc_status(user)
+        is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
+        if (source and user and is_registered) or not source:
+            otp = generate_otp()
+            print(f"Generated otp: {otp}")
+            phone = f"{country_code}{phone_number}"
+            self.login_attempts_reset(user)
+            self.send_otp(phone_number, otp, user, phone)
+            self.save_user_device(user, device_model, device_os_version)
 
     def send_otp(self, phone_number, otp, user, number):
         if user.country_code == "91":
@@ -279,6 +296,8 @@ class UserLoginSerializer(serializers.Serializer):
             refresh = RefreshToken.for_user(user)
             refresh_token = str(refresh)
             access_token = str(refresh.access_token)
+            if not user.jwt_token:
+                user.jwt_token = access_token
 
             user.second_last_login = user.last_login
             if user.second_last_login:
@@ -308,7 +327,7 @@ class UserLoginSerializer(serializers.Serializer):
                 second_last_login = 0
 
             validation = {
-                "access": access_token,
+                "access": user.jwt_token,
                 "refresh": refresh_token,
                 "id": user.id,
                 "name": user.name,
@@ -321,7 +340,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "profile_pic": user.secondary_picture,
             }
 
-            self.xmpp_check_account(user, access_token)
+            self.xmpp_check_account(user, user.jwt_token)
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")
@@ -525,13 +544,9 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         required=False, allow_null=True, allow_blank=True
     )
     photo_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
-    interests = serializers.MultipleChoiceField(
-        choices=INTEREST_CHOICES, required=False
-    )
-    education = serializers.MultipleChoiceField(
-        choices=EDUCATION_CHOICES, required=False
-    )
+    sports = serializers.ListField(required=False)
+    interests = serializers.ListField(required=False)
+    education = serializers.ListField(required=False)
     date_of_birth = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
@@ -674,13 +689,9 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     email = serializers.SerializerMethodField()
     photo_id = serializers.SerializerMethodField()
     country_iso_code = serializers.SerializerMethodField()
-    sports = serializers.MultipleChoiceField(choices=SPORTS_CHOICES, required=False)
-    interests = serializers.MultipleChoiceField(
-        choices=INTEREST_CHOICES, required=False
-    )
-    education = serializers.MultipleChoiceField(
-        choices=EDUCATION_CHOICES, required=False
-    )
+    sports = serializers.SerializerMethodField()
+    interests = serializers.SerializerMethodField()
+    education = serializers.SerializerMethodField()
     invited_by = serializers.SerializerMethodField()
     is_business = serializers.SerializerMethodField()
 
@@ -711,6 +722,25 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
 
     def get_email(self, instance):
         return instance.user.email
+
+    def parse_field_value(self, value):
+        if isinstance(value, list):
+            return value
+
+        if isinstance(value, str) and value not in ["None", "", "[]"]:
+            values = value.split(",")
+            values = [value.strip() for value in values if value]
+            return values
+        return []
+
+    def get_sports(self, instance):
+        return self.parse_field_value(instance.sports)
+
+    def get_interests(self, instance):
+        return self.parse_field_value(instance.interests)
+
+    def get_education(self, instance):
+        return self.parse_field_value(instance.education)
 
     def get_country_iso_code(self, instance):
         return instance.user.country_iso_code

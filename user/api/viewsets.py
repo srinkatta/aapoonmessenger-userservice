@@ -132,6 +132,10 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
+        import sys
+
+        python_version = sys.version  # Todo remove after python version verify
+        logger.info(f"Python Version from logger: {python_version}")
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
@@ -146,10 +150,16 @@ class AuthUserRegistrationView(APIView):
         serializer.is_valid(raise_exception=True)
         user = self.perform_create(serializer)
 
-        user_status = user_kyc_status(user)
+        is_registered = False
+        if user:
+            user_status = user_kyc_status(user)
 
-        # User registration status
-        is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
+            # User registration status
+            is_registered = user_status in [
+                "Basic Verified",
+                "Fully Verified",
+                "Pending",
+            ]
 
         return Response(
             {"message": "Verification Code (OTP) sent", "is_registered": is_registered},
@@ -168,11 +178,8 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
-        logger.info(
-            "Triggered perform create method.(via logs)"
-        )  # todo: remove debugging statements
-        print("Triggered perform create method.")
-        user = serializer.save(self.request)
+        source = self.request.query_params.get("source", None)
+        user = serializer.save(self.request, source)
         return user
 
 
@@ -316,18 +323,7 @@ class SendOTPView(APIView):
             sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
 
-    def login_attempts_reset(self, user, user_settings):
-        if user and user_settings.verify_attempts >= 3:
-            updated = user.last_login_time.replace(tzinfo=timezone.utc)
-            diff = datetime.now(tz=timezone.utc) - updated
-            minutes_since_last_login = diff.total_seconds() // 60
-            if minutes_since_last_login >= 10:
-                user_settings.verify_attempts = 0
-                user.save()
-            else:
-                self.max_phone_attempts(user, user_settings)
-
-    def max_phone_attempts(self, user, user_settings):
+    def max_phone_attempts(self, user):
         """
         Check and handle maximum phone verification attempts.
 
@@ -337,6 +333,7 @@ class SendOTPView(APIView):
         Args:
         - request (Request): The HTTP request.
         """
+        user_settings = user.settings.filter().first()
         if user_settings.verify_attempts >= 3:
             subject = _("Max Attempts Reached on updated Phone Verification")
             phone_failure(user, subject)
@@ -359,7 +356,7 @@ class SendOTPView(APIView):
         """
         user = request.user
         user_settings = request.user.settings.filter().first()
-        self.login_attempts_reset(user, user_settings)
+        self.max_phone_attempts(user)
         if user_settings.phone_number:
             phone = f"{user_settings.country_code}{user_settings.phone_number}"
             phone_number = user_settings.phone_number
@@ -403,7 +400,7 @@ class SendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user_settings = request.user.settings.filter().first()
-        self.login_attempts_reset(user, user_settings)
+        self.max_phone_attempts(user)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -964,21 +961,31 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance.skillset = data.get("skillset")
         instance.experience = data.get("experience")
         instance.profession = data.get("profession")
-        instance.education = data.get("education")
         instance.income = data.get("income")
         instance.relationship_status = data.get("relationship_status")
-        instance.sports = data.get("sports")
-        instance.interests = data.get("interests")
         instance.about_me = data.get("about_me")
         instance.political_interests = data.get("political_interests")
         instance.iam_looking_for = data.get("iam_looking_for")
         instance.name = data.get("name")
         instance.chat_theme = data.get("chat_theme")
 
+        self.save_user_profile_choices(instance, data)
+
         user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
             user_settings.profile_details = True
             user_settings.save()
+
+        instance.save()
+
+    def save_user_profile_choices(self, instance, data):
+        sports = data.get("sports", [])
+        interests = data.get("interests", [])
+        education = data.get("education", [])
+
+        instance.sports = ",".join(sports) if sports else None
+        instance.interests = ",".join(interests) if interests else None
+        instance.education = ",".join(education) if education else None
 
         instance.save()
 
@@ -1347,6 +1354,12 @@ class UserDeleteRequestView(APIView):
 
             return Response(
                 {"message": "User added to be deleted list."}, status=status.HTTP_200_OK
+            )
+
+        except Http404:
+            logger.error("User not found with given criteria.")
+            return Response(
+                {"detail": "User doesn't exist."}, status=status.HTTP_404_NOT_FOUND
             )
 
         except User.DoesNotExist:

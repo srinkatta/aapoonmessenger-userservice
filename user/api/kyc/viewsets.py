@@ -266,7 +266,7 @@ class ComparefacesViewSet(BaseViewSet):
 
         request.data["source_key_back_side"] = (
             self.cloudfront_cdn(request.data["source_key_back_side"])
-            if request.data["source_key_back_side"]
+            if request.data.get("source_key_back_side")
             else ""
         )
 

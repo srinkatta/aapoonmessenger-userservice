@@ -2,7 +2,6 @@ import logging
 import re
 from datetime import timedelta
 
-import pandas as pd
 from django.contrib import admin
 from django.db import connections
 from django.utils import timezone
