@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 
 import pytz
 from django.http import HttpResponse
@@ -21,7 +21,7 @@ class AppAvailabilityMiddleware:
 
     def process_request(self, request):
         ist = pytz.timezone("Asia/Kolkata")
-        current_time_ist = ist.fromutc(datetime.utcnow()).time()
+        current_time_ist = ist.fromutc(datetime.now(tz=timezone.utc)).time()
 
         # Check if it's within the allowed time range and day
         if self.is_app_available(current_time_ist):
