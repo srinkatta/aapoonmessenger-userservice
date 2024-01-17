@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 from smtplib import SMTPAuthenticationError
+from datetime import datetime, timezone
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
@@ -132,7 +133,8 @@ class AuthUserRegistrationView(APIView):
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
         import sys
-        python_version = sys.version   # Todo remove after python version verify
+
+        python_version = sys.version  # Todo remove after python version verify
         logger.info(f"Python Version from logger: {python_version}")
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
@@ -148,10 +150,16 @@ class AuthUserRegistrationView(APIView):
         serializer.is_valid(raise_exception=True)
         user = self.perform_create(serializer)
 
-        user_status = user_kyc_status(user)
+        is_registered = False
+        if user:
+            user_status = user_kyc_status(user)
 
-        # User registration status
-        is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
+            # User registration status
+            is_registered = user_status in [
+                "Basic Verified",
+                "Fully Verified",
+                "Pending",
+            ]
 
         return Response(
             {"message": "Verification Code (OTP) sent", "is_registered": is_registered},
@@ -170,7 +178,8 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
-        user = serializer.save(self.request)
+        source = self.request.query_params.get("source", None)
+        user = serializer.save(self.request, source)
         return user
 
 
@@ -314,7 +323,18 @@ class SendOTPView(APIView):
             sms_client = sms.PINPOINT_SMS(number, otp, user)
             sms_client.send_message()
 
-    def max_phone_attempts(self, user):
+    def login_attempts_reset(self, user, user_settings):
+        if user and user_settings.verify_attempts >= 3:
+            updated = user.last_login_time.replace(tzinfo=timezone.utc)
+            diff = datetime.now(tz=timezone.utc) - updated
+            minutes_since_last_login = diff.total_seconds() // 60
+            if minutes_since_last_login >= 10:
+                user_settings.verify_attempts = 0
+                user.save()
+            else:
+                self.max_phone_attempts(user, user_settings)
+
+    def max_phone_attempts(self, user, user_settings):
         """
         Check and handle maximum phone verification attempts.
 
@@ -324,7 +344,6 @@ class SendOTPView(APIView):
         Args:
         - request (Request): The HTTP request.
         """
-        user_settings = user.settings.filter().first()
         if user_settings.verify_attempts >= 3:
             subject = _("Max Attempts Reached on updated Phone Verification")
             phone_failure(user, subject)
@@ -347,7 +366,7 @@ class SendOTPView(APIView):
         """
         user = request.user
         user_settings = request.user.settings.filter().first()
-        self.max_phone_attempts(user)
+        self.login_attempts_reset(user, user_settings)
         if user_settings.phone_number:
             phone = f"{user_settings.country_code}{user_settings.phone_number}"
             phone_number = user_settings.phone_number
@@ -391,7 +410,7 @@ class SendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user_settings = request.user.settings.filter().first()
-        self.max_phone_attempts(user)
+        self.login_attempts_reset(user, user_settings)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -1345,6 +1364,12 @@ class UserDeleteRequestView(APIView):
 
             return Response(
                 {"message": "User added to be deleted list."}, status=status.HTTP_200_OK
+            )
+
+        except Http404:
+            logger.error("User not found with given criteria.")
+            return Response(
+                {"detail": "User doesn't exist."}, status=status.HTTP_404_NOT_FOUND
             )
 
         except User.DoesNotExist:
