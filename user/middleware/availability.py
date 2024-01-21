@@ -31,7 +31,7 @@ class AppAvailabilityMiddleware:
             return HttpResponse(
                 json.dumps(
                     {
-                        "detail": "APSCHE Messenger is offline between 9 PM and 9 AM IST, Monday to Friday, and on weekends."
+                        "detail": "aapoon Messenger is offline between 9 PM and 9 AM IST, Monday to Friday, and on weekends."
                     }
                 ),
                 status=403,
@@ -39,9 +39,16 @@ class AppAvailabilityMiddleware:
             )
 
     def is_app_available(self, current_time_ist):
+        is_weekend = current_time_ist.weekday() in [
+            5,
+            6,
+        ]  # 5 corresponds to Saturday, 6 corresponds to Sunday
+
         # Check if it's within the allowed time range (9AM to 9PM IST)
         is_within_time_range = time(9, 0) <= current_time_ist.time() <= time(21, 0)
 
-        # Return True if it's a weekday and within the time range
-        # or if it's a weekend (as the app is available on weekends)
-        return is_within_time_range
+        if is_weekend:
+            return False
+        if is_within_time_range:
+            return True
+        return False
