@@ -1,14 +1,23 @@
-Hello Support,
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Feedback</title>
+</head>
+<body>
+    <p>Hello Support,</p>
 
-Please check the feedback from {{ name }}.
+    <p>Please check the feedback from {{ name }}.</p>
 
-User Id: {{ user_id }}
-Email: {{ email }}
-Country Code: {{ country_code }}
-Phone: {{ phone }}
-Topic: {{ topic }}
-Content: {{ content }}
-Attachment: {{ url }}
+    <ul>
+        <li>User Id: {{ user_id }}</li>
+        <li>Email: {{ email }}</li>
+        <li>Country Code: {{ country_code }}</li>
+        <li>Phone: {{ phone }}</li>
+        <li>Topic: {{ topic }}</li>
+        <li>Content: {{ content }}</li>
+        <li>Attachment : <a href="{{ url | safe }}">{{ url }}</a></li>
+    </ul>
 
-Thanks and Regards,
-aapoon.
+    <p>Thanks and Regards,<br>aapoon.</p>
+</body>
+</html>

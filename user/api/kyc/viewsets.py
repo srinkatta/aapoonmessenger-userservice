@@ -1,4 +1,3 @@
-import uuid
 from urllib.parse import urlparse
 
 from rest_framework import permissions
@@ -13,7 +12,8 @@ from user.api.kyc.serializers import (
     ProfileSerializer,
     SelfieSerializer,
 )
-from user.utils import clear_bucket_from_path, s3_url_extract
+from user.utils import s3_url_extract, clear_bucket_from_path
+from user.api.kyc import services as kyc_service
 
 
 class BaseViewSet(APIView):
@@ -91,7 +91,7 @@ class SelfieViewSet(BaseViewSet):
         url = serializer.data.get("url", "")
         request.data["url"] = self.cloudfront_cdn(url) if request.data["url"] else ""
 
-        response = serializer.selfie(request.user)
+        response = kyc_service.validate_selfie(request.user, request.data["url"])
 
         if response.get("is_verified"):
             user_kyc_settings = request.user.settings.filter().first()
@@ -151,8 +151,10 @@ class PhotoIDVerifyViewSet(BaseViewSet):
         serializer.is_valid(raise_exception=True)
         request.data["source_key"] = self.cloudfront_cdn(request.data["source_key"])
 
-        serializer = self.serializer_class(request.data)
-        response = serializer.photo_id_verification(request.user)
+        response = kyc_service.validate_and_compare_photo_id(
+            request.user,
+            request.data["source_key"],
+        )
 
         return Response(response)
 
@@ -204,8 +206,9 @@ class ProfileUpdateViewSet(BaseViewSet):
             self.cloudfront_cdn(target_key) if target_key else ""
         )
 
-        serializer = self.serializer_class(request.data)
-        response = serializer.profile(request.user)
+        response = kyc_service.update_profile_picture(
+            request.user, request.data["target_key"]
+        )
 
         if response.get("is_verified"):
             request.user.secondary_picture = request.data["target_key"]
@@ -263,12 +266,11 @@ class ComparefacesViewSet(BaseViewSet):
 
         request.data["source_key_back_side"] = (
             self.cloudfront_cdn(request.data["source_key_back_side"])
-            if request.data["source_key_back_side"]
+            if request.data.get("source_key_back_side")
             else ""
         )
 
-        serializer = self.serializer_class(request.data)
-        response = serializer.compare_faces(request.user)
+        response = kyc_service.compare_faces(request.user, request.data)
 
         if response.get("is_verified"):
             user_kyc_setting = request.user.settings.filter().first()
