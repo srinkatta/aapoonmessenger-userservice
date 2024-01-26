@@ -161,6 +161,7 @@ class RegisterSerializer(serializers.Serializer):
             return user
 
         user = self.create_user_auto_increment_validate(source, user_exists)
+        print(f"user details: {user}")
         if user:
             if request.data.get("password"):
                 user.set_password(request.data["password"])
@@ -180,6 +181,7 @@ class RegisterSerializer(serializers.Serializer):
 
     def create_user_auto_increment_validate(self, source, user_exists):
         # Web-based user registration is currently restricted
+        print("Triggered create_user_auto_increment_validate method")
         if source and not user_exists:
             pass
 
@@ -201,8 +203,12 @@ class RegisterSerializer(serializers.Serializer):
     def post_flow_actions(
         self, user, country_code, phone_number, device_model, device_os_version, source
     ):
+        print("Entered post flow actions")
         user_status = user_kyc_status(user)
+
+        print(f"user_status: {user_status}")
         is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
+        print(f"source: {source}")
         if (source and user and is_registered) or not source:
             otp = generate_otp()
             print(f"Generated otp: {otp}")
