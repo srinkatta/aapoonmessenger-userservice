@@ -127,10 +127,12 @@ class RegisterSerializer(serializers.Serializer):
         device_os_version = request.data.get("device_os_version", "")
 
         user_exists = False
+        print(f"Entered User save method")
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
         if user:
             user_exists = True
-
+            
+        print(f"User exists in DB: {user}")
         phone = f"{country_code}{phone_number}"
         phone_parse = phonenumbers.parse("+" + phone)
         country = region_code_for_number(phone_parse)

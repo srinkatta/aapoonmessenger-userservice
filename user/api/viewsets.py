@@ -133,9 +133,10 @@ class AuthUserRegistrationView(APIView):
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
         import sys
-
+    
         python_version = sys.version  # Todo remove after python version verify
         logger.info(f"Python Version from logger: {python_version}")
+        print("Triggered Register API")
         serializer = self.serializer_class(data=request.data)
         if request.data.get("email"):
             email = get_adapter().clean_email(request.data.get("email"))
@@ -178,6 +179,7 @@ class AuthUserRegistrationView(APIView):
         Returns:
         - User: The newly created user instance.
         """
+        print("Triggered User Create API")
         source = self.request.query_params.get("source", None)
         user = serializer.save(self.request, source)
         return user
