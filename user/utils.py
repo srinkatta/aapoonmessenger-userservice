@@ -277,25 +277,31 @@ def user_kyc_status(user):
     except Exception as err:
         logging.debug("User kyc logs not found: %s", err)
         print(err)
-    user_kyc_settings = user.settings.filter().first()
-    print(f"user_kyc_settings: {user_kyc_settings}")
-    kyc_done = user_kyc_settings.kyc_done
-    print(f"kyc_done: {kyc_done}")
-    if logs and len(attempts) >= 2 and user.phone_number_verified and not kyc_done:
-        status = "Pending"
-    elif kyc_done:
-        status = "Fully Verified"
-    elif (
-        user.phone_number_verified
-        and user_kyc_settings.account_details
-        and not kyc_done
-    ):
-        status = "Basic Verified"
-    else:
-        status = "Phone Registered"
-
-    print(f"Kyc status: {status}")
-    return status
+    try:
+        user_kyc_settings = user.settings.filter().first()
+        print(f"user_kyc_settings: {user_kyc_settings}")
+        kyc_done = user_kyc_settings.kyc_done
+        print(f"kyc_done: {kyc_done}")
+        if logs and len(attempts) >= 2 and user.phone_number_verified and not kyc_done:
+            status = "Pending"
+        elif kyc_done:
+            status = "Fully Verified"
+        elif (
+            user.phone_number_verified
+            and user_kyc_settings.account_details
+            and not kyc_done
+        ):
+            status = "Basic Verified"
+        else:
+            status = "Phone Registered"
+    
+        print(f"Kyc status: {status}")
+        return status
+    except Exception as err:
+        logging.debug("User kyc settings not found: %s", err)
+        print(err)
+        return status
+        
 
 def get_month(dob):
     """
