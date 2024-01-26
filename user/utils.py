@@ -268,13 +268,19 @@ def user_kyc_status(user):
     status = ""
     try:
         logs = user.logs.filter().first()
+        print(f"logs instance: {logs}")
         logs = logs.kyc_logs
+        print(f"kyc_logs: {logs}")
         if logs:
             attempts = re.findall(r"<b>Target Image: https://", logs)
+            print(f"attempts: {attempts}")
     except Exception as err:
         logging.debug("User kyc logs not found: %s", err)
+        print(err)
     user_kyc_settings = user.settings.filter().first()
+    print(f"user_kyc_settings: {user_kyc_settings}")
     kyc_done = user_kyc_settings.kyc_done
+    print(f"kyc_done: {kyc_done}")
     if logs and len(attempts) >= 2 and user.phone_number_verified and not kyc_done:
         status = "Pending"
     elif kyc_done:
@@ -288,8 +294,8 @@ def user_kyc_status(user):
     else:
         status = "Phone Registered"
 
+    print(f"Kyc status: {status}")
     return status
-
 
 def get_month(dob):
     """
