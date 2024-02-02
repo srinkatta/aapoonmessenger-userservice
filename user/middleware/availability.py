@@ -48,7 +48,7 @@ class AppAvailabilityMiddleware:
         is_within_time_range = time(9, 0) <= current_time_ist.time() <= time(21, 0)
 
         if is_weekend:
-            return False
+            return True
         if is_within_time_range:
             return True
-        return False
+        return True
