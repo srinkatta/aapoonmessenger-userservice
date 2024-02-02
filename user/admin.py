@@ -264,7 +264,10 @@ class UserAdmin(ImportExportModelAdmin, admin.ModelAdmin):
             "Other Info",
             {
                 "classes": ("collapse",),
-                "fields": ("last_login", "is_active"),
+                "fields": (
+                    ("last_login", "is_active"),
+                    ("role",),
+                ),
             },
         ),
     )

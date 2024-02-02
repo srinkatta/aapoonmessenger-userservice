@@ -6,13 +6,11 @@ from django.db import models
 from common.models import BaseTimeStampedModel
 from user.choices import (
     COUNTRY_CODE_CHOICES,
-    EDUCATION_CHOICES,
     GENDER_CHOICES,
     INCOME_CHOICES,
-    INTEREST_CHOICES,
     MARITAL_STATUS_CHOICES,
     SECTORS_TYPE_CHOICES,
-    SPORTS_CHOICES,
+    USER_ROLE_CHOICE,
 )
 
 
@@ -69,6 +67,12 @@ class User(AbstractUser):
     unique_id = models.CharField(max_length=255)
     hash_tag = models.TextField(null=True, blank=True)
     jwt_token = models.TextField(null=True, blank=True)
+    role = models.CharField(
+        max_length=255,
+        choices=USER_ROLE_CHOICE,
+        null=True,
+        blank=True,
+    )
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []

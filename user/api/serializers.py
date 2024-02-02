@@ -131,7 +131,7 @@ class RegisterSerializer(serializers.Serializer):
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
         if user:
             user_exists = True
-            
+
         print(f"User exists in DB: {user}")
         phone = f"{country_code}{phone_number}"
         phone_parse = phonenumbers.parse("+" + phone)
@@ -828,6 +828,10 @@ class UserDetailsSerializer(serializers.Serializer):
     profile_pic = serializers.SerializerMethodField()
     user_type = serializers.SerializerMethodField()
     fcm_token = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+
+    def get_role(self, obj):
+        return obj.role
 
     def get_profile_pic(self, obj):
         return obj.secondary_picture
