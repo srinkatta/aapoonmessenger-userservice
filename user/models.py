@@ -477,18 +477,3 @@ class MuteConversation(models.Model):
     recipient_id = models.CharField(max_length=200)
     mute = models.BooleanField(default=False)
     mute_time = models.BigIntegerField(default=0)
-
-
-class PollData(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="poll",
-    )
-    phone_number = models.CharField(
-        max_length=30, null=True, blank=True, verbose_name="Phone Number"
-    )
-    male_votes = models.IntegerField(default=0)
-    female_votes = models.IntegerField(default=0)
-    transgender_votes = models.IntegerField(default=0)
-    challenging_votes = models.IntegerField(default=0)

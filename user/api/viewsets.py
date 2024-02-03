@@ -43,7 +43,6 @@ from user.api.serializers import (
     UserRemoveSerializer,
     UserSerializer,
     VerifyPhoneSerializer,
-    PollDataSerializer,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
@@ -57,7 +56,6 @@ from user.models import (
     UserInvite,
     UserLog,
     UserProfile,
-    PollData,
 )
 from user.user_delete import UserDelete
 from user.utils import (
@@ -133,7 +131,7 @@ class AuthUserRegistrationView(APIView):
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
         import sys
-    
+
         python_version = sys.version  # Todo remove after python version verify
         logger.info(f"Python Version from logger: {python_version}")
         print("Triggered Register API")
@@ -1937,39 +1935,3 @@ class UserProfileSearchAPI(APIView, GenericPagination):
         return Response(
             {"detail": "No jid provided"}, status=status.HTTP_400_BAD_REQUEST
         )
-
-
-class SubmitPollData(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = PollDataSerializer
-    allowed_methods = ("POST",)
-
-    def post(self, request):
-        user = request.user
-
-        # If the user has previously submitted poll data, update it with the new data
-        existing_poll_data = PollData.objects.filter(user=user)
-        if existing_poll_data.exists():
-            serializer = self.serializer_class(
-                existing_poll_data[0], data=request.data, partial=True
-            )
-
-        else:
-            serializer = self.serializer_class(
-                data={
-                    "user": user.id,
-                    "phone_number": user.phone_number,
-                    "male_votes": request.data.get("male_votes"),
-                    "female_votes": request.data.get("female_votes"),
-                    "transgender_votes": request.data.get("transgender_votes"),
-                    "challenging_votes": request.data.get("challenging_votes"),
-                }
-            )
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Poll data has been submitted successfully."},
-                status=status.HTTP_200_OK,
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
