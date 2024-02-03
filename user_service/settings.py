@@ -66,6 +66,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "user.middleware.availability.AppAvailabilityMiddleware",
 ]
 
 ROOT_URLCONF = "user_service.urls"
@@ -88,15 +89,15 @@ CORS_ALLOW_HEADERS = (
 
 
 CORS_ALLOW_HEADERS = [
-    'x-api-key',
-    'content-type',
-    'authorization',
+    "x-api-key",
+    "content-type",
+    "authorization",
 ]
 
 CORS_EXPOSE_HEADERS = [
-    'x-api-key',
-    'content-type',
-    'authorization',
+    "x-api-key",
+    "content-type",
+    "authorization",
 ]
 
 TEMPLATES = [
