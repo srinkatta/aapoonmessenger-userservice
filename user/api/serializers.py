@@ -293,11 +293,13 @@ class RegisterSerializer(serializers.Serializer):
 class UserLoginSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
+    fcm_token = serializers.CharField(required=True)
     otp = serializers.CharField(required=True)
 
     def validate(self, data):
         country_code = data["country_code"]
         phone_number = data["phone_number"]
+        fcm_token = data.get("fcm_token", None)
         otp = data["otp"]
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
 
@@ -343,6 +345,8 @@ class UserLoginSerializer(serializers.Serializer):
                 user,
                 backend="django.contrib.auth.backends.ModelBackend",
             )
+
+            user.fcm_token = fcm_token if fcm_token else None
             user.otp_requested = None
             user.phone_number_verified = True
             if user.login_attempts <= 3:
@@ -629,6 +633,13 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
     )
     is_business = serializers.BooleanField(default=False)
     university = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
+    year_of_joining = serializers.DateField()
+    registration_number = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
+    designation = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
     college = serializers.CharField(required=False, allow_null=True, allow_blank=True)

@@ -169,14 +169,12 @@ class User(AbstractUser):
         verbose_name="Stream",
     )
     department = models.ManyToManyField(
-        Department, null=True, blank=True, verbose_name="Department"
+        Department, blank=True, verbose_name="Department"
     )
     specialization = models.ManyToManyField(
-        Specialization, null=True, blank=True, verbose_name="Specialization"
+        Specialization, blank=True, verbose_name="Specialization"
     )
-    program = models.ManyToManyField(
-        Program, null=True, blank=True, verbose_name="Program"
-    )
+    program = models.ManyToManyField(Program, blank=True, verbose_name="Program")
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
