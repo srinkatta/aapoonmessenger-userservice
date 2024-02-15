@@ -11,7 +11,57 @@ from user.choices import (
     MARITAL_STATUS_CHOICES,
     SECTORS_TYPE_CHOICES,
     USER_ROLE_CHOICE,
+    USER_TYPE_CHOICE,
 )
+
+
+class Designation(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class University(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class College(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Stream(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Department(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Specialization(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Program(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class User(AbstractUser):
@@ -50,7 +100,9 @@ class User(AbstractUser):
     phone_number_verified = models.BooleanField(
         verbose_name="Phone Verified", default=False
     )
-    user_type = models.CharField(max_length=15, null=True)
+    user_type = models.CharField(
+        max_length=15, choices=USER_TYPE_CHOICE, null=True, blank=True
+    )
     second_last_login = models.DateTimeField(null=True, blank=True)
     jid = models.CharField(max_length=255, null=True, blank=True)
     fcm_token = models.CharField(max_length=255, null=True, blank=True)
@@ -72,6 +124,58 @@ class User(AbstractUser):
         choices=USER_ROLE_CHOICE,
         null=True,
         blank=True,
+    )
+    registration_number = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name="Registration Number",
+    )
+    year_of_joining = models.DateField(
+        null=True, blank=True, verbose_name="Year of Joining"
+    )
+    designation = models.ForeignKey(
+        Designation,
+        on_delete=models.SET_NULL,
+        db_index=True,
+        null=True,
+        blank=True,
+        verbose_name="Designation",
+    )
+    # Category
+    university = models.ForeignKey(
+        University,
+        on_delete=models.SET_NULL,
+        db_index=True,
+        null=True,
+        blank=True,
+        verbose_name="University",
+    )
+    college = models.ForeignKey(
+        College,
+        on_delete=models.SET_NULL,
+        db_index=True,
+        null=True,
+        blank=True,
+        verbose_name="College",
+    )
+    stream = models.ForeignKey(
+        Stream,
+        on_delete=models.SET_NULL,
+        db_index=True,
+        null=True,
+        blank=True,
+        verbose_name="Stream",
+    )
+    department = models.ManyToManyField(
+        Department, null=True, blank=True, verbose_name="Department"
+    )
+    specialization = models.ManyToManyField(
+        Specialization, null=True, blank=True, verbose_name="Specialization"
+    )
+    program = models.ManyToManyField(
+        Program, null=True, blank=True, verbose_name="Program"
     )
 
     USERNAME_FIELD = "username"

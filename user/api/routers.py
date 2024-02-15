@@ -34,6 +34,8 @@ from user.api.viewsets import (
     UserProfileViewSet,
     UserViewSet,
     VerifyPhoneView,
+    CategorySearchView,
+    CheckUserExistsView,
 )
 
 router = routers.SimpleRouter()
@@ -96,6 +98,8 @@ urlpatterns = [
         UserProfileSearchAPI.as_view(),
         name="user_profile_search",
     ),
+    path("category_search/", CategorySearchView.as_view(), name="category_search"),
+    path("user_exists/", CheckUserExistsView.as_view(), name="user_exists_name_dob"),
     # Direct message urls
     path("notify_dm/", NotifyRedirectDmViewSet.as_view(), name="notify_redirect_dm"),
     path("mute_messages/", MuteMessageView.as_view(), name="mute_messages"),

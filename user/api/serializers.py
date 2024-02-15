@@ -22,6 +22,7 @@ from user.choices import (
     SECTORS_TYPE_CHOICES,
     SPORTS_CHOICES,
 )
+from user.service.circle import Circle
 from user.helpers import hotp, sms
 from user.helpers.otp import generate_otp
 from user.models import (
@@ -34,6 +35,13 @@ from user.models import (
     UserLog,
     UserProfile,
     UserVerificationSetting,
+    University,
+    Stream,
+    Program,
+    Department,
+    Specialization,
+    College,
+    Designation,
 )
 from user.utils import (
     calculate_age,
@@ -124,10 +132,29 @@ class RegisterSerializer(serializers.Serializer):
         phone_number = self.get_cleaned_data()["phone_number"]
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
+        user_id = request.data.get("user_id", "")
+
+        user_query = User.objects.get(id=user_id)
+
+        if (
+            user_query
+            and user_query.phone_number == phone_number
+            and not user_query.phone_number_verified
+        ):
+
+            user_query.phone_number_verified = True
+            user_query.save()
+
+        if (
+            user_query
+            and user_query.phone_number != phone_number
+            and user_query.phone_number_verified
+        ):
+            raise ValidationError({"detail": "User with Phone number doesn't exist"})
 
         user_exists = False
-        print(f"Entered User save method")
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
+
         if user:
             user_exists = True
 
@@ -186,14 +213,8 @@ class RegisterSerializer(serializers.Serializer):
 
         elif not source:
             cleaned_data = self.get_cleaned_data()
-
-            while True:
-                try:
-                    user, created = User.objects.get_or_create(**cleaned_data)
-                    if created:
-                        return user
-                except IntegrityError:
-                    pass
+            user = User.objects.get(**cleaned_data)
+            return user
 
     def __invite_flow(self, user, invited_by):
         invited_by_user = User.objects.get(id=invited_by)
@@ -346,12 +367,56 @@ class UserLoginSerializer(serializers.Serializer):
                 "user_profile": user_status,
                 "profile_pic": user.secondary_picture,
                 "role": user.role,
+                "user_type": user.user_type,
             }
 
             self.xmpp_check_account(user, user.jwt_token)
+            self.subscribe_associate_room_topic(user)
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")
+
+    def subscribe_associate_room_topic(self, user):
+        profile = UserProfile.objects.get(user=user)
+        if (
+            all(
+                getattr(user, attr, None) is not None
+                for attr in [
+                    "name",
+                    "email",
+                    "phone_number",
+                    "university",
+                    "stream",
+                    "college",
+                    "department",
+                    "specialization",
+                    "program",
+                ]
+            )
+            and getattr(profile, "gender", None)
+            and getattr(profile, "date_of_birth", None)
+        ):
+
+            department = [
+                department.name for department in profile.user.department.all()
+            ]
+            program = [program.name for program in profile.user.program.all()]
+            specialization = [
+                specialization.name
+                for specialization in profile.user.specialization.all()
+            ]
+
+            circle_service = Circle()
+            subscribing_associate_circles = circle_service.assign_user_room_topic(
+                user_jid=user.jid,
+                fcm_token=user.fcm_token,
+                university=user.university.name,
+                college=user.college.name,
+                stream=user.stream.name,
+                program=program,
+                department=department,
+                specialization=specialization,
+            )
 
     def xmpp_check_account(self, user, access_token):
         """
@@ -563,6 +628,14 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         required=False, allow_null=True, allow_blank=True
     )
     is_business = serializers.BooleanField(default=False)
+    university = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
+    college = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    stream = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    department = serializers.ListField(required=False)
+    program = serializers.ListField(required=False)
+    specialization = serializers.ListField(required=False)
 
     class Meta:
         model = UserProfile
@@ -891,3 +964,66 @@ class DeletedUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeletedUser
         fields = ["id", "user", "is_deleted", "name", "country_code", "phone_number"]
+
+
+class UniversitySerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = University
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+
+
+class CollegeSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = College
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+
+
+class ProgramSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = Program
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+
+
+class DesignationSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = Designation
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+
+
+class StreamSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = Stream
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+
+
+class DepartmentSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = Department
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }
+
+
+class SpecializationSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = Specialization
+        fields = "__all__"
+        extra_kwargs = {
+            "id": {"read_only": True},
+        }

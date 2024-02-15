@@ -667,3 +667,8 @@ USER_ROLE_CHOICE = (
     ("R O", "R O"),
     ("B O", "B O"),
 )
+
+USER_TYPE_CHOICE = (
+    ("Student", "Student"),
+    ("Faculty", "Faculty"),
+)

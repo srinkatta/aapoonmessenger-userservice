@@ -2,11 +2,13 @@ import csv
 import datetime
 import logging
 import os
+import sys
 from smtplib import SMTPAuthenticationError
 from datetime import datetime, timezone
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -43,7 +45,15 @@ from user.api.serializers import (
     UserRemoveSerializer,
     UserSerializer,
     VerifyPhoneSerializer,
+    UniversitySerializer,
+    CollegeSerializer,
+    ProgramSerializer,
+    DepartmentSerializer,
+    DesignationSerializer,
+    SpecializationSerializer,
+    StreamSerializer,
 )
+from user.service.circle import Circle as circle_service
 from user.helpers import sms
 from user.helpers.otp import generate_otp
 from user.models import (
@@ -56,6 +66,13 @@ from user.models import (
     UserInvite,
     UserLog,
     UserProfile,
+    University,
+    Stream,
+    Program,
+    Department,
+    Specialization,
+    College,
+    Designation,
 )
 from user.user_delete import UserDelete
 from user.utils import (
@@ -922,6 +939,53 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         response = UserProfileSerializer(instance)
         return Response(response.data)
 
+    def update_user_category(self, instance, data):
+        user_instance = instance.user
+
+        university = University.objects.get(name=data.get("university"))
+        stream = Stream.objects.get(name=data.get("stream"))
+        college = College.objects.get(name=data.get("college"))
+
+        # Retrieve existing instances
+        program_names = data.get("program", [])
+        department_names = data.get("department", [])
+        specialization_names = data.get("specialization", [])
+
+        programs = Program.objects.filter(name__in=program_names)
+        departments = Department.objects.filter(name__in=department_names)
+        specializations = Specialization.objects.filter(name__in=specialization_names)
+
+        # associate categories to user instance
+        user_instance.university = university
+        user_instance.stream = stream
+        user_instance.college = college
+        user_instance.save()
+
+        user_instance.program.set(programs)
+        user_instance.department.set(departments)
+        user_instance.specialization.set(specializations)
+
+        user_settings = instance.user.settings.filter().first()
+        if not user_settings.account_details and user_instance.name:
+            user_settings.account_details = True
+            user_settings.save()
+            # Subscribing user to associate xmpp room and fcm topic
+            circle_service.assign_user_room_topic(
+                user_jid=user_instance.jid,
+                fcm_token=user_instance.fcm_token,
+                university=user_instance.university__name,
+                college=user_instance.college__name,
+                stream=user_instance.stream__name,
+                program=[program.name for program in user_instance.program.all()],
+                department=[
+                    department.name for department in user_instance.department.all()
+                ],
+                specialization=[
+                    specialization.name
+                    for specialization in user_instance.specialization.all()
+                ],
+            )
+
     def update_account_details(self, instance, data):
         """
         Update the account details of the UserProfile associated with the authenticated user.
@@ -948,6 +1012,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         if data.get("country_iso_code"):
             instance.user.country_iso_code = data.get("country_iso_code")
             instance.user.save()
+
+        self.update_user_category(instance, data)
 
         user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
@@ -1935,3 +2001,146 @@ class UserProfileSearchAPI(APIView, GenericPagination):
         return Response(
             {"detail": "No jid provided"}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class CategorySearchView(APIView):
+    """
+    A view to search across different categories based on a provided name query parameter.
+
+    The view allows searching across various categories such as university, college, stream, program,
+    department, specialization, and designation. The search is performed based on the `name` parameter
+    and can optionally specify a `category` parameter to narrow down the search to a specific category.
+
+    Attributes:
+        category_model (dict): A mapping of category names to their respective Django model classes.
+
+    Methods:
+        get(self, request): Handles GET requests to perform category search based on name and optionally category.
+        serialize_categories(self, category_model, query): Serializes matching categories based on the provided model and query.
+    """
+
+    permission_classes = (HasAPIKey,)
+
+    category_model = {
+        "university": University,
+        "college": College,
+        "stream": Stream,
+        "program": Program,
+        "department": Department,
+        "specialization": Specialization,
+        "designation": Designation,
+    }
+
+    def get(self, request):
+        """
+        Handle GET requests to perform category search based on name and optionally category.
+
+        Parameters:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the serialized categories or error messages.
+        """
+        name = request.GET.get("name")
+        category = request.GET.get("category")
+
+        if not name:
+            return Response(
+                {"detail": "Name parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        query = Q(name__icontains=name)
+        if category:
+            category_model = self.category_model.get(category.lower())
+            if category_model:
+                results = self.serialize_categories(category_model, query)
+                return Response(results, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"detail": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(
+                {"detail": "Category parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def serialize_categories(self, category_model, query):
+        """
+        Serialize matching categories based on the provided model and query.
+
+        Parameters:
+            category_model (Model): The Django model class representing the category.
+            query (Q): The query to filter categories.
+
+        Returns:
+            dict: A dictionary containing the serialized categories.
+        """
+        matching_categories = category_model.objects.filter(query)
+        serializer_class = getattr(
+            sys.modules[__name__], f"{category_model.__name__}Serializer"
+        )
+        serializer = serializer_class(matching_categories, many=True)
+        return serializer.data
+
+
+class CheckUserExistsView(APIView):
+    """
+    An API view to check if a user exists based on provided name and date of birth (dob).
+    """
+
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        """
+        Handle POST requests to check if a user exists based on provided name and dob.
+
+        Parameters:
+            request (Request): The HTTP request object containing 'name' and 'dob' in the payload.
+
+        Returns:
+            Response: HTTP response indicating whether the user exists or not.
+        """
+        name = request.data.get("name")
+        dob = request.data.get("dob")
+
+        if not name or not dob:
+            return Response(
+                {"detail": "Name and dob are required in the payload"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        names = name.split()
+        if len(names) == 2:
+            first_name, last_name = names
+        else:
+            first_name, last_name = name, ""
+
+        # Check if the user exists based on name and dob
+        try:
+            profile = UserProfile.objects.filter(
+                Q(user__name=name) & Q(date_of_birth=dob)
+            )
+            if not profile.exists():
+                # If no match found, swap the first and last names and search again
+                swapped_name = f"{last_name} {first_name}"
+                profile = UserProfile.objects.filter(
+                    Q(user__name=swapped_name) & Q(date_of_birth=dob)
+                )
+            if profile.exists():
+                user_id = profile.first().user.id
+                return Response(
+                    {"message": f"User exists with given details", "user_id": user_id},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"detail": "User records not found with given details"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        except UserProfile.DoesNotExist:
+            return Response(
+                {"detail": "User records not found with given details"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
