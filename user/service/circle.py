@@ -25,7 +25,9 @@ class Circle:
 
     def assign_user_room_topic(
         self,
+        user_id: int,
         user_jid: str = "",
+        user_type: str = "",
         fcm_token: str = "",
         university: str = "",
         college: str = "",
@@ -52,7 +54,9 @@ class Circle:
         """
         result = {}
         request_data = {
+            "user_id": user_id,
             "user_jid": user_jid,
+            "user_type": user_type,
             "fcm_token": fcm_token,
             "category": {
                 "university": university,
