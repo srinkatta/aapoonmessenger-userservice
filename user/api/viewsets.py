@@ -975,7 +975,9 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             user_settings.save()
             # Subscribing user to associate xmpp room and fcm topic
             circle_service.assign_user_room_topic(
+                user_id=user_instance.id,
                 user_jid=user_instance.jid,
+                user_type=user_instance.user_type,
                 fcm_token=user_instance.fcm_token,
                 university=user_instance.university__name,
                 college=user_instance.college__name,
@@ -2023,7 +2025,7 @@ class CategorySearchView(APIView):
         serialize_categories(self, category_model, query): Serializes matching categories based on the provided model and query.
     """
 
-    permission_classes = (HasAPIKey,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     category_model = {
         "university": University,
@@ -2107,43 +2109,62 @@ class CheckUserExistsView(APIView):
             Response: HTTP response indicating whether the user exists or not.
         """
         name = request.data.get("name")
-        dob = request.data.get("dob")
+        college_name = request.data.get("college")
+        university_name = request.data.get("university")
 
-        if not name or not dob:
+        # Validate payload
+        if not all([name, college_name, university_name]):
             return Response(
-                {"detail": "Name and dob are required in the payload"},
+                {"detail": "Name, College, and University are required in the payload"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        names = name.split()
-        if len(names) == 2:
-            first_name, last_name = names
-        else:
-            first_name, last_name = name, ""
+        college = College.objects.filter(name=college_name).first()
+        university = University.objects.filter(name=university_name).first()
 
-        # Check if the user exists based on name and dob
-        try:
-            profile = UserProfile.objects.filter(
-                Q(user__name=name) & Q(date_of_birth=dob)
+        if not college:
+            return Response(
+                {
+                    "detail": "The provided payload does not match any colleges in the database."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            if not profile.exists():
-                # If no match found, swap the first and last names and search again
-                swapped_name = f"{last_name} {first_name}"
-                profile = UserProfile.objects.filter(
-                    Q(user__name=swapped_name) & Q(date_of_birth=dob)
-                )
-            if profile.exists():
-                user_id = profile.first().user.id
-                return Response(
-                    {"message": f"User exists with given details", "user_id": user_id},
-                    status=status.HTTP_200_OK,
-                )
-            else:
-                return Response(
-                    {"detail": "User records not found with given details"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-        except UserProfile.DoesNotExist:
+        if not university:
+            return Response(
+                {
+                    "detail": "The provided payload does not match any universities in the database."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Split name into first and last name
+        names = name.split()
+        first_name = names[0]
+        last_name = names[1] if len(names) > 1 else ""
+
+        # Check if the user exists based on name and university/college
+        queryset = User.objects.filter(
+            Q(name__icontains=first_name)
+            & Q(name__icontains=last_name)
+            & Q(university=university)
+            & Q(college=college)
+        )
+        if not queryset.exists():
+            # If no match found, swap the first and last names and search again
+            queryset = User.objects.filter(
+                Q(name__icontains=last_name)
+                & Q(name__icontains=first_name)
+                & Q(university=university)
+                & Q(college=college)
+            )
+
+        if queryset.exists():
+            user_id = queryset.first().id
+            return Response(
+                {"message": f"User exists with given details", "user_id": user_id},
+                status=status.HTTP_200_OK,
+            )
+        else:
             return Response(
                 {"detail": "User records not found with given details"},
                 status=status.HTTP_404_NOT_FOUND,

@@ -2,6 +2,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse
+from typing import Optional
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
@@ -108,11 +109,6 @@ class RegisterSerializer(serializers.Serializer):
         return get_adapter().clean_password(password)
 
     def get_cleaned_data(self) -> dict:
-        is_business = self.validated_data.get("is_business")
-        if is_business:
-            user_type = "businessuser"
-        else:
-            user_type = "individualuser"
 
         return {
             "username": f"{self.validated_data.get('name', '')}-{generate_otp()}",
@@ -122,8 +118,7 @@ class RegisterSerializer(serializers.Serializer):
             "phone_number": self.validated_data.get("phone_number", ""),
             "name": self.validated_data.get("name", ""),
             "hash_tag": self.validated_data.get("hash_tag", ""),
-            "user_type": user_type,
-            "is_business": is_business,
+            "user_type": self.validated_data.get("user_type", ""),
         }
 
     def save(self, request, source) -> User:
@@ -132,25 +127,23 @@ class RegisterSerializer(serializers.Serializer):
         phone_number = self.get_cleaned_data()["phone_number"]
         device_model = request.data.get("device_model", "")
         device_os_version = request.data.get("device_os_version", "")
-        user_id = request.data.get("user_id", "")
+        user_type = request.data.get("user_type")
+        user_id = request.data.get("user_id", None)
 
-        user_query = User.objects.get(id=user_id)
+        if user_type == "Student":
+            user_query = User.objects.filter(id=user_id).first()
+            if user_query and not user_query.phone_number_verified:
+                user_query.phone_number = phone_number
+                user_query.save()
 
-        if (
-            user_query
-            and user_query.phone_number == phone_number
-            and not user_query.phone_number_verified
-        ):
-
-            user_query.phone_number_verified = True
-            user_query.save()
-
-        if (
-            user_query
-            and user_query.phone_number != phone_number
-            and user_query.phone_number_verified
-        ):
-            raise ValidationError({"detail": "User with Phone number doesn't exist"})
+            elif (
+                user_query
+                and user_query.phone_number != phone_number
+                and user_query.phone_number_verified
+            ):
+                raise ValidationError(
+                    {"detail": "User with Phone number doesn't exist"}
+                )
 
         user_exists = False
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
@@ -186,7 +179,7 @@ class RegisterSerializer(serializers.Serializer):
             )
             return user
 
-        user = self.create_user_auto_increment_validate(source, user_exists)
+        user = self.create_user_auto_increment_validate(source, user_exists, user_type)
         print(f"user details: {user}")
         if user:
             if request.data.get("password"):
@@ -205,16 +198,32 @@ class RegisterSerializer(serializers.Serializer):
                 self.__invite_flow(user, invited_by)
             return user
 
-    def create_user_auto_increment_validate(self, source, user_exists):
+    def create_user_auto_increment_validate(
+        self, source: bool, user_exists: bool, user_type: str
+    ) -> Optional[User]:
         # Web-based user registration is currently restricted
         print("Triggered create_user_auto_increment_validate method")
         if source and not user_exists:
             pass
 
-        elif not source:
+        elif not source and user_type == "Student":
             cleaned_data = self.get_cleaned_data()
-            user = User.objects.get(**cleaned_data)
+            user = User.objects.filter(**cleaned_data)
+            if not user:
+                raise ValidationError(
+                    {"detail": "User with given details doesn't exist"}
+                )
             return user
+
+        elif not source and user_type == "Faculty":
+            cleaned_data = self.get_cleaned_data()
+            while True:
+                try:
+                    user, created = User.objects.get_or_create(**cleaned_data)
+                    if created:
+                        return user
+                except IntegrityError:
+                    pass
 
     def __invite_flow(self, user, invited_by):
         invited_by_user = User.objects.get(id=invited_by)
@@ -382,7 +391,8 @@ class UserLoginSerializer(serializers.Serializer):
 
     def subscribe_associate_room_topic(self, user):
         profile = UserProfile.objects.get(user=user)
-        if (
+        user_settings = user.settings.filter().first()
+        if user_settings.account_details and (
             all(
                 getattr(user, attr, None) is not None
                 for attr in [
@@ -412,7 +422,9 @@ class UserLoginSerializer(serializers.Serializer):
 
             circle_service = Circle()
             subscribing_associate_circles = circle_service.assign_user_room_topic(
+                user_id=user.id,
                 user_jid=user.jid,
+                user_type=user.user_type,
                 fcm_token=user.fcm_token,
                 university=user.university.name,
                 college=user.college.name,
@@ -672,7 +684,7 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
         # Name Validate & Update
         self.name_validate(request, attrs)
 
-        self.is_business_validate(request, attrs)
+        # self.is_business_validate(request, attrs)
 
         self.invited_by_validate(request, attrs)
 
