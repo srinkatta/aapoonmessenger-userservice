@@ -1055,7 +1055,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class GetAssociatedUsers(APIView):
     serializer_class = UserSerializer(many=True)
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = [HasAPIKey | AllowAny]
     allowed_methods = ("GET",)
 
     @extend_schema(
