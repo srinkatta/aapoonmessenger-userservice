@@ -2050,6 +2050,10 @@ class CategorySearchView(APIView):
         name = request.GET.get("name")
         category = request.GET.get("category")
 
+        if not name and category:
+            # List of specific category
+            return self.list_all_categories(category)
+
         if not name:
             return Response(
                 {"detail": "Name parameter is required"},
@@ -2089,6 +2093,29 @@ class CategorySearchView(APIView):
         )
         serializer = serializer_class(matching_categories, many=True)
         return serializer.data
+
+    def list_all_categories(self, category):
+        """
+        Return a list of objects for the specified category without performing a search.
+
+        Parameters:
+            category (str): The name of the category for which to return objects.
+
+        Returns:
+            Response: The HTTP response containing the list of objects for the specified category.
+        """
+        category_model = self.category_model.get(category.lower())
+        if category_model:
+            categories = category_model.objects.all()
+            serializer_class = getattr(
+                sys.modules[__name__], f"{category_model.__name__}Serializer"
+            )
+            serializer = serializer_class(categories, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"detail": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class CheckUserExistsView(APIView):
