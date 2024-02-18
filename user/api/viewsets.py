@@ -19,6 +19,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_api_key.permissions import HasAPIKey
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.decorators import action
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 
 from user.api.serializers import (
     AppInfoSerializer,
@@ -1051,6 +1053,40 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         return get_object_or_404(User.objects.all(), id=self.request.user.id)
 
+class GetAssociatedUsers(APIView):
+    serializer_class = UserSerializer(many=True)
+    permission_classes = (permissions.IsAuthenticated,)
+    allowed_methods = ("GET",)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="role",
+                description="Filter by role name",
+                required=True,
+                type=str,
+            ),
+        ]
+    )
+    def get(self, request):
+        """Get associated users given a role
+
+        Raises:
+            Http404: User with role not found
+
+        Returns:
+            Response: list of users
+        """
+        role = request.GET.get("role", "")
+        users = User.objects.filter(profile__role=role)
+
+        serializer = UserSerializer(
+            users,
+            many=True,
+            context={"request": request},
+        )
+
+        return Response(serializer.data)
 
 class PushNotificationSettings(APIView):
     """

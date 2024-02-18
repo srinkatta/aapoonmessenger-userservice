@@ -17,6 +17,7 @@ from user.api.viewsets import (
     AuthUserRegistrationView,
     DeviceInfoView,
     FeedbackView,
+    GetAssociatedUsers,
     InviteListView,
     PushNotificationSettings,
     SendOTPView,
@@ -75,6 +76,7 @@ urlpatterns = [
     path(
         "delete-requests/", UserDeleteRequestList.as_view(), name="deleted_users_list"
     ),
+    path("associated/", GetAssociatedUsers.as_view(), name="role-associated-users"),
     path(
         "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
     ),
