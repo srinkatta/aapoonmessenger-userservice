@@ -1078,7 +1078,7 @@ class GetAssociatedUsers(APIView):
             Response: list of users
         """
         role = request.GET.get("role", "")
-        users = User.objects.filter(profile__role=role)
+        users = User.objects.filter(role=role)
 
         serializer = UserSerializer(
             users,
