@@ -23,6 +23,13 @@ from user.models import (
     UserLog,
     UserProfile,
     UserVerificationSetting,
+    Designation,
+    University,
+    College,
+    Stream,
+    Department,
+    Program,
+    Specialization,
 )
 from user.utils import make_request
 from user_service import settings
@@ -33,6 +40,14 @@ admin.site.register(DeviceInfo)
 admin.site.register(AppInfo)
 admin.site.register(Languages)
 admin.site.register(DeletedUser)
+
+admin.site.register(Designation)
+admin.site.register(University)
+admin.site.register(College)
+admin.site.register(Stream)
+admin.site.register(Department)
+admin.site.register(Program)
+admin.site.register(Specialization)
 
 logging = logging.getLogger(__name__)
 
