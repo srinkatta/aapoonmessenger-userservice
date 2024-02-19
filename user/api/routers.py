@@ -36,6 +36,7 @@ from user.api.viewsets import (
     UserViewSet,
     VerifyPhoneView,
     SubmitPollData,
+    UserRoleChoicesAPIView,
 )
 
 router = routers.SimpleRouter()
@@ -77,6 +78,7 @@ urlpatterns = [
         "delete-requests/", UserDeleteRequestList.as_view(), name="deleted_users_list"
     ),
     path("associated/", GetAssociatedUsers.as_view(), name="role-associated-users"),
+    path('user-roles/', UserRoleChoicesAPIView.as_view(), name='user-role-choices'),
     path(
         "user/delete/revoke/", UserDeleteRevokeView.as_view(), name="user_delete_revoke"
     ),
