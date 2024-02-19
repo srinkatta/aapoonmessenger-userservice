@@ -72,6 +72,7 @@ from user.utils import (
     user_kyc_status,
 )
 from user_service import settings
+from user.choices import USER_ROLE_CHOICE
 
 logger = logging.getLogger(__name__)
 
@@ -1052,6 +1053,11 @@ class UserViewSet(viewsets.ModelViewSet):
         - User: The User instance associated with the user.
         """
         return get_object_or_404(User.objects.all(), id=self.request.user.id)
+
+class UserRoleChoicesAPIView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        return Response(dict(USER_ROLE_CHOICE))
 
 class GetAssociatedUsers(APIView):
     serializer_class = UserSerializer(many=True)
