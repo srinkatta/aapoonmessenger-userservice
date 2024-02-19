@@ -176,6 +176,7 @@ class RegisterSerializer(serializers.Serializer):
                 device_model,
                 device_os_version,
                 source,
+                user_type,
             )
             return user
 
@@ -191,6 +192,7 @@ class RegisterSerializer(serializers.Serializer):
                 device_model,
                 device_os_version,
                 source,
+                user_type,
             )
 
             invited_by = request.data.get("invited_by", "")
@@ -229,8 +231,20 @@ class RegisterSerializer(serializers.Serializer):
         invited_by_user = User.objects.get(id=invited_by)
         UserInvite.objects.get_or_create(invited_user=user, invited_by=invited_by_user)
 
+    def user_type_validate(self, user, user_type):
+        if not user.user_type:
+            user.user_type = user_type
+            user.save()
+
     def post_flow_actions(
-        self, user, country_code, phone_number, device_model, device_os_version, source
+        self,
+        user,
+        country_code,
+        phone_number,
+        device_model,
+        device_os_version,
+        source,
+        user_type,
     ):
         print("Entered post flow actions")
         user_status = user_kyc_status(user)
@@ -243,6 +257,7 @@ class RegisterSerializer(serializers.Serializer):
             print(f"Generated otp: {otp}")
             phone = f"{country_code}{phone_number}"
             self.login_attempts_reset(user)
+            self.user_type_validate(user, user_type)
             self.send_otp(phone_number, otp, user, phone)
             self.save_user_device(user, device_model, device_os_version)
 
@@ -384,7 +399,7 @@ class UserLoginSerializer(serializers.Serializer):
             }
 
             self.xmpp_check_account(user, user.jwt_token)
-            self.subscribe_associate_room_topic(user)
+            # self.subscribe_associate_room_topic(user)
             return validation
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")

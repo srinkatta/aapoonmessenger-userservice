@@ -132,9 +132,7 @@ class User(AbstractUser):
         blank=True,
         verbose_name="Registration Number",
     )
-    year_of_joining = models.DateField(
-        null=True, blank=True, verbose_name="Year of Joining"
-    )
+    year_of_joining = models.CharField(max_length=30, null=True, blank=True)
     designation = models.ForeignKey(
         Designation,
         on_delete=models.SET_NULL,

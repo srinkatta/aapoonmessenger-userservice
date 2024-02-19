@@ -957,40 +957,70 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         specializations = Specialization.objects.filter(name__in=specialization_names)
 
         # associate categories to user instance
-        user_instance.registration_number = data.get("registration_number")
         user_instance.year_of_joining = data.get("year_of_joining")
-        user_instance.designation = designation
         user_instance.university = university
         user_instance.stream = stream
         user_instance.college = college
+        if user_instance.user_type == "Student":
+            user_instance.registration_number = data.get("registration_number")
+        if user_instance.user_type == "Faculty":
+            user_instance.designation = designation
         user_instance.save()
 
         user_instance.program.set(programs)
         user_instance.department.set(departments)
         user_instance.specialization.set(specializations)
 
-        user_settings = instance.user.settings.filter().first()
-        if not user_settings.account_details and user_instance.name:
-            user_settings.account_details = True
-            user_settings.save()
-            # Subscribing user to associate xmpp room and fcm topic
-            circle_service.assign_user_room_topic(
-                user_id=user_instance.id,
-                user_jid=user_instance.jid,
-                user_type=user_instance.user_type,
-                fcm_token=user_instance.fcm_token,
-                university=user_instance.university__name,
-                college=user_instance.college__name,
-                stream=user_instance.stream__name,
-                program=[program.name for program in user_instance.program.all()],
-                department=[
-                    department.name for department in user_instance.department.all()
-                ],
-                specialization=[
-                    specialization.name
-                    for specialization in user_instance.specialization.all()
-                ],
+    def validate_and_subscribe_user(self, user_instance, profile_instance):
+        if (
+            all(
+                getattr(user_instance, attr, None) is not None
+                for attr in [
+                    "name",
+                    "email",
+                    "phone_number",
+                    "university",
+                    "stream",
+                    "college",
+                    "department",
+                    "specialization",
+                    "program",
+                ]
             )
+            and getattr(profile_instance, "gender", None)
+            and getattr(profile_instance, "date_of_birth", None)
+        ):
+            if (
+                user_instance.user_type == "Student"
+                and user_instance.registration_number is not None
+                and user_instance.year_of_joining is not None
+            ) or (
+                user_instance.user_type == "Faculty"
+                and user_instance.designation is not None
+            ):
+                user_settings = user_instance.settings.filter().first()
+                if not user_settings.account_details:
+                    user_settings.account_details = True
+                    user_settings.save()
+
+                # Subscribing user to associate xmpp room and fcm topic
+                circle_service.assign_user_room_topic(
+                    user_id=user_instance.id,
+                    user_jid=user_instance.jid,
+                    user_type=user_instance.user_type,
+                    fcm_token=user_instance.fcm_token,
+                    university=user_instance.university__name,
+                    college=user_instance.college__name,
+                    stream=user_instance.stream__name,
+                    program=[program.name for program in user_instance.program.all()],
+                    department=[
+                        department.name for department in user_instance.department.all()
+                    ],
+                    specialization=[
+                        specialization.name
+                        for specialization in user_instance.specialization.all()
+                    ],
+                )
 
     def update_account_details(self, instance, data):
         """
@@ -1020,6 +1050,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             instance.user.save()
 
         self.update_user_category(instance, data)
+        self.validate_and_subscribe_user(instance.user, instance)
 
         user_settings = instance.user.settings.filter().first()
         if not user_settings.account_details and data.get("name"):
@@ -2009,7 +2040,7 @@ class UserProfileSearchAPI(APIView, GenericPagination):
         )
 
 
-class CategorySearchView(APIView):
+class CategorySearchView(APIView, GenericPagination):
     """
     A view to search across different categories based on a provided name query parameter.
 
@@ -2025,7 +2056,8 @@ class CategorySearchView(APIView):
         serialize_categories(self, category_model, query): Serializes matching categories based on the provided model and query.
     """
 
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = [HasAPIKey | permissions.AllowAny]
+    allowed_methods = ("GET",)
 
     category_model = {
         "university": University,
@@ -2052,7 +2084,7 @@ class CategorySearchView(APIView):
 
         if not name and category:
             # List of specific category
-            return self.list_all_categories(category)
+            return self.list_all_categories(category, request)
 
         if not name:
             return Response(
@@ -2064,8 +2096,15 @@ class CategorySearchView(APIView):
         if category:
             category_model = self.category_model.get(category.lower())
             if category_model:
-                results = self.serialize_categories(category_model, query)
-                return Response(results, status=status.HTTP_200_OK)
+                queryset = category_model.objects.filter(query)
+                pagination = self.paginate_queryset(queryset, request)
+                if pagination is not None:
+                    serializer_class = getattr(
+                        sys.modules[__name__], f"{category_model.__name__}Serializer"
+                    )
+                    serializer = serializer_class(pagination, many=True)
+                    return self.get_paginated_response(serializer.data)
+
             else:
                 return Response(
                     {"detail": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST
@@ -2094,7 +2133,7 @@ class CategorySearchView(APIView):
         serializer = serializer_class(matching_categories, many=True)
         return serializer.data
 
-    def list_all_categories(self, category):
+    def list_all_categories(self, category, request):
         """
         Return a list of objects for the specified category without performing a search.
 
@@ -2107,15 +2146,17 @@ class CategorySearchView(APIView):
         category_model = self.category_model.get(category.lower())
         if category_model:
             categories = category_model.objects.all()
-            serializer_class = getattr(
-                sys.modules[__name__], f"{category_model.__name__}Serializer"
-            )
-            serializer = serializer_class(categories, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(
-                {"detail": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            pagination = self.paginate_queryset(categories, request)
+            if pagination is not None:
+                serializer_class = getattr(
+                    sys.modules[__name__], f"{category_model.__name__}Serializer"
+                )
+                serializer = serializer_class(pagination, many=True)
+                return self.get_paginated_response(serializer.data)
+
+        return Response(
+            {"detail": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class CheckUserExistsView(APIView):
