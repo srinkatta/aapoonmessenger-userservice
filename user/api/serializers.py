@@ -208,7 +208,7 @@ class RegisterSerializer(serializers.Serializer):
         if source and not user_exists:
             pass
 
-        # For qa testing disabled this and allowed student registration
+        # For Qa testing disabled this and allowed student registration for now
         # elif not source and user_type == "Student":
         #     cleaned_data = self.get_cleaned_data()
         #     user = User.objects.filter(**cleaned_data)
