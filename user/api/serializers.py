@@ -208,16 +208,17 @@ class RegisterSerializer(serializers.Serializer):
         if source and not user_exists:
             pass
 
-        elif not source and user_type == "Student":
-            cleaned_data = self.get_cleaned_data()
-            user = User.objects.filter(**cleaned_data)
-            if not user:
-                raise ValidationError(
-                    {"detail": "User with given details doesn't exist"}
-                )
-            return user
+        # For Qa testing disabled this and allowed student registration for now
+        # elif not source and user_type == "Student":
+        #     cleaned_data = self.get_cleaned_data()
+        #     user = User.objects.filter(**cleaned_data)
+        #     if not user:
+        #         raise ValidationError(
+        #             {"detail": "User with given details doesn't exist"}
+        #         )
+        #     return user
 
-        elif not source and user_type == "Faculty":
+        elif not source and user_type in ["Faculty", "Student"]:
             cleaned_data = self.get_cleaned_data()
             while True:
                 try:
