@@ -260,9 +260,10 @@ class PINPOINT_SMS:
         self.message = message
         self.user = user
 
-    def send_message(self):
+    def send_message(self, ref_id = None):
         try:
-            ref_id = self.generate_ref_id(self.phone_number)
+            if ref_id is None:
+                ref_id = self.generate_ref_id(self.phone_number)
 
             client = boto3.client(
                 "pinpoint",
@@ -291,7 +292,7 @@ class PINPOINT_SMS:
             print(f"An error occurred: {str(e)}")
             return False
 
-    def verify_otp_with_pinpoint(self):
+    def verify_otp_with_pinpoint(self, ref_id=None):
         try:
             client = boto3.client(
                 "pinpoint",
@@ -300,7 +301,8 @@ class PINPOINT_SMS:
                 aws_secret_access_key=self.aws_secret_access_key,
             )
 
-            ref_id = self.generate_ref_id(self.phone_number)
+            if ref_id is None:
+                ref_id = self.generate_ref_id(self.phone_number)
             response = client.verify_otp_message(
                 ApplicationId=self.app_id,
                 VerifyOTPMessageRequestParameters={
@@ -310,6 +312,8 @@ class PINPOINT_SMS:
                 },
             )
             print(response)
+            if "VerificationResponse" in response and "Valid" in response["VerificationResponse"]:
+                return response["VerificationResponse"]["Valid"]
             return True
 
         except ClientError as e:
@@ -320,4 +324,10 @@ class PINPOINT_SMS:
         self, destination_number, brand_name="aapoon", source="OTP_verify"
     ):
         ref_id = brand_name + source + destination_number
+        return hashlib.md5(ref_id.encode()).hexdigest()
+
+    def generate_ref_id_for_report(
+        self, destination_number, brand_name="aapoon", source="OTP_verify", report_id=""
+    ):
+        ref_id = brand_name + source + destination_number + report_id
         return hashlib.md5(ref_id.encode()).hexdigest()

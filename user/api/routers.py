@@ -20,6 +20,8 @@ from user.api.viewsets import (
     GetAssociatedUsers,
     InviteListView,
     PushNotificationSettings,
+    ReportSendOTPView,
+    ReportVerifyOTPView,
     SendOTPView,
     UserCheckAPIView,
     UserDeleteCronView,
@@ -72,6 +74,8 @@ urlpatterns = [
     path("auth/login/", AuthUserLoginView.as_view(), name="login"),
     path("auth/send_otp/", SendOTPView.as_view(), name="send_otp"),
     path("auth/verify_otp/", VerifyPhoneView.as_view(), name="verify_otp"),
+    path("auth/send_report_otp/", ReportSendOTPView.as_view(), name="send_report_otp"),
+    path("auth/verify_report_otp/", ReportVerifyOTPView.as_view(), name="verify_report_otp"),
     path("device_info/", DeviceInfoView.as_view(), name="device_info"),
     path("user_delete/", UserDeleteRequestView.as_view(), name="user_delete"),
     path(
