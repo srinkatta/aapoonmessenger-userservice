@@ -208,16 +208,17 @@ class RegisterSerializer(serializers.Serializer):
         if source and not user_exists:
             pass
 
-        elif not source and user_type == "Student":
-            cleaned_data = self.get_cleaned_data()
-            user = User.objects.filter(**cleaned_data)
-            if not user:
-                raise ValidationError(
-                    {"detail": "User with given details doesn't exist"}
-                )
-            return user
+        # For qa testing disabled this and allowed student registration
+        # elif not source and user_type == "Student":
+        #     cleaned_data = self.get_cleaned_data()
+        #     user = User.objects.filter(**cleaned_data)
+        #     if not user:
+        #         raise ValidationError(
+        #             {"detail": "User with given details doesn't exist"}
+        #         )
+        #     return user
 
-        elif not source and user_type == "Faculty":
+        elif not source and user_type in ["Faculty", "Student"]:
             cleaned_data = self.get_cleaned_data()
             while True:
                 try:
@@ -662,7 +663,9 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
     university = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
-    year_of_joining = serializers.DateField()
+    year_of_joining = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
     registration_number = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
@@ -813,6 +816,15 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
     education = serializers.SerializerMethodField()
     invited_by = serializers.SerializerMethodField()
     is_business = serializers.SerializerMethodField()
+    year_of_joining = serializers.SerializerMethodField()
+    registration_number = serializers.SerializerMethodField()
+    designation = serializers.SerializerMethodField()
+    university = serializers.SerializerMethodField()
+    stream = serializers.SerializerMethodField()
+    college = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
+    program = serializers.SerializerMethodField()
+    specialization = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -826,6 +838,36 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
         invite = UserInvite.objects.filter(invited_user=instance.user)
         if invite:
             return invite[0].invited_by.id
+
+    def get_year_of_joining(self, instance):
+        return instance.user.year_of_joining
+
+    def get_registration_number(self, instance):
+        return instance.user.registration_number
+
+    def get_designation(self, instance):
+        return instance.user.designation
+
+    def get_university(self, instance):
+        return instance.user.university.name
+
+    def get_stream(self, instance):
+        return instance.user.stream.name
+
+    def get_college(self, instance):
+        return instance.user.college.name
+
+    def get_department(self, instance):
+        departments = instance.user.department.all()
+        return [department.name for department in departments]
+
+    def get_program(self, instance):
+        programs = instance.user.program.all()
+        return [program.name for program in programs]
+
+    def get_specialization(self, instance):
+        specializations = instance.user.specialization.all()
+        return [specialization.name for specialization in specializations]
 
     def get_photo_id(self, instance):
         user_settings = instance.user.settings.filter().first()

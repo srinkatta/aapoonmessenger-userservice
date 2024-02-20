@@ -1,4 +1,5 @@
 import requests
+import json
 from typing import (
     List,
     Dict,
@@ -6,6 +7,7 @@ from typing import (
 
 from requests import Response
 from user_service import settings
+from loguru import logger
 
 
 class Circle:
@@ -21,7 +23,7 @@ class Circle:
         self.user_subscribe_room_topic = (
             f"{self.base_url}api/circles/assign_user_room_topic/"
         )
-        self.headers = {"Authorization": settings.CIRCLE_MICROSERVICE_API_KEY}
+        self.headers = {"x-api-key": settings.CIRCLE_MICROSERVICE_API_KEY}
 
     def assign_user_room_topic(
         self,
@@ -67,14 +69,29 @@ class Circle:
                 "specialization": specialization,
             },
         }
+        for key, value in request_data["category"].items():
+            if isinstance(value, list) and not value:
+                request_data["category"][key] = None
+
+        # Convert payload to JSON string
+        payload = json.dumps(request_data)
+        print(payload)
         try:
             response: Response = requests.post(
                 self.user_subscribe_room_topic,
-                json=request_data,
+                json=payload,
                 headers=self.headers,
             )
             response.raise_for_status()
             result = response.json()
-        except (requests.exceptions.RequestException, requests.exceptions.HTTPError):
+            logger.info(response.raise_for_status())
+            print(result)
+        except (
+            requests.exceptions.RequestException,
+            requests.exceptions.HTTPError,
+        ) as exc:
+            logger.exception(
+                f"Error while subscribing Circle room and FCM topic: {exc}"
+            )
             result = {}
         return result

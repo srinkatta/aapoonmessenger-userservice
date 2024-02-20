@@ -1004,14 +1004,14 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     user_settings.save()
 
                 # Subscribing user to associate xmpp room and fcm topic
-                circle_service.assign_user_room_topic(
+                circle_subscribe = circle_service().assign_user_room_topic(
                     user_id=user_instance.id,
                     user_jid=user_instance.jid,
                     user_type=user_instance.user_type,
                     fcm_token=user_instance.fcm_token,
-                    university=user_instance.university__name,
-                    college=user_instance.college__name,
-                    stream=user_instance.stream__name,
+                    university=user_instance.university.name,
+                    college=user_instance.college.name,
+                    stream=user_instance.stream.name,
                     program=[program.name for program in user_instance.program.all()],
                     department=[
                         department.name for department in user_instance.department.all()
@@ -1045,18 +1045,13 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         instance.role = data.get("role")
         instance.sector = data.get("sector")
         instance.team_size = data.get("team_size")
+        instance.save()
         if data.get("country_iso_code"):
             instance.user.country_iso_code = data.get("country_iso_code")
             instance.user.save()
 
         self.update_user_category(instance, data)
         self.validate_and_subscribe_user(instance.user, instance)
-
-        user_settings = instance.user.settings.filter().first()
-        if not user_settings.account_details and data.get("name"):
-            user_settings.account_details = True
-            user_settings.save()
-        instance.save()
 
         return instance
 
@@ -2209,19 +2204,16 @@ class CheckUserExistsView(APIView):
         names = name.split()
         first_name = names[0]
         last_name = names[1] if len(names) > 1 else ""
+        swapped_name = f"{last_name} {first_name}"
 
         # Check if the user exists based on name and university/college
         queryset = User.objects.filter(
-            Q(name__icontains=first_name)
-            & Q(name__icontains=last_name)
-            & Q(university=university)
-            & Q(college=college)
+            Q(name__iexact=name) & Q(university=university) & Q(college=college)
         )
         if not queryset.exists():
             # If no match found, swap the first and last names and search again
             queryset = User.objects.filter(
-                Q(name__icontains=last_name)
-                & Q(name__icontains=first_name)
+                Q(name__iexact=swapped_name)
                 & Q(university=university)
                 & Q(college=college)
             )
