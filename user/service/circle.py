@@ -61,16 +61,14 @@ class Circle:
             "user_jid": user_jid,
             "user_type": user_type,
             "fcm_token": fcm_token,
-            "category": {
-                "university": university,
-                "college": college,
-                "stream": stream,
-                "program": program,
-                "department": department,
-                "specialization": specialization,
-            },
+            "university": university,
+            "college": college,
+            "stream": stream,
+            "program": program,
+            "department": department,
+            "specialization": specialization,
         }
-        for key, value in request_data["category"].items():
+        for key, value in request_data.items():
             if isinstance(value, list) and not value:
                 request_data["category"][key] = None
 
