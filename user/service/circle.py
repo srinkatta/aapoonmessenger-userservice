@@ -54,6 +54,7 @@ class Circle:
         Returns:
             Dict: A dictionary containing the result of the operation.
         """
+        print("Triggered circle assign_user_room_topic method")
         result = {}
         request_data = {
             "user_id": user_id,
@@ -83,8 +84,8 @@ class Circle:
                 headers=self.headers,
             )
             response.raise_for_status()
-            result = response.json()
             logger.info(response.raise_for_status())
+            result = response.json()
             print(result)
         except (
             requests.exceptions.RequestException,
