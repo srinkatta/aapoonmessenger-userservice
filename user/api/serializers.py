@@ -808,6 +808,7 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
 
 class UserProfileSerializer(FlexFieldsModelSerializer):
     name = serializers.SerializerMethodField()
+    phone_number = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
     photo_id = serializers.SerializerMethodField()
     country_iso_code = serializers.SerializerMethodField()
@@ -838,6 +839,9 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
         invite = UserInvite.objects.filter(invited_user=instance.user)
         if invite:
             return invite[0].invited_by.id
+
+    def get_phone_number(self, instance):
+        return instance.user.phone_number
 
     def get_year_of_joining(self, instance):
         return instance.user.year_of_joining
