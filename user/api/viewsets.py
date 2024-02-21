@@ -950,8 +950,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         print(f"stream: {stream}")
         college = College.objects.get(name=data.get("college"))
         print(f"college: {college}")
-        designation = Designation.objects.get(name=data.get("designation"))
-        print(f"designation: {designation}")
 
         # Retrieve existing instances
         program_names = data.get("program", [])
@@ -966,13 +964,14 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         print(f"specializations: {specializations}")
 
         # associate categories to user instance
-        user_instance.year_of_joining = data.get("year_of_joining")
         user_instance.university = university
         user_instance.stream = stream
         user_instance.college = college
         if user_instance.user_type == "Student":
             user_instance.registration_number = data.get("registration_number")
+            user_instance.year_of_joining = data.get("year_of_joining")
         if user_instance.user_type == "Faculty":
+            designation = Designation.objects.get(name=data.get("designation"))
             user_instance.designation = designation
         user_instance.save()
 
