@@ -70,7 +70,7 @@ class Circle:
         }
         for key, value in request_data.items():
             if isinstance(value, list) and not value:
-                request_data["category"][key] = None
+                request_data[key] = None
 
         # Convert payload to JSON string
         payload = json.dumps(request_data)
