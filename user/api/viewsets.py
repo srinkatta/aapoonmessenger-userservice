@@ -923,6 +923,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         Returns:
         - Response: JSON response indicating the successful update of UserProfile details.
         """
+        print("Triggered Profile Put method")
         pk = kwargs.get("pk")
         if not str(request.user.id) == pk:
             return Response(
@@ -940,12 +941,17 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return Response(response.data)
 
     def update_user_category(self, instance, data):
+        print("Entered update_user_category method")
         user_instance = instance.user
 
         university = University.objects.get(name=data.get("university"))
+        print(f"university: {university}")
         stream = Stream.objects.get(name=data.get("stream"))
+        print(f"stream: {stream}")
         college = College.objects.get(name=data.get("college"))
+        print(f"college: {college}")
         designation = Designation.objects.get(name=data.get("designation"))
+        print(f"designation: {designation}")
 
         # Retrieve existing instances
         program_names = data.get("program", [])
@@ -953,8 +959,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         specialization_names = data.get("specialization", [])
 
         programs = Program.objects.filter(name__in=program_names)
+        print(f"programs: {programs}")
         departments = Department.objects.filter(name__in=department_names)
+        print(f"departments: {departments}")
         specializations = Specialization.objects.filter(name__in=specialization_names)
+        print(f"specializations: {specializations}")
 
         # associate categories to user instance
         user_instance.year_of_joining = data.get("year_of_joining")
@@ -970,6 +979,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         user_instance.program.set(programs)
         user_instance.department.set(departments)
         user_instance.specialization.set(specializations)
+        print("Category details saved successfully")
 
     def validate_and_subscribe_user(self, user_instance, profile_instance):
         if (
@@ -990,6 +1000,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             and getattr(profile_instance, "gender", None)
             and getattr(profile_instance, "date_of_birth", None)
         ):
+            print("Entered validate_and_subscribe_user method")
             if (
                 user_instance.user_type == "Student"
                 and user_instance.registration_number is not None
@@ -1033,6 +1044,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         Returns:
         - UserProfile: The updated UserProfile instance.
         """
+        print("Entered update_account_details method")
         instance.name = data.get("name")
         instance.date_of_birth = data.get("date_of_birth")
         instance.gender = data.get("gender")
