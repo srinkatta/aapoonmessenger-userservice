@@ -849,28 +849,42 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
         return instance.user.registration_number
 
     def get_designation(self, instance):
-        return instance.user.designation
+        if instance.user.designation_id:
+            return instance.user.designation
+        return None
 
     def get_university(self, instance):
-        return instance.user.university.name
+        if instance.user.university_id:
+            return instance.user.university.name
+        return None
 
     def get_stream(self, instance):
-        return instance.user.stream.name
+        if instance.user.stream_id:
+            return instance.user.stream.name
+        return None
 
     def get_college(self, instance):
-        return instance.user.college.name
+        if instance.user.college_id:
+            return instance.user.college.name
+        return None
 
     def get_department(self, instance):
         departments = instance.user.department.all()
-        return [department.name for department in departments]
+        if departments:
+            return [department.name for department in departments]
+        return None
 
     def get_program(self, instance):
         programs = instance.user.program.all()
-        return [program.name for program in programs]
+        if programs:
+            return [program.name for program in programs]
+        return None
 
     def get_specialization(self, instance):
         specializations = instance.user.specialization.all()
-        return [specialization.name for specialization in specializations]
+        if specializations:
+            return [specialization.name for specialization in specializations]
+        return None
 
     def get_photo_id(self, instance):
         user_settings = instance.user.settings.filter().first()
