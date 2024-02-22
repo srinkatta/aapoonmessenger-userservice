@@ -56,7 +56,7 @@ class Circle:
         """
         print("Triggered circle assign_user_room_topic method")
         result = {}
-        request_data = {
+        request_data: dict = {
             "user_id": user_id,
             "user_jid": user_jid,
             "user_type": user_type,
@@ -70,15 +70,13 @@ class Circle:
         }
         for key, value in request_data.items():
             if isinstance(value, list) and not value:
-                request_data["category"][key] = None
+                request_data[key] = None
 
-        # Convert payload to JSON string
-        payload = json.dumps(request_data)
-        print(payload)
+        print(request_data)
         try:
             response: Response = requests.post(
                 self.user_subscribe_room_topic,
-                json=payload,
+                json=request_data,
                 headers=self.headers,
             )
             response.raise_for_status()
