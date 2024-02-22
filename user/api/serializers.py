@@ -208,17 +208,16 @@ class RegisterSerializer(serializers.Serializer):
         if source and not user_exists:
             pass
 
-        # For qa testing disabled this and allowed student registration
-        # elif not source and user_type == "Student":
-        #     cleaned_data = self.get_cleaned_data()
-        #     user = User.objects.filter(**cleaned_data)
-        #     if not user:
-        #         raise ValidationError(
-        #             {"detail": "User with given details doesn't exist"}
-        #         )
-        #     return user
+        elif not source and user_type == "Student":
+            cleaned_data = self.get_cleaned_data()
+            user = User.objects.filter(**cleaned_data)
+            if not user:
+                raise ValidationError(
+                    {"detail": "User with given details doesn't exist"}
+                )
+            return user
 
-        elif not source and user_type in ["Faculty", "Student"]:
+        elif not source and user_type == "Faculty":
             cleaned_data = self.get_cleaned_data()
             while True:
                 try:
@@ -318,7 +317,7 @@ class RegisterSerializer(serializers.Serializer):
 class UserLoginSerializer(serializers.Serializer):
     country_code = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
-    fcm_token = serializers.CharField(required=True)
+    fcm_token = serializers.CharField(required=False)
     otp = serializers.CharField(required=True)
 
     def validate(self, data):
