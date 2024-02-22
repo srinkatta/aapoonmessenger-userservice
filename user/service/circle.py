@@ -80,7 +80,6 @@ class Circle:
                 headers=self.headers,
             )
             response.raise_for_status()
-            logger.info(response.raise_for_status())
             result = response.json()
             print(result)
         except (
