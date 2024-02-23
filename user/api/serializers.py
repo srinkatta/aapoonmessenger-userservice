@@ -850,7 +850,7 @@ class UserProfileSerializer(FlexFieldsModelSerializer):
 
     def get_designation(self, instance):
         if instance.user.designation_id:
-            return instance.user.designation
+            return instance.user.designation.name
         return None
 
     def get_university(self, instance):
