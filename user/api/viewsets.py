@@ -985,9 +985,9 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         if user_instance.user_type == "Faculty":
             try:
                 designation = Designation.objects.get(name=data.get("designation"))
+                user_instance.designation = designation
             except ObjectDoesNotExist as exc:
                 raise ValidationError({"detail": f"{exc}"})
-            user_instance.designation = designation
         user_instance.save()
 
         user_instance.program.set(programs)
