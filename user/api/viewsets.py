@@ -1036,6 +1036,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     fcm_token=user_instance.fcm_token,
                     university=user_instance.university.name,
                     college=user_instance.college.name,
+                    designation=user_instance.designation.name,
                     stream=user_instance.stream.name,
                     program=[program.name for program in user_instance.program.all()],
                     department=[
