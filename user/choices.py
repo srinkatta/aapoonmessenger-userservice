@@ -671,4 +671,5 @@ USER_ROLE_CHOICE = (
 USER_TYPE_CHOICE = (
     ("Student", "Student"),
     ("Faculty", "Faculty"),
+    ("APSCHE Head Office", "APSCHE Head Office"),
 )
