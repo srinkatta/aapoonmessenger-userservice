@@ -101,7 +101,7 @@ class User(AbstractUser):
         verbose_name="Phone Verified", default=False
     )
     user_type = models.CharField(
-        max_length=15, choices=USER_TYPE_CHOICE, null=True, blank=True
+        max_length=30, choices=USER_TYPE_CHOICE, null=True, blank=True
     )
     second_last_login = models.DateTimeField(null=True, blank=True)
     jid = models.CharField(max_length=255, null=True, blank=True)

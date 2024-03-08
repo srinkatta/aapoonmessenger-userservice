@@ -3,17 +3,17 @@ import datetime
 import logging
 import os
 import sys
-from smtplib import SMTPAuthenticationError
 from datetime import datetime, timezone
+from smtplib import SMTPAuthenticationError
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, get_object_or_404
@@ -26,12 +26,19 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from user.api.serializers import (
     AppInfoSerializer,
     AppPolicySerializer,
+    CollegeSerializer,
     DeletedUserSerializer,
+    DepartmentSerializer,
+    DesignationSerializer,
     DeviceInfoSerializer,
     FeedbackSerializer,
     NotificationSettingsSerializer,
+    ProgramSerializer,
     RegisterSerializer,
     SendOTPSerializer,
+    SpecializationSerializer,
+    StreamSerializer,
+    UniversitySerializer,
     UserCheckSerializer,
     UserDetailsInputSerializer,
     UserDetailsSerializer,
@@ -46,35 +53,28 @@ from user.api.serializers import (
     UserRemoveSerializer,
     UserSerializer,
     VerifyPhoneSerializer,
-    UniversitySerializer,
-    CollegeSerializer,
-    ProgramSerializer,
-    DepartmentSerializer,
-    DesignationSerializer,
-    SpecializationSerializer,
-    StreamSerializer,
 )
-from user.service.circle import Circle as circle_service
 from user.helpers import sms
 from user.helpers.otp import generate_otp
 from user.models import (
     AppInfo,
+    College,
     DeletedUser,
+    Department,
+    Designation,
     DeviceInfo,
     Languages,
+    Program,
+    Specialization,
+    Stream,
+    University,
     User,
     UserDevice,
     UserInvite,
     UserLog,
     UserProfile,
-    University,
-    Stream,
-    Program,
-    Department,
-    Specialization,
-    College,
-    Designation,
 )
+from user.service.circle import Circle as circle_service
 from user.user_delete import UserDelete
 from user.utils import (
     GenericPagination,
@@ -976,16 +976,28 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             logger.info(f"Error while retrieving category objects: {exc}")
 
         # associate categories to user instance
-        user_instance.university = university
-        user_instance.stream = stream
-        user_instance.college = college
+        user_instance.university = (
+            university if university else user_instance.university
+        )
+        user_instance.stream = stream if stream else user_instance.stream
+        user_instance.college = college if college else user_instance.college
         if user_instance.user_type == "Student":
-            user_instance.registration_number = data.get("registration_number")
-            user_instance.year_of_joining = data.get("year_of_joining")
+            user_instance.registration_number = (
+                data.get("registration_number")
+                if data.get("registration_number")
+                else user_instance.registration_number
+            )
+            user_instance.year_of_joining = (
+                data.get("year_of_joining")
+                if data.get("year_of_joining")
+                else user_instance.year_of_joining
+            )
         if user_instance.user_type == "Faculty":
             try:
                 designation = Designation.objects.get(name=data.get("designation"))
-                user_instance.designation = designation
+                user_instance.designation = (
+                    designation if designation else user_instance.designation
+                )
             except ObjectDoesNotExist as exc:
                 raise ValidationError({"detail": f"{exc}"})
         user_instance.save()

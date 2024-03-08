@@ -1,8 +1,8 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from urllib.parse import urlparse
 from typing import Optional
+from urllib.parse import urlparse
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
@@ -23,27 +23,27 @@ from user.choices import (
     SECTORS_TYPE_CHOICES,
     SPORTS_CHOICES,
 )
-from user.service.circle import Circle
 from user.helpers import hotp, sms
 from user.helpers.otp import generate_otp
 from user.models import (
     AppInfo,
+    College,
     DeletedUser,
+    Department,
+    Designation,
     DeviceInfo,
+    Program,
+    Specialization,
+    Stream,
+    University,
     User,
     UserDevice,
     UserInvite,
     UserLog,
     UserProfile,
     UserVerificationSetting,
-    University,
-    Stream,
-    Program,
-    Department,
-    Specialization,
-    College,
-    Designation,
 )
+from user.service.circle import Circle
 from user.utils import (
     calculate_age,
     check_special,
@@ -395,6 +395,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "profile_pic": user.secondary_picture,
                 "role": user.role,
                 "user_type": user.user_type,
+                "designation": user.designation.name,
             }
 
             self.xmpp_check_account(user, user.jwt_token)
