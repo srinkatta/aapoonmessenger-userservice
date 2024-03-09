@@ -380,7 +380,8 @@ class UserLoginSerializer(serializers.Serializer):
             user_status = user_kyc_status(user)
             if not user.second_last_login:
                 second_last_login = 0
-
+            designation = user.designation.name if user.designation_id else None
+            
             validation = {
                 "access": user.jwt_token,
                 "refresh": refresh_token,
@@ -395,7 +396,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "profile_pic": user.secondary_picture,
                 "role": user.role,
                 "user_type": user.user_type,
-                "designation": user.designation.name,
+                "designation": designation,
             }
 
             self.xmpp_check_account(user, user.jwt_token)
