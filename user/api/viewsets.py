@@ -1009,32 +1009,33 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     def validate_and_subscribe_user(self, user_instance, profile_instance):
         if (
-            all(
-                getattr(user_instance, attr, None) is not None
-                for attr in [
-                    "name",
-                    "email",
-                    "phone_number",
-                    "university",
-                    "stream",
-                    "college",
-                    "department",
-                    "specialization",
-                    "program",
-                ]
-            )
-            and getattr(profile_instance, "gender", None)
-            and getattr(profile_instance, "date_of_birth", None)
+            user_instance.user_type == "Student"
+            and user_instance.registration_number is not None
+            and user_instance.year_of_joining is not None
+        ) or (
+            user_instance.user_type == "Faculty"
+            and user_instance.designation is not None
         ):
-            print("Entered validate_and_subscribe_user method")
+
             if (
-                user_instance.user_type == "Student"
-                and user_instance.registration_number is not None
-                and user_instance.year_of_joining is not None
-            ) or (
-                user_instance.user_type == "Faculty"
-                and user_instance.designation is not None
+                all(
+                    getattr(user_instance, attr, None) is not None
+                    for attr in [
+                        "name",
+                        "email",
+                        "phone_number",
+                        "university",
+                        "stream",
+                        "college",
+                        "department",
+                        "specialization",
+                        "program",
+                    ]
+                )
+                and getattr(profile_instance, "gender", None)
+                and getattr(profile_instance, "date_of_birth", None)
             ):
+                print("Entered validate_and_subscribe_user method")
                 user_settings = user_instance.settings.filter().first()
                 if not user_settings.account_details:
                     user_settings.account_details = True
@@ -1060,16 +1061,50 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     ],
                 )
                 return circle_subscribe
+
             raise ValidationError(
                 {
                     "detail": "User details are incomplete (student or faculty) to proceed with circle subscription."
                 }
             )
-        raise ValidationError(
-            {
-                "detail": "User details are incomplete to proceed with circle subscription."
-            }
-        )
+        elif user_instance.user_type == "APSCHE Head Office" and (
+            all(
+                getattr(user_instance, attr, None) is not None
+                for attr in [
+                    "name",
+                    "email",
+                    "phone_number",
+                ]
+            )
+            and getattr(profile_instance, "gender", None)
+            and getattr(profile_instance, "date_of_birth", None)
+        ):
+            # Subscribing user to associate xmpp room and fcm topic
+            circle_subscribe = circle_service().assign_user_room_topic(
+                user_id=user_instance.id,
+                user_jid=user_instance.jid,
+                user_type=user_instance.user_type,
+                fcm_token=user_instance.fcm_token,
+                university=user_instance.university.name
+                if user_instance.university_id
+                else None,
+                college=user_instance.college.name
+                if user_instance.college_id
+                else None,
+                designation=user_instance.designation.name
+                if user_instance.designation_id
+                else None,
+                stream=user_instance.stream.name if user_instance.stream_id else None,
+                program=[program.name for program in user_instance.program.all()],
+                department=[
+                    department.name for department in user_instance.department.all()
+                ],
+                specialization=[
+                    specialization.name
+                    for specialization in user_instance.specialization.all()
+                ],
+            )
+            return circle_subscribe
 
     def update_account_details(self, instance, data):
         """
