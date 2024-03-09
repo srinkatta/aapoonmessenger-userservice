@@ -216,7 +216,7 @@ class RegisterSerializer(serializers.Serializer):
                 )
             return user
 
-        elif not source and user_type == "Faculty":
+        elif not source and user_type in ["Faculty", "APSCHE Head Office"]:
             cleaned_data = self.get_cleaned_data()
             while True:
                 try:
