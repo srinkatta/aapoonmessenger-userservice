@@ -1027,11 +1027,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                         "university",
                         "stream",
                         "college",
-                        "department",
-                        "specialization",
-                        "program",
                     ]
                 )
+                and user_instance.department.exists()
+                and user_instance.specialization.exists()
+                and user_instance.program.exists()
                 and getattr(profile_instance, "gender", None)
                 and getattr(profile_instance, "date_of_birth", None)
             ):
@@ -1041,26 +1041,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     user_settings.account_details = True
                     user_settings.save()
 
-                # Subscribing user to associate xmpp room and fcm topic
-                circle_subscribe = circle_service().assign_user_room_topic(
-                    user_id=user_instance.id,
-                    user_jid=user_instance.jid,
-                    user_type=user_instance.user_type,
-                    fcm_token=user_instance.fcm_token,
-                    university=user_instance.university.name,
-                    college=user_instance.college.name,
-                    designation=user_instance.designation.name,
-                    stream=user_instance.stream.name,
-                    program=[program.name for program in user_instance.program.all()],
-                    department=[
-                        department.name for department in user_instance.department.all()
-                    ],
-                    specialization=[
-                        specialization.name
-                        for specialization in user_instance.specialization.all()
-                    ],
-                )
-                return circle_subscribe
+                # Subscribing user to associate circle,xmpp room and fcm topic
+                return self.subscribe_user_circle(user_instance)
 
             raise ValidationError(
                 {
@@ -1079,32 +1061,34 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             and getattr(profile_instance, "gender", None)
             and getattr(profile_instance, "date_of_birth", None)
         ):
-            # Subscribing user to associate xmpp room and fcm topic
-            circle_subscribe = circle_service().assign_user_room_topic(
-                user_id=user_instance.id,
-                user_jid=user_instance.jid,
-                user_type=user_instance.user_type,
-                fcm_token=user_instance.fcm_token,
-                university=user_instance.university.name
-                if user_instance.university_id
-                else None,
-                college=user_instance.college.name
-                if user_instance.college_id
-                else None,
-                designation=user_instance.designation.name
-                if user_instance.designation_id
-                else None,
-                stream=user_instance.stream.name if user_instance.stream_id else None,
-                program=[program.name for program in user_instance.program.all()],
-                department=[
-                    department.name for department in user_instance.department.all()
-                ],
-                specialization=[
-                    specialization.name
-                    for specialization in user_instance.specialization.all()
-                ],
-            )
-            return circle_subscribe
+            # Subscribing user to associate circle,xmpp room and fcm topic
+            return self.subscribe_user_circle(user_instance)
+
+    def subscribe_user_circle(self, user_instance):
+        # Subscribing user to associate xmpp room and fcm topic
+        circle_subscribe = circle_service().assign_user_room_topic(
+            user_id=user_instance.id,
+            user_jid=user_instance.jid,
+            user_type=user_instance.user_type,
+            fcm_token=user_instance.fcm_token,
+            university=user_instance.university.name
+            if user_instance.university_id
+            else None,
+            college=user_instance.college.name if user_instance.college_id else None,
+            designation=user_instance.designation.name
+            if user_instance.designation_id
+            else None,
+            stream=user_instance.stream.name if user_instance.stream_id else None,
+            program=[program.name for program in user_instance.program.all()],
+            department=[
+                department.name for department in user_instance.department.all()
+            ],
+            specialization=[
+                specialization.name
+                for specialization in user_instance.specialization.all()
+            ],
+        )
+        return circle_subscribe
 
     def update_account_details(self, instance, data):
         """
@@ -2224,19 +2208,29 @@ class CategorySearchView(APIView, GenericPagination):
             Response: The HTTP response containing the list of objects for the specified category.
         """
         category_model = self.category_model.get(category.lower())
-        if category_model:
-            categories = category_model.objects.all()
-            pagination = self.paginate_queryset(categories, request)
-            if pagination is not None:
-                serializer_class = getattr(
-                    sys.modules[__name__], f"{category_model.__name__}Serializer"
-                )
-                serializer = serializer_class(pagination, many=True)
-                return self.get_paginated_response(serializer.data)
+        if category_model is None:
+            return Response(
+                {"detail": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        return Response(
-            {"detail": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        queryset = category_model.objects.all()
+
+        if category.lower() == "designation":
+            # Exclude APSCHE HO's
+            queryset = queryset.exclude(
+                name__in=["Chairman", "Vice Chairman", "Secretary", "Vice Chairperson"]
+            )
+
+        # Order the queryset
+        queryset = queryset.order_by("id")
+
+        pagination = self.paginate_queryset(queryset, request)
+        if pagination is not None:
+            serializer_class = getattr(
+                sys.modules[__name__], f"{category_model.__name__}Serializer"
+            )
+            serializer = serializer_class(pagination, many=True)
+            return self.get_paginated_response(serializer.data)
 
 
 class CheckUserExistsView(APIView):
