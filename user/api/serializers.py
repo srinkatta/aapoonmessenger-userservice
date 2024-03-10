@@ -381,7 +381,7 @@ class UserLoginSerializer(serializers.Serializer):
             if not user.second_last_login:
                 second_last_login = 0
             designation = user.designation.name if user.designation_id else None
-            
+
             validation = {
                 "access": user.jwt_token,
                 "refresh": refresh_token,
