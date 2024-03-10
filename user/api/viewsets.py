@@ -944,68 +944,74 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     def update_user_category(self, instance, data):
         print("Entered update_user_category method")
         user_instance = instance.user
-        try:
-            university = University.objects.get(name=data.get("university"))
-            stream = Stream.objects.get(name=data.get("stream"))
-            college = College.objects.get(name=data.get("college"))
-        except ObjectDoesNotExist as exc:
-            raise ValidationError({"detail": f"{exc}"})
+        if user_instance.user_type in ["Student", "Faculty"]:
 
-        try:
-            # Retrieve existing instances
-            program_names = data.get("program", [])
-            department_names = data.get("department", [])
-            specialization_names = data.get("specialization", [])
-
-            # Ensure each list is valid
-            for name_list in [program_names, department_names, specialization_names]:
-                if not isinstance(name_list, list):
-                    raise ValueError(
-                        "Invalid data type for names list. Expected a list."
-                    )
-
-            programs = Program.objects.filter(name__in=program_names)
-            departments = Department.objects.filter(name__in=department_names)
-            specializations = Specialization.objects.filter(
-                name__in=specialization_names
-            )
-            logger.info(
-                f"programs: {programs}, departments: {departments}, specializations: {specializations}"
-            )
-        except (KeyError, ValueError) as exc:
-            logger.info(f"Error while retrieving category objects: {exc}")
-
-        # associate categories to user instance
-        user_instance.university = (
-            university if university else user_instance.university
-        )
-        user_instance.stream = stream if stream else user_instance.stream
-        user_instance.college = college if college else user_instance.college
-        if user_instance.user_type == "Student":
-            user_instance.registration_number = (
-                data.get("registration_number")
-                if data.get("registration_number")
-                else user_instance.registration_number
-            )
-            user_instance.year_of_joining = (
-                data.get("year_of_joining")
-                if data.get("year_of_joining")
-                else user_instance.year_of_joining
-            )
-        if user_instance.user_type == "Faculty":
             try:
-                designation = Designation.objects.get(name=data.get("designation"))
-                user_instance.designation = (
-                    designation if designation else user_instance.designation
-                )
+                university = University.objects.get(name=data.get("university"))
+                stream = Stream.objects.get(name=data.get("stream"))
+                college = College.objects.get(name=data.get("college"))
             except ObjectDoesNotExist as exc:
                 raise ValidationError({"detail": f"{exc}"})
-        user_instance.save()
 
-        user_instance.program.set(programs)
-        user_instance.department.set(departments)
-        user_instance.specialization.set(specializations)
-        logger.info("Category details for user saved successfully")
+            try:
+                # Retrieve existing instances
+                program_names = data.get("program", [])
+                department_names = data.get("department", [])
+                specialization_names = data.get("specialization", [])
+
+                # Ensure each list is valid
+                for name_list in [
+                    program_names,
+                    department_names,
+                    specialization_names,
+                ]:
+                    if not isinstance(name_list, list):
+                        raise ValueError(
+                            "Invalid data type for names list. Expected a list."
+                        )
+
+                programs = Program.objects.filter(name__in=program_names)
+                departments = Department.objects.filter(name__in=department_names)
+                specializations = Specialization.objects.filter(
+                    name__in=specialization_names
+                )
+                logger.info(
+                    f"programs: {programs}, departments: {departments}, specializations: {specializations}"
+                )
+            except (KeyError, ValueError) as exc:
+                logger.info(f"Error while retrieving category objects: {exc}")
+
+            # associate categories to user instance
+            user_instance.university = (
+                university if university else user_instance.university
+            )
+            user_instance.stream = stream if stream else user_instance.stream
+            user_instance.college = college if college else user_instance.college
+            if user_instance.user_type == "Student":
+                user_instance.registration_number = (
+                    data.get("registration_number")
+                    if data.get("registration_number")
+                    else user_instance.registration_number
+                )
+                user_instance.year_of_joining = (
+                    data.get("year_of_joining")
+                    if data.get("year_of_joining")
+                    else user_instance.year_of_joining
+                )
+            if user_instance.user_type == "Faculty":
+                try:
+                    designation = Designation.objects.get(name=data.get("designation"))
+                    user_instance.designation = (
+                        designation if designation else user_instance.designation
+                    )
+                except ObjectDoesNotExist as exc:
+                    raise ValidationError({"detail": f"{exc}"})
+            user_instance.save()
+
+            user_instance.program.set(programs)
+            user_instance.department.set(departments)
+            user_instance.specialization.set(specializations)
+            logger.info("Category details for user saved successfully")
 
     def validate_and_subscribe_user(self, user_instance, profile_instance):
         if (
