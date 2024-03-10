@@ -941,11 +941,10 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         response = UserProfileSerializer(instance)
         return Response(response.data)
 
-    def update_user_category(self, instance, data):
-        print("Entered update_user_category method")
+    def update_student_category(self, instance, data):
+        print("Entered update_student_category method")
         user_instance = instance.user
-        if user_instance.user_type in ["Student", "Faculty"]:
-
+        if user_instance.user_type == "Student":
             try:
                 university = University.objects.get(name=data.get("university"))
                 stream = Stream.objects.get(name=data.get("stream"))
@@ -987,25 +986,16 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             )
             user_instance.stream = stream if stream else user_instance.stream
             user_instance.college = college if college else user_instance.college
-            if user_instance.user_type == "Student":
-                user_instance.registration_number = (
-                    data.get("registration_number")
-                    if data.get("registration_number")
-                    else user_instance.registration_number
-                )
-                user_instance.year_of_joining = (
-                    data.get("year_of_joining")
-                    if data.get("year_of_joining")
-                    else user_instance.year_of_joining
-                )
-            if user_instance.user_type == "Faculty":
-                try:
-                    designation = Designation.objects.get(name=data.get("designation"))
-                    user_instance.designation = (
-                        designation if designation else user_instance.designation
-                    )
-                except ObjectDoesNotExist as exc:
-                    raise ValidationError({"detail": f"{exc}"})
+            user_instance.registration_number = (
+                data.get("registration_number")
+                if data.get("registration_number")
+                else user_instance.registration_number
+            )
+            user_instance.year_of_joining = (
+                data.get("year_of_joining")
+                if data.get("year_of_joining")
+                else user_instance.year_of_joining
+            )
             user_instance.save()
 
             user_instance.program.set(programs)
@@ -1013,14 +1003,72 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             user_instance.specialization.set(specializations)
             logger.info("Category details for user saved successfully")
 
+    def update_faculty_category(self, instance, data):
+        print("Entered update_faculty_category method")
+        user_instance = instance.user
+        if user_instance.user_type == "Faculty":
+            try:
+                university = University.objects.get(name=data.get("university"))
+                designation = Designation.objects.get(name=data.get("designation"))
+            except ObjectDoesNotExist as exc:
+                raise ValidationError({"detail": f"{exc}"})
+
+            university_level_designations = [
+                "Vice Chancellor",
+                "Rector",
+                "Registrar",
+                "Dean C D C",
+                "BOS Chairman(University)",
+            ]
+            college_level_designations = [
+                "Principal",
+                "Head of the Department (HoD)",
+                "Faculty",
+                "Non Teaching Staff",
+                "Placement Officer",
+                "BOS Chairman(College)",
+            ]
+            if designation.name in university_level_designations:
+
+                # associate categories to user instance
+                user_instance.university = (
+                    university if university else user_instance.university
+                )
+                user_instance.designation = (
+                    designation if designation else user_instance.designation
+                )
+                user_instance.save()
+                logger.info(
+                    "Category details for university level faculty saved successfully"
+                )
+
+            elif designation.name in college_level_designations:
+                try:
+                    stream = Stream.objects.get(name=data.get("stream"))
+                    college = College.objects.get(name=data.get("college"))
+                except ObjectDoesNotExist as exc:
+                    raise ValidationError({"detail": f"{exc}"})
+
+                # associate categories to user instance
+                user_instance.university = (
+                    university if university else user_instance.university
+                )
+                user_instance.designation = (
+                    designation if designation else user_instance.designation
+                )
+                user_instance.stream = stream if stream else user_instance.stream
+                user_instance.college = college if college else user_instance.college
+
+                user_instance.save()
+                logger.info(
+                    "Category details for college level faculty saved successfully"
+                )
+
     def validate_and_subscribe_user(self, user_instance, profile_instance):
         if (
             user_instance.user_type == "Student"
             and user_instance.registration_number is not None
             and user_instance.year_of_joining is not None
-        ) or (
-            user_instance.user_type == "Faculty"
-            and user_instance.designation is not None
         ):
 
             if (
@@ -1052,23 +1100,60 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
             raise ValidationError(
                 {
-                    "detail": "User details are incomplete (student or faculty) to proceed with circle subscription."
+                    "detail": "User details(student) are incomplete to proceed with circle subscription."
                 }
             )
-        elif user_instance.user_type == "APSCHE Head Office" and (
-            all(
-                getattr(user_instance, attr, None) is not None
-                for attr in [
-                    "name",
-                    "email",
-                    "phone_number",
-                ]
-            )
-            and getattr(profile_instance, "gender", None)
-            and getattr(profile_instance, "date_of_birth", None)
+        elif (
+            user_instance.user_type == "Faculty"
+            and user_instance.designation is not None
         ):
-            # Subscribing user to associate circle,xmpp room and fcm topic
-            return self.subscribe_user_circle(user_instance)
+            if (
+                all(
+                    getattr(user_instance, attr, None) is not None
+                    for attr in [
+                        "name",
+                        "email",
+                        "phone_number",
+                        "university",
+                    ]
+                )
+                and getattr(profile_instance, "gender", None)
+                and getattr(profile_instance, "date_of_birth", None)
+            ):
+                print("Entered validate_and_subscribe_user method")
+                user_settings = user_instance.settings.filter().first()
+                if not user_settings.account_details:
+                    user_settings.account_details = True
+                    user_settings.save()
+
+                # Subscribing user to associate circle,xmpp room and fcm topic
+                return self.subscribe_user_circle(user_instance)
+
+            raise ValidationError(
+                {
+                    "detail": "User details(faculty) are incomplete to proceed with circle subscription."
+                }
+            )
+        elif user_instance.user_type == "APSCHE Head Office":
+            if (
+                all(
+                    getattr(user_instance, attr, None) is not None
+                    for attr in [
+                        "name",
+                        "email",
+                        "phone_number",
+                    ]
+                )
+                and getattr(profile_instance, "gender", None)
+                and getattr(profile_instance, "date_of_birth", None)
+            ):
+                # Subscribing user to associate circle,xmpp room and fcm topic
+                return self.subscribe_user_circle(user_instance)
+            raise ValidationError(
+                {
+                    "detail": "User details(APSCHE HO) are incomplete to proceed with circle subscription."
+                }
+            )
 
     def subscribe_user_circle(self, user_instance):
         # Subscribing user to associate xmpp room and fcm topic
@@ -1125,7 +1210,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             instance.user.country_iso_code = data.get("country_iso_code")
             instance.user.save()
 
-        self.update_user_category(instance, data)
+        self.update_student_category(instance, data)
+        self.update_faculty_category(instance, data)
         self.validate_and_subscribe_user(instance.user, instance)
 
         return instance
