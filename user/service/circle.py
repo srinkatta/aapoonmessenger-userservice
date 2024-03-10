@@ -82,6 +82,7 @@ class Circle:
                 headers=self.headers,
             )
             response.raise_for_status()
+            logger.info(f"Response status code: {response.status_code}")
             result = response.json()
             print(result)
         except (
