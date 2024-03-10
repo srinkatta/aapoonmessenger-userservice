@@ -109,7 +109,6 @@ class RegisterSerializer(serializers.Serializer):
         return get_adapter().clean_password(password)
 
     def get_cleaned_data(self) -> dict:
-
         return {
             "username": f"{self.validated_data.get('name', '')}-{generate_otp()}",
             "password": self.validated_data.get("password", ""),
@@ -381,7 +380,6 @@ class UserLoginSerializer(serializers.Serializer):
             user_status = user_kyc_status(user)
             if not user.second_last_login:
                 second_last_login = 0
-
             designation = user.designation.name if user.designation_id else None
 
             validation = {
@@ -428,7 +426,6 @@ class UserLoginSerializer(serializers.Serializer):
             and getattr(profile, "gender", None)
             and getattr(profile, "date_of_birth", None)
         ):
-
             department = [
                 department.name for department in profile.user.department.all()
             ]
@@ -1002,6 +999,18 @@ class UserDetailsSerializer(serializers.Serializer):
     user_type = serializers.SerializerMethodField()
     fcm_token = serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
+    university = serializers.SerializerMethodField()
+    designation = serializers.SerializerMethodField()
+    college = serializers.SerializerMethodField()
+
+    def get_university(self, obj):
+        return obj.university.name if obj.university else ""
+
+    def get_designation(self, obj):
+        return obj.designation.name if obj.designation else ""
+
+    def get_college(self, obj):
+        return obj.college.name if obj.college else ""
 
     def get_role(self, obj):
         return obj.role
