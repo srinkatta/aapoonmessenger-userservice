@@ -1064,6 +1064,36 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     "Category details for college level faculty saved successfully"
                 )
 
+    def subscribe_apsche_ho_user(self, instance):
+        user_instance = instance.user
+
+        if user_instance.user_type == "APSCHE Head Office":
+            if (
+                all(
+                    getattr(user_instance, attr, None) is not None
+                    for attr in [
+                        "name",
+                        "email",
+                        "phone_number",
+                    ]
+                )
+                and getattr(instance, "gender", None)
+                and getattr(instance, "date_of_birth", None)
+            ):
+                print("Entered subscribe_apsche_ho_user method")
+                user_settings = user_instance.settings.filter().first()
+                if not user_settings.account_details:
+                    user_settings.account_details = True
+                    user_settings.save()
+
+                # Subscribing user to associate circle,xmpp room and fcm topic
+                return self.subscribe_user_circle(user_instance)
+            raise ValidationError(
+                {
+                    "detail": "User details(APSCHE HO) are incomplete to proceed with circle subscription."
+                }
+            )
+
     def validate_and_subscribe_user(self, user_instance, profile_instance):
         if (
             user_instance.user_type == "Student"
@@ -1134,26 +1164,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     "detail": "User details(faculty) are incomplete to proceed with circle subscription."
                 }
             )
-        elif user_instance.user_type == "APSCHE Head Office":
-            if (
-                all(
-                    getattr(user_instance, attr, None) is not None
-                    for attr in [
-                        "name",
-                        "email",
-                        "phone_number",
-                    ]
-                )
-                and getattr(profile_instance, "gender", None)
-                and getattr(profile_instance, "date_of_birth", None)
-            ):
-                # Subscribing user to associate circle,xmpp room and fcm topic
-                return self.subscribe_user_circle(user_instance)
-            raise ValidationError(
-                {
-                    "detail": "User details(APSCHE HO) are incomplete to proceed with circle subscription."
-                }
-            )
 
     def subscribe_user_circle(self, user_instance):
         # Subscribing user to associate xmpp room and fcm topic
@@ -1212,6 +1222,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
         self.update_student_category(instance, data)
         self.update_faculty_category(instance, data)
+        self.subscribe_apsche_ho_user(instance)
         self.validate_and_subscribe_user(instance.user, instance)
 
         return instance
