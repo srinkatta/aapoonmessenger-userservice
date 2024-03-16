@@ -832,6 +832,14 @@ class UserDetailsSerializer(serializers.Serializer):
     user_type = serializers.SerializerMethodField()
     fcm_token = serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
+    election_type = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
+
+    def get_department(self, obj):
+        return obj.department
+
+    def get_election_type(self, obj):
+        return obj.election_type
 
     def get_role(self, obj):
         return obj.role
