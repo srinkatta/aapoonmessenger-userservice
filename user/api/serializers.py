@@ -347,6 +347,8 @@ class UserLoginSerializer(serializers.Serializer):
                 "user_profile": user_status,
                 "profile_pic": user.secondary_picture,
                 "role": user.role,
+                "election_type": user.election_type,
+                "department": user.department
             }
 
             self.xmpp_check_account(user, user.jwt_token)
@@ -830,6 +832,14 @@ class UserDetailsSerializer(serializers.Serializer):
     user_type = serializers.SerializerMethodField()
     fcm_token = serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
+    election_type = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
+
+    def get_department(self, obj):
+        return obj.department
+
+    def get_election_type(self, obj):
+        return obj.election_type
 
     def get_role(self, obj):
         return obj.role
