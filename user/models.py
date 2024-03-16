@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from common.models import BaseTimeStampedModel
@@ -70,6 +71,17 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=255,
         choices=USER_ROLE_CHOICE,
+        null=True,
+        blank=True,
+    )
+
+    election_type = ArrayField(
+        models.CharField(max_length=255, blank=True),
+        null=True,
+        blank=True,
+    )
+    department = ArrayField(
+        models.CharField(max_length=255, blank=True),
         null=True,
         blank=True,
     )

@@ -347,6 +347,8 @@ class UserLoginSerializer(serializers.Serializer):
                 "user_profile": user_status,
                 "profile_pic": user.secondary_picture,
                 "role": user.role,
+                "election_type": user.election_type,
+                "department": user.department
             }
 
             self.xmpp_check_account(user, user.jwt_token)
