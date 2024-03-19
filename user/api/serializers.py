@@ -129,20 +129,20 @@ class RegisterSerializer(serializers.Serializer):
         user_type = request.data.get("user_type")
         user_id = request.data.get("user_id", None)
 
-        if user_type == "Student":
-            user_query = User.objects.filter(id=user_id).first()
-            if user_query and not user_query.phone_number_verified:
-                user_query.phone_number = phone_number
-                user_query.save()
+        # if user_type == "Student":
+        #     user_query = User.objects.filter(id=user_id).first()
+        #     if user_query and not user_query.phone_number_verified:
+        #         user_query.phone_number = phone_number
+        #         user_query.save()
 
-            elif (
-                user_query
-                and user_query.phone_number != phone_number
-                and user_query.phone_number_verified
-            ):
-                raise ValidationError(
-                    {"detail": "User with Phone number doesn't exist"}
-                )
+        #     elif (
+        #         user_query
+        #         and user_query.phone_number != phone_number
+        #         and user_query.phone_number_verified
+        #     ):
+        #         raise ValidationError(
+        #             {"detail": "User with Phone number doesn't exist"}
+        #         )
 
         user_exists = False
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
@@ -207,14 +207,14 @@ class RegisterSerializer(serializers.Serializer):
         if source and not user_exists:
             pass
 
-        elif not source and user_type == "Student":
-            cleaned_data = self.get_cleaned_data()
-            user = User.objects.filter(**cleaned_data)
-            if not user:
-                raise ValidationError(
-                    {"detail": "User with given details doesn't exist"}
-                )
-            return user
+        # elif not source and user_type == "Student":
+        #     cleaned_data = self.get_cleaned_data()
+        #     user = User.objects.filter(**cleaned_data)
+        #     if not user:
+        #         raise ValidationError(
+        #             {"detail": "User with given details doesn't exist"}
+        #         )
+        #     return user
 
         elif not source and user_type in ["Faculty", "APSCHE Head Office"]:
             cleaned_data = self.get_cleaned_data()
