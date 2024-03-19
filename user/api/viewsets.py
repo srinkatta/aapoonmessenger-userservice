@@ -909,6 +909,10 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 {"detail": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
             )
         instance = self.get_object()
+        if not instance:
+            return Response(
+                {"detail": "User doesn't exist."}, status=status.HTTP_404_NOT_FOUND
+            )
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -931,6 +935,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 {"detail": "Action not allowed"}, status=status.HTTP_403_FORBIDDEN
             )
         instance = self.get_object()
+        if not instance:
+            return Response(
+                {"detail": "User doesn't exist."}, status=status.HTTP_404_NOT_FOUND
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         action = serializer.validated_data["action"]
@@ -1449,6 +1458,10 @@ class DeviceInfoView(APIView):
         logger.info(f"user_id : {user_id}, device_id: {device_id}")
         logger.info(request.data)
         user_info = User.objects.filter(id=user_id).first()
+        if not user_info:
+            return Response(
+                {"detail": "User doesn't exist."}, status=status.HTTP_404_NOT_FOUND
+            )
         logger.info(f"{user_info}")
         if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
             serializer = self.serializer_class(
