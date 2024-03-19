@@ -986,11 +986,26 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             )
             user_instance.stream = stream if stream else user_instance.stream
             user_instance.college = college if college else user_instance.college
-            user_instance.registration_number = (
-                data.get("registration_number")
-                if data.get("registration_number")
-                else user_instance.registration_number
-            )
+
+            if data.get("registration_number"):
+                if User.objects.filter(
+                    registration_number=data.get("registration_number")
+                ).exclude(id=user_instance.id):
+                    print(f"registration number already exists with another user")
+                    logger.error(
+                        f"registration number already exists with another user"
+                    )
+                    raise ValidationError(
+                        {
+                            "detail": "Given registration number already associated with another user"
+                        }
+                    )
+                else:
+                    user_instance.registration_number = (
+                        data.get("registration_number")
+                        if data.get("registration_number")
+                        else user_instance.registration_number
+                    )
             user_instance.year_of_joining = (
                 data.get("year_of_joining")
                 if data.get("year_of_joining")
@@ -1172,13 +1187,13 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             user_jid=user_instance.jid,
             user_type=user_instance.user_type,
             fcm_token=user_instance.fcm_token,
-            university=user_instance.university.name
-            if user_instance.university_id
-            else None,
+            university=(
+                user_instance.university.name if user_instance.university_id else None
+            ),
             college=user_instance.college.name if user_instance.college_id else None,
-            designation=user_instance.designation.name
-            if user_instance.designation_id
-            else None,
+            designation=(
+                user_instance.designation.name if user_instance.designation_id else None
+            ),
             stream=user_instance.stream.name if user_instance.stream_id else None,
             program=[program.name for program in user_instance.program.all()],
             department=[
