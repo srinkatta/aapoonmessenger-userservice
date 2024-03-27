@@ -1160,7 +1160,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 }
             )
 
-    def account_details_on_circle_subscribe(self, user_instance):
+    def account_details_on_circle_subscribe(self, user_instance: User) -> None:
         subscribe_user_circle = self.subscribe_user_circle(user_instance)
         if subscribe_user_circle:
             user_settings = user_instance.settings.filter().first()
