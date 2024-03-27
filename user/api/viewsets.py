@@ -1090,13 +1090,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 and getattr(instance, "date_of_birth", None)
             ):
                 print("Entered subscribe_apsche_ho_user method")
-                user_settings = user_instance.settings.filter().first()
-                if not user_settings.account_details:
-                    user_settings.account_details = True
-                    user_settings.save()
-
                 # Subscribing user to associate circle,xmpp room and fcm topic
-                return self.subscribe_user_circle(user_instance)
+                return self.account_details_on_circle_subscribe(user_instance)
             raise ValidationError(
                 {
                     "detail": "User details(APSCHE HO) are incomplete to proceed with circle subscription."
@@ -1129,13 +1124,9 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 and getattr(profile_instance, "date_of_birth", None)
             ):
                 print("Entered validate_and_subscribe_user method")
-                user_settings = user_instance.settings.filter().first()
-                if not user_settings.account_details:
-                    user_settings.account_details = True
-                    user_settings.save()
 
                 # Subscribing user to associate circle,xmpp room and fcm topic
-                return self.subscribe_user_circle(user_instance)
+                return self.account_details_on_circle_subscribe(user_instance)
 
             raise ValidationError(
                 {
@@ -1160,19 +1151,23 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 and getattr(profile_instance, "date_of_birth", None)
             ):
                 print("Entered validate_and_subscribe_user method")
-                user_settings = user_instance.settings.filter().first()
-                if not user_settings.account_details:
-                    user_settings.account_details = True
-                    user_settings.save()
-
                 # Subscribing user to associate circle,xmpp room and fcm topic
-                return self.subscribe_user_circle(user_instance)
+                return self.account_details_on_circle_subscribe(user_instance)
 
             raise ValidationError(
                 {
                     "detail": "User details(faculty) are incomplete to proceed with circle subscription."
                 }
             )
+
+    def account_details_on_circle_subscribe(self, user_instance: User) -> None:
+        subscribe_user_circle = self.subscribe_user_circle(user_instance)
+        if subscribe_user_circle:
+            user_settings = user_instance.settings.filter().first()
+            if not user_settings.account_details:
+                user_settings.account_details = True
+                user_settings.save()
+        return None
 
     def subscribe_user_circle(self, user_instance):
         # Subscribing user to associate xmpp room and fcm topic
