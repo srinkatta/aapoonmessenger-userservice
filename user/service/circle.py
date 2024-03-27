@@ -1,3 +1,5 @@
+import http
+
 import requests
 import json
 from typing import (
@@ -38,7 +40,7 @@ class Circle:
         program: List[str] = [],
         department: List[str] = [],
         specialization: List[str] = [],
-    ) -> Dict:
+    ) -> bool:
         """
         Assigns a user to a room and topic in the Circle microservice.
 
@@ -53,10 +55,9 @@ class Circle:
             specialization (List[str]): The specializations of the user.
 
         Returns:
-            Dict: A dictionary containing the result of the operation.
+            bool: True if the operation was successful, False otherwise.
         """
         print("Triggered circle assign_user_room_topic method")
-        result = {}
         request_data: dict = {
             "user_id": user_id,
             "user_jid": user_jid,
@@ -85,6 +86,7 @@ class Circle:
             logger.info(f"Response status code: {response.status_code}")
             result = response.json()
             print(result)
+            return True
         except (
             requests.exceptions.RequestException,
             requests.exceptions.HTTPError,
@@ -92,5 +94,4 @@ class Circle:
             logger.exception(
                 f"Error while subscribing Circle room and FCM topic: {exc}"
             )
-            result = {}
-        return result
+            return False
