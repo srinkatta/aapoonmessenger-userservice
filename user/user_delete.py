@@ -235,10 +235,10 @@ class UserDelete:
 
         # delete all circle subscriber roles for chief admins with self-created single circles
         query = f"""DELETE FROM circle_circlesubscriberrole
-                WHERE user_id = '207655'
+                WHERE user_id = '{self.user_id}'
                 AND circle_id IN (
                     SELECT id FROM circle_circle
-                    WHERE owner_id = '207655'
+                    WHERE owner_id = '{self.user_id}'
                     AND parent_id IS NULL
                     AND hierarchy = FALSE
                 )
