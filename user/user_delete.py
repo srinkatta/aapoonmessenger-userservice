@@ -227,19 +227,25 @@ class UserDelete:
         Delete user's circle subscriber roles, except for the chief admin role
         """
         query = f"""DELETE FROM circle_circlesubscriberrole AS csr
-                JOIN circle_circlerole AS cr ON cr.id = csr.role_id
-                WHERE user_id='{self.user_id}'
+                USING circle_circlerole AS cr
+                WHERE cr.id = csr.role_id
+                AND csr.user_id = '{self.user_id}'
                 AND cr.role IN (0, 20, 30, 40);"""
         self.circle_execute_query(query)
 
         # delete all circle subscriber roles for chief admins with self-created single circles
-        query = f"""DELETE FROM circle_circlesubscriberrole AS csr
-                JOIN circle_circle AS circle ON circle.id = csr.circle_id
-                JOIN circle_circlerole AS cr ON cr.id = csr.role_id
-                WHERE csr.user_id = '{self.user_id}' AND circle.owner_id='{self.user_id}'
-                  AND circle.parent_id IS NULL
-                  AND circle.hierarchy = FALSE
-                  AND cr.role IN (10);"""
+        query = f"""DELETE FROM circle_circlesubscriberrole
+                WHERE user_id = '{self.user_id}'
+                AND circle_id IN (
+                    SELECT id FROM circle_circle
+                    WHERE owner_id = '{self.user_id}'
+                    AND parent_id IS NULL
+                    AND hierarchy = FALSE
+                )
+                AND role_id IN (
+                    SELECT id FROM circle_circlerole
+                    WHERE role = 10
+                );"""
         self.circle_execute_query(query)
 
     def delete_user_owned_circle_hierarchy(self):
