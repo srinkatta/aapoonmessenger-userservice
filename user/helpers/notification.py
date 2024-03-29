@@ -145,7 +145,11 @@ def notify_dm_v2(
         if body:
             data_message = prepare_data_message(to_user, from_user, message, xml, body)
 
+            if not to_user.fcm_token:
+                raise ValueError("FCM token is not available for the recipient user")
+
             if to_user.fcm_token and not to_user.apns_token:
+
                 token = to_user.fcm_token
                 print("Result for DM")
                 print("Android")
