@@ -70,7 +70,7 @@ class User(AbstractUser):
     jwt_token = models.TextField(null=True, blank=True)
     role = models.CharField(
         max_length=255,
-        choices=USER_ROLE_CHOICE,
+        # choices=USER_ROLE_CHOICE,
         null=True,
         blank=True,
     )
