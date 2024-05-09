@@ -348,7 +348,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "profile_pic": user.secondary_picture,
                 "role": user.role,
                 "election_type": user.election_type,
-                "department": user.department
+                "department": user.department,
             }
 
             self.xmpp_check_account(user, user.jwt_token)
@@ -854,6 +854,13 @@ class UserDetailsSerializer(serializers.Serializer):
         return user_kyc_status(obj)
 
 
+class UserListDetailsSerializer(serializers.Serializer):
+    id = serializers.CharField(required=False)
+    name = serializers.CharField(required=False)
+    country_code = serializers.CharField(required=False)
+    phone_number = serializers.CharField(required=False)
+
+
 class aapoonContactSyncSerializer(serializers.Serializer):
     """
     Serializer class to validate country code and phone number
@@ -916,3 +923,8 @@ class PollDataSerializer(serializers.ModelSerializer):
             "transgender_votes",
             "challenging_votes",
         ]
+
+
+class UserListDetailsInputSerializer(serializers.Serializer):
+    user_ids = serializers.ListField(required=True)
+    user_role = serializers.CharField(required=True)
