@@ -1093,8 +1093,7 @@ class GetAssociatedUsers(APIView):
         departments: str = request.GET.get("department", "")
         election_types = request.GET.get("election_type", "")
         only_ids = request.GET.get("only_ids", False)
-        if not isinstance(only_ids, bool):
-            raise ValidationError({"error": "only_ids only accept true or false."})
+        only_ids = only_ids == "True"
 
         users = User.objects.filter(role=role)
 
