@@ -46,6 +46,8 @@ from user.api.serializers import (
     UserSerializer,
     VerifyPhoneSerializer,
     PollDataSerializer,
+    UserListDetailsInputSerializer,
+    UserListDetailsSerializer,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
@@ -136,7 +138,7 @@ class AuthUserRegistrationView(APIView):
         - Response: JSON response indicating the success of user registration and OTP sending.
         """
         import sys
-    
+
         python_version = sys.version  # Todo remove after python version verify
         logger.info(f"Python Version from logger: {python_version}")
         print("Triggered Register API")
@@ -1054,10 +1056,13 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         return get_object_or_404(User.objects.all(), id=self.request.user.id)
 
+
 class UserRoleChoicesAPIView(APIView):
     permission_classes = [AllowAny]
+
     def get(self, request):
         return Response(dict(USER_ROLE_CHOICE))
+
 
 class GetAssociatedUsers(APIView):
     serializer_class = UserSerializer(many=True)
@@ -1093,6 +1098,7 @@ class GetAssociatedUsers(APIView):
         )
 
         return Response(serializer.data)
+
 
 class PushNotificationSettings(APIView):
     """
@@ -2015,3 +2021,67 @@ class SubmitPollData(APIView):
                 status=status.HTTP_200_OK,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserListDetailsAPI(APIView):
+    """
+    API View to retrieve users details based on user ID's
+
+    Authentication:
+    - API Key: Users must provide a valid API key or be allowed anonymous access to use this view.
+
+    Permissions:
+    - HasAPIKey: Users with a valid API key can access this view.
+    - AllowAny: Anonymous users are allowed to access this view.
+
+    HTTP Methods:
+    - POST: Retrieve user details by providing user ID or user JID.
+
+    Request Data:
+    - user_ids (list): The ID of the user for whom details are to be retrieved.
+
+    Returns:
+    - Response: Detailed information about the requested users
+    """
+
+    permission_classes = [HasAPIKey | permissions.AllowAny]
+    allowed_methods = ("POST",)
+
+    def post(self, request):
+        """
+        Retrieve user details based on user ID or user JID.
+
+        This endpoint allows users to retrieve detailed information about a user by providing either the user's
+        ID or user JID (Jabber ID).
+
+        Args:
+        - user_ids (list)
+
+        Returns:
+        - Response: Detailed information about the requested user, including user profile data.
+
+        Error Responses:
+        - 400 Bad Request: If input data is missing or incorrect.
+        - 403 Forbidden: If both user ID and user JID are missing in the request.
+        - 404 Not Found: If the requested user is not found.
+        """
+        serializer = UserListDetailsInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_ids = serializer.data.get("user_ids", [])
+        user_role = serializer.data.get("user_role")
+
+        if user_ids:
+            users = User.objects.filter(id__in=user_ids, role__icontains=user_role)
+        else:
+            return Response(
+                {"detail": "Input data error"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not users:
+            return Response(
+                {"detail": "user not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = UserListDetailsSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
