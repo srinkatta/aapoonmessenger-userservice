@@ -4,6 +4,7 @@ import logging
 import os
 from smtplib import SMTPAuthenticationError
 from datetime import datetime, timezone
+from typing import List
 
 import phonenumbers
 from allauth.account.adapter import get_adapter
@@ -1089,6 +1090,12 @@ class GetAssociatedUsers(APIView):
             Response: list of users
         """
         role = request.GET.get("role", "")
+        departments: str = request.GET.get("department", "")
+        election_types = request.GET.get("election_type", "")
+        only_ids = request.GET.get("only_ids", False)
+        if not isinstance(only_ids, bool):
+            raise ValidationError({"error": "only_ids only accept true or false."})
+
         users = User.objects.filter(role=role)
 
         serializer = UserSerializer(
@@ -1096,6 +1103,18 @@ class GetAssociatedUsers(APIView):
             many=True,
             context={"request": request},
         )
+
+        if departments:
+            departments_list: List[str] = list(departments.split(","))
+            users = users.filter(department__overlap=departments_list)
+
+        if election_types:
+            election_type = list(election_types.split(","))
+            users = users.filter(election_type__overlap=election_type)
+
+        if only_ids:
+            user_ids = users.values("id")
+            return Response(user_ids)
 
         return Response(serializer.data)
 
