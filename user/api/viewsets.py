@@ -1095,7 +1095,7 @@ class GetAssociatedUsers(APIView):
         only_ids = request.GET.get("only_ids", False)
         only_ids = only_ids == "True"
 
-        users = User.objects.filter(role=role)
+        users = User.objects.filter(role__icontains=role)
 
         serializer = UserSerializer(
             users,
