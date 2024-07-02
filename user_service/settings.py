@@ -13,7 +13,7 @@ import json
 import os
 from datetime import timedelta
 from pathlib import Path
-
+from common.choices import EnvironmentChoices
 from dotenv import load_dotenv
 from corsheaders.defaults import default_methods, default_headers
 
@@ -33,6 +33,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
+# Swagger Auth
+ENVIRONMENT = os.environ.get("ENVIRONMENT", EnvironmentChoices.PRODUCTION.value)
 
 # Prevent SSRF
 ALLOWED_HOSTS_WHITELIST = list(json.loads(os.environ.get("ALLOWED_HOSTS_WHITELIST", "[]")))
