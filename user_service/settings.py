@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import json
 import os
+import sentry_sdk
 from datetime import timedelta
 from pathlib import Path
 from common.choices import EnvironmentChoices
@@ -336,3 +337,18 @@ STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
 STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 KMS_KEY_ARN = os.environ["KMS_KEY_ARN"]
+
+# Secure Headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_BROWSER_XSS_FILTER = True
+
+# Sentry settings
+IS_SENTRY_ENABLED = os.environ.get("IS_SENTRY_ENABLED", False)
+
+if IS_SENTRY_ENABLED:
+    SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        enable_tracing=True,
+    )
