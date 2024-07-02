@@ -46,8 +46,8 @@ from user.utils import (
     phone_failure,
     s3_url_extract,
     user_kyc_status,
-    PreventSSRF
 )
+from common.prevent_ssrf import PreventSSRF
 from user_service import settings
 
 logger = logging.getLogger(__name__)
