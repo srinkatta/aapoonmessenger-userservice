@@ -33,6 +33,11 @@ DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
+
+# Prevent SSRF
+ALLOWED_HOSTS_WHITELIST = list(json.loads(os.environ.get("ALLOWED_HOSTS_WHITELIST", "[]")))
+FORBIDDEN_HOSTS_BLACKLIST = list(json.loads(os.environ.get("FORBIDDEN_HOSTS_BLACKLIST", "[]")))
+
 # Application definition
 
 INSTALLED_APPS = [
