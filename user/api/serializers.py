@@ -47,6 +47,7 @@ from user.utils import (
     s3_url_extract,
     user_kyc_status,
 )
+from common.prevent_ssrf import PreventSSRF
 from user_service import settings
 
 logger = logging.getLogger(__name__)
@@ -878,3 +879,22 @@ class DeletedUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeletedUser
         fields = ["id", "user", "is_deleted", "name", "country_code", "phone_number"]
+
+class ExternalRequestSerializer(serializers.Serializer):
+    """
+    Serializer class to validate external request
+    """
+    url = serializers.URLField(required=True)
+
+    def validate_url(self, url):
+
+        if not PreventSSRF.is_valid_url(url):
+            raise ValidationError("Invalid URL")
+
+        parsed_uri = urlparse(url)
+        hostname = parsed_uri.hostname
+
+        if not PreventSSRF.is_host_allowed(hostname):
+            raise ValidationError("Host is not allowed")
+
+        return url
