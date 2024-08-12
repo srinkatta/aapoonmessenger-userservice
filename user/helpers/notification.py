@@ -4,6 +4,7 @@ import re
 from pyfcm import FCMNotification
 
 from user_service import settings
+from user.helpers.v2 import notification as notification_v2
 
 logging = logging.getLogger(__name__)
 
@@ -198,15 +199,17 @@ def notify_dm_v2(
             if not to_user.fcm_token:
                 raise ValueError("FCM token is not available for the recipient user")
 
+            notification = notification_v2.FirebaseNotificationService()
             if to_user.fcm_token and not to_user.apns_token:
                 token = to_user.fcm_token
                 print("Result for DM")
                 print("Android")
-                notify_android_device(token, from_user.name, data_message)
+
+                notification.notify_android_device(token, from_user.name, data_message)
             else:
                 token = to_user.fcm_token
                 print("iPhone")
-                notify_ios_device(token, from_user.name, data_message["body"], data_message)
+                notification.notify_ios_device(token, data_message)
     return True
 
 
