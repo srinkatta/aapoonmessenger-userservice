@@ -33,4 +33,3 @@ mock==5.1.0
 django-storages==1.14.2
 loguru==0.7.2
 pytz==2023.3.post1
-firebase-admin==6.5.0
