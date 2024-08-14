@@ -82,7 +82,7 @@ class FirebaseNotificationService:
             response: str = messaging.send(message, app=self.android_app)
             logging.info(f"Android Notification - Token: {token}, Data: {android_data_message}")
             logging.info(f"Android Result: {response}")
-        except exceptions.FirebaseError as e:
+        except Exception as e:
             if isinstance(e, messaging.UnregisteredError):
                 logging.error(f"Unregistered token: {token}")
             else:
@@ -132,7 +132,7 @@ class FirebaseNotificationService:
                 f"iOS Notification - Token: {token}, Message: {data_message['notification']['body']}, Title: {data_message['notification']['title']}"
             )
             logging.info(f"iOS Result: {response}")
-        except exceptions.FirebaseError as e:
+        except Exception as e:
             if isinstance(e, messaging.UnregisteredError):
                 logging.info(f"Unregistered token: {token}")
             else:
