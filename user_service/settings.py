@@ -11,9 +11,10 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import json
 import os
+import sentry_sdk
 from datetime import timedelta
 from pathlib import Path
-
+from common.choices import EnvironmentChoices
 from dotenv import load_dotenv
 from corsheaders.defaults import default_methods, default_headers
 
@@ -32,6 +33,13 @@ SECRET_KEY = os.environ.get("USER_SECRET") or os.environ.get("SECRET")
 DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
+
+# Swagger Auth
+ENVIRONMENT = os.environ.get("ENVIRONMENT", EnvironmentChoices.PRODUCTION.value)
+
+# Prevent SSRF
+ALLOWED_HOSTS_WHITELIST = list(json.loads(os.environ.get("ALLOWED_HOSTS_WHITELIST", "[]")))
+FORBIDDEN_HOSTS_BLACKLIST = list(json.loads(os.environ.get("FORBIDDEN_HOSTS_BLACKLIST", "[]")))
 
 # Application definition
 
@@ -255,6 +263,9 @@ DEFAULT_FROM_EMAIL = "support@aapoon.net"
 SUPPORT_EMAIL = "support@aapoon.net"
 
 FCM_API_KEY = os.environ["FCM_API_KEY"]
+FCM_ADMIN_ANDROID_CRED = os.environ["FCM_ADMIN_ANDROID_CRED"]
+FCM_ADMIN_IOS_CRED = os.environ["FCM_ADMIN_IOS_CRED"]
+ANDROID_FCM_API_KEY = os.environ["ANDROID_FCM_API_KEY"]
 
 FAST_API_KEY = os.environ["FAST_API_KEY"]
 FAST_SMS_SENDER_ID = os.environ["FAST_SMS_SENDER_ID"]
@@ -283,8 +294,8 @@ XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
 
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_BACKEND = "postmarker.django.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "postmarker.django.EmailBackend"
 EMAIL_HOST = os.environ["EMAIL_HOST"]
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
@@ -329,3 +340,18 @@ STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
 STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 KMS_KEY_ARN = os.environ["KMS_KEY_ARN"]
+
+# Secure Headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_BROWSER_XSS_FILTER = True
+
+# Sentry settings
+IS_SENTRY_ENABLED = os.environ.get("IS_SENTRY_ENABLED", False)
+
+if IS_SENTRY_ENABLED:
+    SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        enable_tracing=True,
+    )
