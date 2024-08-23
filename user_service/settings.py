@@ -263,6 +263,9 @@ DEFAULT_FROM_EMAIL = "support@aapoon.net"
 SUPPORT_EMAIL = "support@aapoon.net"
 
 FCM_API_KEY = os.environ["FCM_API_KEY"]
+FCM_ADMIN_ANDROID_CRED = os.environ["FCM_ADMIN_ANDROID_CRED"]
+FCM_ADMIN_IOS_CRED = os.environ["FCM_ADMIN_IOS_CRED"]
+ANDROID_FCM_API_KEY = os.environ["ANDROID_FCM_API_KEY"]
 
 FAST_API_KEY = os.environ["FAST_API_KEY"]
 FAST_SMS_SENDER_ID = os.environ["FAST_SMS_SENDER_ID"]
@@ -291,8 +294,8 @@ XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
 
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_BACKEND = "postmarker.django.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "postmarker.django.EmailBackend"
 EMAIL_HOST = os.environ["EMAIL_HOST"]
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
