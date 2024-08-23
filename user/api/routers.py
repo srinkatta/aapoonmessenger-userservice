@@ -34,6 +34,7 @@ from user.api.viewsets import (
     UserProfileViewSet,
     UserViewSet,
     VerifyPhoneView,
+    ExternalRequestView,
 )
 
 router = routers.SimpleRouter()
@@ -52,6 +53,7 @@ router.register(
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(r"", include(router.urls)),
+    path("external_request/", ExternalRequestView.as_view(), name="external_request"),
     path(
         "auth/token/obtain/",
         jwt_views.TokenObtainPairView.as_view(),
