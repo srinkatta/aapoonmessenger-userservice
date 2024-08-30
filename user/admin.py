@@ -10,7 +10,7 @@ from django_admin_listfilter_dropdown.filters import DropdownFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.fields import Field
-from rangefilter.filter import DateRangeFilter
+from rangefilter.filters import DateRangeFilter
 
 from user.models import (
     AppInfo,
