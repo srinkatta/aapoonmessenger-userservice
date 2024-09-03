@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "storages",
     # Custom App
     "user",
+    "certificates",
 ]
 
 MIDDLEWARE = [
