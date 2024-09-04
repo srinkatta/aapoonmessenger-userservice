@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from certificates.api import serializers as certificate_serializers
 import subprocess
+from user_service import settings
 
 
 class SignCertificateAPIView(APIView):
@@ -31,8 +32,8 @@ class SignCertificateAPIView(APIView):
         # Use OpenSSL to sign the CSR certificate with CA certificate
         # You need to replace the following with your actual command to sign the CSR
         # For post-quantum cryptography, use relevant algorithms like Dilithium, Falcon, or Kyber
-        ca_certificate = "/path/to/ca_certificate.pem"
-        ca_key = "/path/to/ca_key.pem"
+        ca_certificate = settings.CA_CERTIFICATE
+        ca_key = settings.CA_KEY
         process = subprocess.Popen(
             [
                 "openssl",
@@ -56,5 +57,5 @@ class SignCertificateAPIView(APIView):
         )
         stdout, stderr = process.communicate()
         if process.returncode != 0:
-            raise Exception(f"Failed to sign certificate: {stderr.decode()}")
+            raise RuntimeError(f"Failed to sign certificate: {stderr.decode()}")
         return stdout.decode()
