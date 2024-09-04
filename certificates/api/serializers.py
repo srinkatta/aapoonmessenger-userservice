@@ -1,8 +1,4 @@
 from rest_framework import serializers
-from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.x509.oid import NameOID
 from certificates import models as certificate_models
 
 
