@@ -1,10 +1,11 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from certificates.api import viewsets as certificate_viewsets
 
-router = DefaultRouter()
-router.register(r"csrs", certificate_viewsets.CSRViewSet, basename="csr")
 
 urlpatterns = [
-    path("", include(router.urls)),
+    path(
+        "csrs/",
+        certificate_viewsets.SignCertificateAPIView.as_view(),
+        name="sign-certificate",
+    ),
 ]

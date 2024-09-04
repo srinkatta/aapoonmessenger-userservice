@@ -1,37 +1,60 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-from certificates import models as certificate_models
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.response import Response
 from certificates.api import serializers as certificate_serializers
+import subprocess
 
 
-class CSRViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for handling Certificate Signing Requests (CSRs).
+class SignCertificateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = certificate_serializers.CertificateSerializer(data=request.data)
+        if serializer.is_valid():
+            csr_certificate = serializer.validated_data["csr_certificate"]
+            device_id = serializer.validated_data["device_id"]
+            phone_number = serializer.validated_data.get("phone_number")
+            # Sign the CSR using OpenSSL with post-quantum cryptography
+            signed_certificate = self.sign_certificate(csr_certificate)
+            # Save the signed certificate and other details in the database
+            certificate = certificate_serializers.Certificate.objects.create(
+                csr_certificate=csr_certificate,
+                device_id=device_id,
+                phone_number=phone_number,
+                signed_certificate=signed_certificate,
+            )
+            return Response(
+                certificate_serializers.CertificateSerializer(certificate).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    This ViewSet provides actions to list, retrieve, create, update, and delete CSRs.
-    It restricts access to authenticated users and ensures users can only interact with
-    their own CSRs.
-
-    Attributes:
-        queryset (QuerySet): Default queryset for the viewset, fetching all CSR objects.
-        serializer_class (Serializer): Serializer class used to validate and deserialize
-            input and serialize output.
-        permission_classes (list): List of permission classes to apply to the viewset.
-
-    Methods:
-        get_queryset():
-            Filters the queryset to only include CSRs related to the authenticated user.
-    """
-
-    queryset = certificate_models.CSR.objects.all()
-    serializer_class = certificate_serializers.CSRSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        """
-        Filters the queryset to only include CSRs related to the authenticated user.
-
-        Returns:
-            QuerySet: Filtered queryset of CSRs for the authenticated user.
-        """
-        return self.queryset.filter(device__user=self.request.user)
+    def sign_certificate(self, csr_certificate):
+        # Use OpenSSL to sign the CSR certificate with CA certificate
+        # You need to replace the following with your actual command to sign the CSR
+        # For post-quantum cryptography, use relevant algorithms like Dilithium, Falcon, or Kyber
+        ca_certificate = "/path/to/ca_certificate.pem"
+        ca_key = "/path/to/ca_key.pem"
+        process = subprocess.Popen(
+            [
+                "openssl",
+                "x509",
+                "-req",
+                "-in",
+                csr_certificate,
+                "-CA",
+                ca_certificate,
+                "-CAkey",
+                ca_key,
+                "-CAcreateserial",
+                "-out",
+                "-",
+                "-days",
+                "365",
+                "-sha256",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        stdout, stderr = process.communicate()
+        if process.returncode != 0:
+            raise Exception(f"Failed to sign certificate: {stderr.decode()}")
+        return stdout.decode()
