@@ -2,11 +2,27 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from certificates.api import serializers as certificate_serializers
+from certificates import models as certificates_models
 import subprocess
 from user_service import settings
 
 
 class SignCertificateAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        serializer = certificate_serializers.DeviceIDSerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+        device_id = serializer.validated_data["device_id"]
+
+        queryset = certificates_models.Certificate.objects.filter(device=device_id)
+
+        serialized_data = certificate_serializers.CertificateSerializer(
+            queryset, many=True
+        ).data
+
+        return Response(serialized_data, status=status.HTTP_200_OK)
+
     def post(self, request, *args, **kwargs):
         serializer = certificate_serializers.CertificateSerializer(data=request.data)
         if serializer.is_valid():

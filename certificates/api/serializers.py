@@ -10,3 +10,7 @@ class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = certificate_models.Certificate
         fields = "__all__"
+
+
+class DeviceIDSerializer(serializers.Serializer):
+    device_id = serializers.CharField()
