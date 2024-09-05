@@ -10,4 +10,3 @@ class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = certificate_models.Certificate
         fields = "__all__"
-        read_only_fields = ["csr_certificate", "created_at"]
