@@ -4,7 +4,7 @@ from certificates.api import viewsets as certificate_viewsets
 
 urlpatterns = [
     path(
-        "csrs/",
+        "certificate/",
         certificate_viewsets.SignCertificateAPIView.as_view(),
         name="sign-certificate",
     ),
