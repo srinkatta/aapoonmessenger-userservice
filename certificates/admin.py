@@ -1,3 +1,4 @@
 from django.contrib import admin
+from certificates import models as certificate_models
 
-# Register your models here.
+admin.site.register(certificate_models.Certificate)

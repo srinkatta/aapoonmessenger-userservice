@@ -24,54 +24,76 @@ class SignCertificateAPIView(APIView):
         return Response(serialized_data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
+
         serializer = certificate_serializers.CertificateSerializer(data=request.data)
-        if serializer.is_valid():
-            csr_certificate = serializer.validated_data["csr_certificate"]
-            device_id = serializer.validated_data["device_id"]
-            phone_number = serializer.validated_data.get("phone_number")
-            # Sign the CSR using OpenSSL with post-quantum cryptography
+        serializer.is_valid(raise_exception=True)
+
+        csr_certificate = serializer.validated_data["csr_certificate"]
+        device_id = serializer.validated_data["device"]
+        phone_number = serializer.validated_data.get("phone_number")
+
+        try:
             signed_certificate = self.sign_certificate(csr_certificate)
-            # Save the signed certificate and other details in the database
-            certificate = certificate_serializers.Certificate.objects.create(
-                csr_certificate=csr_certificate,
-                device_id=device_id,
-                phone_number=phone_number,
-                signed_certificate=signed_certificate,
-            )
+        except RuntimeError as e:
             return Response(
-                certificate_serializers.CertificateSerializer(certificate).data,
-                status=status.HTTP_201_CREATED,
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        certificate_instance = certificates_models.Certificate.objects.create(
+            csr_certificate=csr_certificate,
+            device_id=device_id,
+            phone_number=phone_number,
+            signed_certificate=signed_certificate,
+        )
+
+        serialized_certificate_instance = certificate_serializers.CertificateSerializer(
+            certificate_instance
+        ).data
+
+        return Response(serialized_certificate_instance, status=status.HTTP_201_CREATED)
 
     def sign_certificate(self, csr_certificate):
-        # Use OpenSSL to sign the CSR certificate with CA certificate
-        # You need to replace the following with your actual command to sign the CSR
-        # For post-quantum cryptography, use relevant algorithms like Dilithium, Falcon, or Kyber
+        """
+        Sign the CSR certificate using OpenSSL with the CA certificate and key.
+
+        Args:
+            csr_certificate_path (str): Path to the CSR file to be signed.
+
+        Returns:
+            str: The signed certificate in PEM format.
+
+        Raises:
+            RuntimeError: If the certificate signing process fails.
+        """
         ca_certificate = settings.CA_CERTIFICATE
         ca_key = settings.CA_KEY
-        process = subprocess.Popen(
-            [
-                "openssl",
-                "x509",
-                "-req",
-                "-in",
-                csr_certificate,
-                "-CA",
-                ca_certificate,
-                "-CAkey",
-                ca_key,
-                "-CAcreateserial",
-                "-out",
-                "-",
-                "-days",
-                "365",
-                "-sha256",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        stdout, stderr = process.communicate()
-        if process.returncode != 0:
-            raise RuntimeError(f"Failed to sign certificate: {stderr.decode()}")
-        return stdout.decode()
+        signed_certificate_path = "signed_certificate.pem"
+
+        openssl_command = [
+            "openssl",
+            "x509",
+            "-req",
+            "-in",
+            csr_certificate,
+            "-CA",
+            ca_certificate,
+            "-CAkey",
+            ca_key,
+            "-CAcreateserial",
+            "-out",
+            signed_certificate_path,
+            "-days",
+            "365",
+            "-sha256",
+        ]
+
+        try:
+            result = subprocess.run(
+                openssl_command, check=True, capture_output=True, text=True
+            )
+            print(
+                f"CSR signed successfully. Signed certificate saved to: {signed_certificate_path}"
+            )
+            return result.stdout
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Failed to sign certificate: {e.stderr}")
