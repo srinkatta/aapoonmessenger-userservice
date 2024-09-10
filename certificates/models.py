@@ -1,5 +1,6 @@
 from django.db import models
 from common import models as common_models
+from certificates.utils import validators as certificate_validators
 
 
 class Certificate(common_models.BaseTimeStampedModel):
@@ -17,7 +18,10 @@ class Certificate(common_models.BaseTimeStampedModel):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     csr_certificate = models.TextField()
     signed_certificate = models.FileField(
-        upload_to="signed_certificates/", blank=True, null=True
+        upload_to="signed_certificates/",
+        blank=True,
+        null=True,
+        validators=[certificate_validators.CertificateExtensionValidator()],
     )
 
     def __str__(self):
