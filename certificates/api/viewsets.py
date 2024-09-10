@@ -1,3 +1,5 @@
+from django.core.files.base import ContentFile
+from django.http import FileResponse
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -26,30 +28,36 @@ class SignCertificateAPIView(APIView):
         serializer = certificate_serializers.CertificateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        csr_certificate = serializer.validated_data["csr_certificate"]
+        csr_certificate_file = request.FILES.get("csr_certificate")
         device_id = serializer.validated_data["device"]
         phone_number = serializer.validated_data.get("phone_number")
 
         signer = sign_certificate.CertificateSigner()
 
         try:
-            signed_certificate = signer.sign_certificate(csr_certificate)
-            with open(csr_certificate, "r") as client_csr_file:
-                csr_content = client_csr_file.read()
+            csr_content = csr_certificate_file.read().decode("utf-8")
+            signed_certificate = signer.sign_certificate(csr_content)
+            signed_certificate_file = ContentFile(
+                signed_certificate.encode("utf-8"), f"signed_certificate{device_id}.pem"
+            )
+
         except RuntimeError as e:
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        certificate_instance = certificates_models.Certificate.objects.create(
+        certificates_models.Certificate.objects.create(
             csr_certificate=csr_content,
             device=device_id,
             phone_number=phone_number,
-            signed_certificate=signed_certificate,
+            signed_certificate=signed_certificate_file,
         )
 
-        serialized_certificate_instance = certificate_serializers.CertificateSerializer(
-            certificate_instance
-        ).data
+        response = FileResponse(
+            signed_certificate_file,
+            as_attachment=True,
+            filename="signed_certificate.pem",
+            content_type="application/x-x509-ca-cert",
+        )
 
-        return Response(serialized_certificate_instance, status=status.HTTP_201_CREATED)
+        return response

@@ -7,6 +7,8 @@ class CertificateSerializer(serializers.ModelSerializer):
     Serializer for Certificate Signing Requests (CSRs).
     """
 
+    csr_certificate = serializers.FileField()
+
     class Meta:
         model = certificate_models.Certificate
         fields = "__all__"

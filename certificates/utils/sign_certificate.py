@@ -9,12 +9,12 @@ class CertificateSigner:
         self.ca_certificate_path = settings.CA_CERTIFICATE_PATH
         self.ca_key_path = settings.CA_KEY_PATH
 
-    def sign_certificate(self, csr_certificate_path: str) -> str:
+    def sign_certificate(self, csr_certificate_content: str) -> str:
         """
         Sign the CSR certificate using OpenSSL with the CA certificate and key.
 
         Args:
-            csr_certificate_path (str): Path to the CSR file to be signed.
+            csr_certificate_content (str): Content of CSR file.
 
         Returns:
             str: The signed certificate in PEM format.
@@ -23,21 +23,25 @@ class CertificateSigner:
             RuntimeError: If the certificate signing process fails.
         """
 
-        self._validate_files(csr_certificate_path)
+        self._validate_files()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csr") as temp_csr_file:
+            temp_csr_path = temp_csr_file.name
+            temp_csr_file.write(csr_certificate_content.encode("utf-8"))
 
         with tempfile.NamedTemporaryFile(delete=False) as temp_signed_certificate_file:
             signed_certificate_path = temp_signed_certificate_file.name
 
         try:
-            self._run_openssl(csr_certificate_path, signed_certificate_path)
+            self._run_openssl(temp_csr_path, signed_certificate_path)
             return self._read_signed_certificate(signed_certificate_path)
         finally:
             if os.path.isfile(signed_certificate_path):
                 os.remove(signed_certificate_path)
 
-    def _validate_files(self, csr_certificate_path: str):
+    def _validate_files(self):
         """
-        Validate the existence of the CSR certificate, CA certificate, and CA key files.
+        Validate the existence of the CA certificate, and CA key files.
 
         Args:
             csr_certificate_path (str): Path to the CSR file.
@@ -46,7 +50,6 @@ class CertificateSigner:
             RuntimeError: If any required file does not exist.
         """
         file_paths = {
-            "CSR certificate": csr_certificate_path,
             "CA certificate": self.ca_certificate_path,
             "CA key": self.ca_key_path,
         }
