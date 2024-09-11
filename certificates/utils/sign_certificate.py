@@ -36,8 +36,10 @@ class CertificateSigner:
             self._run_openssl(temp_csr_path, signed_certificate_path)
             return self._read_signed_certificate(signed_certificate_path)
         finally:
-            if os.path.isfile(signed_certificate_path):
-                os.remove(signed_certificate_path)
+            to_remove = [temp_csr_path, signed_certificate_path]
+            for file_path in to_remove:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
 
     def _validate_files(self):
         """

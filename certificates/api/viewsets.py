@@ -6,6 +6,9 @@ from rest_framework.response import Response
 from certificates.api import serializers as certificate_serializers
 from certificates import models as certificates_models
 from certificates.utils import sign_certificate
+from certificates.utils import upload_sign_certificate
+import tempfile
+import os
 
 
 class SignCertificateAPIView(APIView):
@@ -33,12 +36,30 @@ class SignCertificateAPIView(APIView):
         phone_number = serializer.validated_data.get("phone_number")
 
         signer = sign_certificate.CertificateSigner()
+        uploader = upload_sign_certificate.S3Uploader()
 
         try:
             csr_content = csr_certificate_file.read().decode("utf-8")
             signed_certificate = signer.sign_certificate(csr_content)
-            signed_certificate_file = ContentFile(
-                signed_certificate.encode("utf-8"), f"signed_certificate{device_id}.pem"
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".csr") as temp_file:
+                temp_file.write(signed_certificate.encode("utf-8"))
+                temp_file_path = temp_file.name
+
+            signed_certificate_link = uploader.upload_file(
+                file_path=temp_file_path,
+                s3_key_suffix=f"signed_certificate_{device_id}.pem",
+            )
+
+            certificates_models.Certificate.objects.create(
+                csr_certificate=csr_content,
+                device=device_id,
+                phone_number=phone_number,
+                signed_certificate=signed_certificate_link,
+            )
+
+            return Response(
+                {"file_url": signed_certificate_link}, status=status.HTTP_201_CREATED
             )
 
         except RuntimeError as e:
@@ -46,18 +67,6 @@ class SignCertificateAPIView(APIView):
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        certificates_models.Certificate.objects.create(
-            csr_certificate=csr_content,
-            device=device_id,
-            phone_number=phone_number,
-            signed_certificate=signed_certificate_file,
-        )
-
-        response = FileResponse(
-            signed_certificate_file,
-            as_attachment=True,
-            filename="signed_certificate.pem",
-            content_type="application/x-x509-ca-cert",
-        )
-
-        return response
+        finally:
+            if temp_file_path and os.path.isfile(temp_file_path):
+                os.remove(temp_file_path)
