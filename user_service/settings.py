@@ -299,8 +299,8 @@ XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_BACKEND = "postmarker.django.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "postmarker.django.EmailBackend"
 EMAIL_HOST = os.environ["EMAIL_HOST"]
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
