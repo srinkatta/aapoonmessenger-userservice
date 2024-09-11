@@ -36,10 +36,6 @@ class S3Uploader:
         except (NoCredentialsError, PartialCredentialsError) as e:
             raise RuntimeError("AWS credentials are not valid or not provided.") from e
         except Exception as e:
-            print(file_path)
-            print(s3_key_suffix)
-            print(f"{self.s3_key_prefix}{s3_key_suffix}")
-            print(e)
             raise RuntimeError("Failed to upload the file to S3.") from e
 
         return self.generate_presigned_url(
