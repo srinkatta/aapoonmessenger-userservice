@@ -1,5 +1,7 @@
 import boto3
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+from loguru import logger
+
 from user_service import settings
 
 
@@ -33,6 +35,7 @@ class S3Uploader:
             self.s3_client.upload_file(
                 file_path, self.bucket_name, f"{self.s3_key_prefix}{s3_key_suffix}"
             )
+            logger.info("File Uploaded to: {self.s3_key_prefix}{s3_key_suffix}")
         except (NoCredentialsError, PartialCredentialsError) as e:
             raise RuntimeError("AWS credentials are not valid or not provided.") from e
         except Exception as e:
