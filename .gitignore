@@ -282,6 +282,3 @@ cython_debug/
 
 # sqlite databse
 db.sqlite3
-
-# Metadata Files
-.DS_Store

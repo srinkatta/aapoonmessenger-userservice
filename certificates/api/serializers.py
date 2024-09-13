@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from certificates import models as certificate_models
+from certificates.utils import validators as certificate_validators
 
 
 class CSRFileField(serializers.Field):
