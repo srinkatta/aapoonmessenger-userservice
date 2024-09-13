@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
+
 import json
 import os
 import sentry_sdk
@@ -67,6 +68,7 @@ INSTALLED_APPS = [
     "storages",
     # Custom App
     "user",
+    "certificates",
 ]
 
 MIDDLEWARE = [
@@ -326,6 +328,11 @@ AWS_PINPOINT_FROM_NUMBER = os.environ["AWS_PINPOINT_FROM_NUMBER"]
 
 # KYC Microservice Configuration
 KYC_MICROSERVICE_URL = os.environ["KYC_MICROSERVICE_URL"]
+
+# CSR Certificate Config
+CA_CERTIFICATE_PATH = os.path.join(BASE_DIR, "certs", "dilithium2_CA.crt")
+CA_KEY_PATH = os.path.join(BASE_DIR, "certs", "dilithium2_CA.key")
+
 
 AWS_ACCESS_KEY_ID = os.environ["STATIC_AWS_ACCESS_KEY_ID"]
 AWS_SECRET_ACCESS_KEY = os.environ["STATIC_AWS_SECRET_ACCESS_KEY"]
