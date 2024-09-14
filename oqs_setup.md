@@ -11,6 +11,28 @@ To build the OQS-Provider, you need to install the following dependencies:
 
 If any of the libraries are installed in non-standard locations, you must provide the installation paths using the `OPENSSL_ROOT_DIR` and `liboqs_DIR` variables during the CMake build process.
 
+## Checking for Existing Installations
+Before proceeding with the installation, check if OpenSSL 3.0+ and liboqs are already installed:
+
+### 1. Checking OpenSSL Version
+
+To check if OpenSSL 3.0+ is installed and view the version:
+
+```bash
+openssl version
+```
+If the version is not 3.0 or higher, proceed to install or upgrade OpenSSL.
+
+### 2. Checking liboqs Installation
+
+To determine if `liboqs` is installed, use the following command:
+
+```bash
+pkg-config --modversion liboqs
+```
+
+If `liboqs` is not found, follow the installation instructions below.
+
 ## Pre-Installation Steps
 
 Make sure to update and install essential packages required for building from source:
@@ -20,7 +42,7 @@ sudo apt update
 sudo apt install build-essential cmake git libssl-dev
 ```
 
-### Installing OpenSSL 3.0+
+### Installing or Upgrading OpenSSL 3.0+
 
 If OpenSSL 3.0 is not already installed on your system, download and install it from the source:
 
@@ -32,6 +54,8 @@ cd openssl-3.0.0
 make
 sudo make install
 ```
+
+Ensure the installation path is added to your system's `PATH` if it's not in the default location.
 
 ### Installing liboqs
 
