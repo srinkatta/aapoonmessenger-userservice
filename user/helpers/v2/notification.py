@@ -72,11 +72,14 @@ class FirebaseNotificationService:
             "message_id": data_message["notification"]["message_id"],
         }
 
+        print(f"Android data message: {android_data_message}")
+
         message: messaging.Message = messaging.Message(
             data=android_data_message,
             token=token,
             android=messaging.AndroidConfig(priority="high"),
         )
+        print(f"Android notification message: {message}")
 
         try:
             response: str = messaging.send(message, app=self.android_app)
@@ -96,6 +99,7 @@ class FirebaseNotificationService:
             token (str): The device token to which the notification will be sent.
             data_message (dict): The data message to send in the notification.
         """
+        print(f"iOS data message: {data_message}")
         notification: messaging.Notification = messaging.Notification(
             title=data_message["notification"]["title"], body=data_message["notification"]["body"]
         )
@@ -125,6 +129,7 @@ class FirebaseNotificationService:
                 ),
             ),
         )
+        print(f"iOS notification message: {message}")
 
         try:
             response: str = messaging.send(message, app=self.ios_app)
