@@ -204,6 +204,7 @@ def notify_dm_v2(
                 token = to_user.fcm_token
                 print("Result for DM")
                 print("Android")
+
                 notification.notify_android_device(token, from_user.name, data_message)
             else:
                 token = to_user.fcm_token
