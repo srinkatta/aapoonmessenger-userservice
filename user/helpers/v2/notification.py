@@ -65,6 +65,11 @@ class FirebaseNotificationService:
             "Nick": name,
             "body": data_message["body"],
             "priority": "high",
+            "sender_jid": data_message["notification"]["sender_jid"],
+            "room_id": data_message["notification"]["room_id"],
+            "bubble_type": data_message["notification"]["bubble_type"],
+            "data": data_message["notification"]["data"],
+            "message_id": data_message["notification"]["message_id"],
         }
 
         message: messaging.Message = messaging.Message(
