@@ -124,6 +124,7 @@ class FirebaseNotificationService:
                         badge=0,
                         sound=data_message["notification"]["sound"],
                         content_available=True,
+                        mutable_content=1,
                     ),
                     custom_data=data_message["notification"],
                 ),
