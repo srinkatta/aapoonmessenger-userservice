@@ -145,23 +145,16 @@ def prepare_data_message(to_user, from_user, message, xml, body):
 
     data_message = {
         "notification": {
-            "click_action": "ReplyOrRead",
-            "title": name,
-            "body": message_value,
             "sender_jid": from_user.jid,
             "room_id": "",
             "bubble_type": bubble_type,
             "data": data,
             "message_id": message_id,
-            "sound": "default",
-            "mutable-content": 1,
-            "content-available": True,
         },
         "to": to_user.fcm_token,
         "Nick": name,
         "body": message_value,
         "priority": "high",
-        "content_available": True,
     }
     print(f"data_message: {data_message}")
     return data_message
