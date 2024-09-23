@@ -103,28 +103,22 @@ class FirebaseNotificationService:
         """
         print(f"iOS data message: {data_message}")
         notification: messaging.Notification = messaging.Notification(
-            title=data_message["notification"]["title"], body=data_message["notification"]["body"]
+            title=data_message["Nick"], body=data_message["body"]
         )
 
         ios_message: messaging.Message = messaging.Message(
             notification=notification,
             token=token,
-            android=messaging.AndroidConfig(
-                notification=messaging.AndroidNotification(
-                    click_action=data_message["notification"]["click_action"],
-                    sound=data_message["notification"]["sound"],
-                )
-            ),
             apns=messaging.APNSConfig(
                 headers={"apns-priority": "10"},
                 payload=messaging.APNSPayload(
                     aps=messaging.Aps(
                         alert=messaging.ApsAlert(
-                            title=data_message["notification"]["title"],
-                            body=data_message["notification"]["body"],
+                            title=data_message["Nick"],
+                            body=data_message["body"],
                         ),
                         badge=0,
-                        sound=data_message["notification"]["sound"],
+                        sound="default",
                         content_available=True,
                         mutable_content=True,
                     ),
