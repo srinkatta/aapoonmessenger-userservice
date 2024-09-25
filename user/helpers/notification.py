@@ -138,7 +138,6 @@ def prepare_data_message(to_user, from_user, message, xml, body):
     print(f"xml message: {xml}")
     name = from_user.name
     message_value = extract_message_value(xml)
-    message_value = body[0] if message_value == "Text" else message_value
     bubble_type = extract_bubble_type(xml)
     data = extract_data(xml)
     message_id = extract_message_id(xml)
