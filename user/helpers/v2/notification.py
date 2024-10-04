@@ -1,5 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials, messaging, exceptions, App
+import json
 import logging
 from user_service import settings
 
@@ -79,7 +80,8 @@ class FirebaseNotificationService:
             token=token,
             android=messaging.AndroidConfig(priority="high"),
         )
-        print(f"Android notification message: {message}")
+        android_message_json = json.dumps(message, default=lambda o: o.__dict__, indent=4)
+        print(f"Android notification message: {android_message_json}")
 
         try:
             response: str = messaging.send(message, app=self.android_app)
@@ -101,38 +103,34 @@ class FirebaseNotificationService:
         """
         print(f"iOS data message: {data_message}")
         notification: messaging.Notification = messaging.Notification(
-            title=data_message["notification"]["title"], body=data_message["notification"]["body"]
+            title=data_message["Nick"], body=data_message["body"]
         )
 
-        message: messaging.Message = messaging.Message(
+        ios_message: messaging.Message = messaging.Message(
             notification=notification,
             token=token,
-            android=messaging.AndroidConfig(
-                notification=messaging.AndroidNotification(
-                    click_action=data_message["notification"]["click_action"],
-                    sound=data_message["notification"]["sound"],
-                )
-            ),
             apns=messaging.APNSConfig(
                 headers={"apns-priority": "10"},
                 payload=messaging.APNSPayload(
                     aps=messaging.Aps(
                         alert=messaging.ApsAlert(
-                            title=data_message["notification"]["title"],
-                            body=data_message["notification"]["body"],
+                            title=data_message["Nick"],
+                            body=data_message["body"],
                         ),
                         badge=0,
-                        sound=data_message["notification"]["sound"],
+                        sound="default",
                         content_available=True,
+                        mutable_content=True,
                     ),
                     custom_data=data_message["notification"],
                 ),
             ),
         )
-        print(f"iOS notification message: {message}")
+        ios_message_json = json.dumps(ios_message, default=lambda o: o.__dict__, indent=4)
+        print(f"iOS notification message: {ios_message_json}")
 
         try:
-            response: str = messaging.send(message, app=self.ios_app)
+            response: str = messaging.send(ios_message, app=self.ios_app)
             logging.info(
                 f"iOS Notification - Token: {token}, Message: {data_message['notification']['body']}, Title: {data_message['notification']['title']}"
             )
