@@ -233,8 +233,15 @@ class ArchiveChat(object):
         """
         Initialize an ArchiveChat instance with provided attributes.
         """
-        for field in ("id", "bare_peer", "timestamp", "xml", "username", "user_pic"):
-            setattr(self, field, kwargs.get(field))
+        for field, default in {
+            "id": None,
+            "bare_peer": "",
+            "timestamp": None,
+            "xml": "",
+            "username": "",
+            "user_pic": None,
+        }.items():
+            setattr(self, field, kwargs.get(field, default))
 
 
 class XMPPMonthlyChatViewSet(viewsets.ViewSet, CustomPagination):
