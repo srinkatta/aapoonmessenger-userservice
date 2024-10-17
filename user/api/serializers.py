@@ -391,8 +391,7 @@ class UserLoginSerializer(serializers.Serializer):
                 "password": access_token,
             }
             try:
-                resp = make_request(url, "POST", data=data)
-                print("reg response", resp)
+                make_request(url, "POST", data=data)
                 user.id_xmpp_register = True
                 user.save()
                 logging.info("User successfully registered at websocket server")

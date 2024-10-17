@@ -112,8 +112,6 @@ def notify_android_device(token, name, data_message):
         data_message=android_data_message,
         content_available=True,
     )
-    print(f"Android Notification - Token: {token}, Data: {android_data_message}")
-    print(f"Android Result:  {android_result}")
     logging.info(f"Android result: , {android_result}")
 
 
@@ -127,10 +125,11 @@ def notify_ios_device(token, name, message_value, data_message):
         content_available=True,
         extra_kwargs={"mutable_content": True},
     )
-    print(
-        f"iOS Notification - Token: {token}, Message: {message_value}, Title: {name}, Data: {data_message}"
-    )
-    print(f"IOS Result:  {result}")
+    # Enable debug statements when needed
+    # print(
+    #     f"iOS Notification - Token: {token}, Message: {message_value}, Title: {name}, Data: {data_message}"
+    # )
+    # print(f"IOS Result:  {result}")
     logging.info(f"IOS result: , {result}")
 
 
@@ -172,11 +171,11 @@ def extract_message_value(xml):
         "5": "Document",
         "11": "Contact",
     }
+
     bubble_start = xml.find("<Bubble>") + len("<Bubble>")
     bubble_end = xml.find("</Bubble>")
     message_value = xml[bubble_start:bubble_end]
-    return message_value_dict.get(message_value, None)
-
+    return message_value_dict.get(message_value)
 
 def notify_dm_v2(
     to_user=None,
@@ -319,7 +318,7 @@ def notify_dm(
                         data_message=android_data_message,
                         content_available=True,
                     )
-                    print(android_result)
+                    # print(android_result)
                     logging.info(f"Android result: , {android_result}")
                 else:
                     token = to_user.fcm_token
@@ -333,6 +332,6 @@ def notify_dm(
                         content_available=True,
                         extra_kwargs={"mutable_content": True},
                     )
-                    print(result)
+                    # print(result)
                     logging.info(f"IOS result: , {result}")
                 return True

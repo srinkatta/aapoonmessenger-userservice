@@ -93,21 +93,15 @@ CORS_ALLOWED_ORIGINS = [
     "https://aapoon.com",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = (*default_methods,)
 CORS_ALLOW_HEADERS = (
     *default_headers,
     "origin",
     "x-api-key",
-)
-
-
-CORS_ALLOW_HEADERS = [
-    "x-api-key",
     "content-type",
     "authorization",
-]
+)
 
 CORS_EXPOSE_HEADERS = [
     "x-api-key",
