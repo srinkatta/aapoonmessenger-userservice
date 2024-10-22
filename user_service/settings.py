@@ -9,11 +9,13 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
+
 import json
 import os
+import sentry_sdk
 from datetime import timedelta
 from pathlib import Path
-
+from common.choices import EnvironmentChoices
 from dotenv import load_dotenv
 from corsheaders.defaults import default_methods, default_headers
 
@@ -32,6 +34,18 @@ SECRET_KEY = os.environ.get("USER_SECRET") or os.environ.get("SECRET")
 DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
+
+# Swagger Auth
+ENVIRONMENT = os.environ.get("ENVIRONMENT", EnvironmentChoices.PRODUCTION.value)
+
+
+def __get_hosts_list(hosts_string: str | None) -> list[str]:
+    return [host.strip().strip("'") for host in hosts_string.split(",")] if hosts_string else []
+
+
+
+ALLOWED_HOSTS_WHITELIST = __get_hosts_list(os.getenv("ALLOWED_HOSTS_WHITELIST", ""))
+FORBIDDEN_HOSTS_BLACKLIST = __get_hosts_list(os.getenv("FORBIDDEN_HOSTS_BLACKLIST", ""))
 
 # Application definition
 
@@ -54,6 +68,7 @@ INSTALLED_APPS = [
     "storages",
     # Custom App
     "user",
+    "certificates",
 ]
 
 MIDDLEWARE = [
@@ -66,7 +81,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "user.middleware.availability.AppAvailabilityMiddleware",
+    # "user.middleware.availability.AppAvailabilityMiddleware",
 ]
 
 ROOT_URLCONF = "user_service.urls"
@@ -78,21 +93,15 @@ CORS_ALLOWED_ORIGINS = [
     "https://aapoon.com",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = (*default_methods,)
 CORS_ALLOW_HEADERS = (
     *default_headers,
     "origin",
     "x-api-key",
-)
-
-
-CORS_ALLOW_HEADERS = [
-    "x-api-key",
     "content-type",
     "authorization",
-]
+)
 
 CORS_EXPOSE_HEADERS = [
     "x-api-key",
@@ -286,8 +295,8 @@ XMPP_SERVER_URL = "https://{}:{}/".format(XMPP_HOST, XMPP_PORT)
 API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 CACHE_TTL = 10
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_BACKEND = "postmarker.django.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "postmarker.django.EmailBackend"
 EMAIL_HOST = os.environ["EMAIL_HOST"]
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
@@ -314,6 +323,11 @@ AWS_PINPOINT_FROM_NUMBER = os.environ["AWS_PINPOINT_FROM_NUMBER"]
 # KYC Microservice Configuration
 KYC_MICROSERVICE_URL = os.environ["KYC_MICROSERVICE_URL"]
 
+# CSR Certificate Config
+CA_CERTIFICATE_PATH = os.path.join(BASE_DIR, "certs", "dilithium2_CA.crt")
+CA_KEY_PATH = os.path.join(BASE_DIR, "certs", "dilithium2_CA.key")
+
+
 AWS_ACCESS_KEY_ID = os.environ["STATIC_AWS_ACCESS_KEY_ID"]
 AWS_SECRET_ACCESS_KEY = os.environ["STATIC_AWS_SECRET_ACCESS_KEY"]
 AWS_STORAGE_BUCKET_NAME = os.environ["STATIC_AWS_STORAGE_BUCKET_NAME"]
@@ -332,3 +346,18 @@ STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
 STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 KMS_KEY_ARN = os.environ["KMS_KEY_ARN"]
+
+# Secure Headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_BROWSER_XSS_FILTER = True
+
+# Sentry settings
+IS_SENTRY_ENABLED = os.environ.get("IS_SENTRY_ENABLED", False)
+
+if IS_SENTRY_ENABLED:
+    SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        enable_tracing=True,
+    )

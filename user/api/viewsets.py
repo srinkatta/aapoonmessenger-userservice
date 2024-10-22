@@ -43,6 +43,7 @@ from user.api.serializers import (
     UserRemoveSerializer,
     UserSerializer,
     VerifyPhoneSerializer,
+    ExternalRequestSerializer,
 )
 from user.helpers import sms
 from user.helpers.otp import generate_otp
@@ -1174,8 +1175,6 @@ class DeviceInfoView(APIView):
         """
         device_id = request.data["device_id"]
         user_id = request.data["user"]
-        logger.info(f"user_id : {user_id}, device_id: {device_id}")
-        logger.info(request.data)
         user_info = User.objects.filter(id=user_id).first()
         logger.info(f"{user_info}")
         if not DeviceInfo.objects.filter(device_id=device_id, user_id=user_id).exists():
@@ -1933,3 +1932,18 @@ class UserProfileSearchAPI(APIView, GenericPagination):
         return Response(
             {"detail": "No jid provided"}, status=status.HTTP_400_BAD_REQUEST
         )
+
+class ExternalRequestView(APIView):
+    """
+    API View to handle external requests.
+    This API view allows external services to make requests to the APSCHE Messenger API.
+    """
+
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+
+        serializer = ExternalRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        return Response({"success": "Request is allowed"}, status=status.HTTP_200_OK) 

@@ -10,9 +10,7 @@ logging = logging.getLogger(__name__)
 
 
 def extract_media(xml):
-    media = re.findall(
-        r'<MEDIA (\S+)=[""]?((?:.(?![""]?\s+(?:\S+)=|\s*\/?[>""]))+.)[""]?>', xml
-    )
+    media = re.findall(r'<MEDIA (\S+)=[""]?((?:.(?![""]?\s+(?:\S+)=|\s*\/?[>""]))+.)[""]?>', xml)
     return media
 
 
@@ -22,6 +20,51 @@ def extract_command_action(xml):
         xml,
     )
     return command_action
+
+
+def extract_bubble_type(xml):
+    """
+    Extracts the bubble type from the provided XML string.
+    Args:
+        xml (str): The XML string containing message details.
+    Returns:
+        str: The bubble type extracted from the XML, or an empty string if not found.
+    """
+    bubble_type = re.search(r"<Bubble>(.*?)</Bubble>", xml)
+    if bubble_type:
+        return bubble_type.group(1)
+    return ""
+
+
+def extract_message_id(xml):
+    """
+    Extracts the message id from the provided XML string.
+    Args:
+        xml (str): The XML string containing message details.
+    Returns:
+        str: The data extracted from the XML, or an empty string if not found.
+    """
+    message_id_match = re.search(r"id=['\"]([^'\"]+)['\"]", xml)
+    if message_id_match:
+        return message_id_match.group(1)
+    return ""
+
+
+def extract_data(xml):
+    """
+    Extracts the data from the provided XML string.
+    Args:
+        xml (str): The XML string containing message details.
+    Returns:
+        str: The data extracted from the XML, or an empty string if not found.
+    """
+    data_match = re.findall(r"<Data>(.*?)</Data>", xml, re.DOTALL)
+    if not data_match:
+        pattern = r"<Data(?: xmlns='urn:xmpp:(?:Data|data)')?>(.*?)</Data>"
+        data_match = re.findall(pattern, xml, re.DOTALL)
+    if data_match:
+        return data_match[0]
+    return ""
 
 
 def process_media(xml):
@@ -40,10 +83,7 @@ def process_media(xml):
 def process_command_action(xml, message_value):
     command_action = extract_command_action(xml)
     if command_action and message_value == "Contact":
-        if (
-            command_action[0][0] == "xmlns"
-            and command_action[0][1] == "'urn:xmpp:commandaction'"
-        ):
+        if command_action[0][0] == "xmlns" and command_action[0][1] == "'urn:xmpp:commandaction'":
             xml = xml.replace("<body>!~~!</body>", "<body>Contact</body>")
             command_message = xml.find("<CommandMessage>")
             if command_message > 0:
@@ -55,20 +95,23 @@ def process_command_action(xml, message_value):
     return xml
 
 
-def notify_android_device(token, name, message_value):
-    push_service = FCMNotification(api_key=settings.FCM_API_KEY)
+def notify_android_device(token, name, data_message):
+    push_service = FCMNotification(api_key=settings.ANDROID_FCM_API_KEY)
     android_data_message = {
         "Nick": name,
-        "body": message_value,
+        "body": data_message["body"],
         "priority": "high",
+        "sender_jid": data_message["notification"]["sender_jid"],
+        "room_id": data_message["notification"]["room_id"],
+        "bubble_type": data_message["notification"]["bubble_type"],
+        "data": data_message["notification"]["data"],
+        "message_id": data_message["notification"]["message_id"],
     }
     android_result = push_service.notify_single_device(
         registration_id=token,
         data_message=android_data_message,
         content_available=True,
     )
-    print(f"Android Notification - Token: {token}, Data: {android_data_message}")
-    print(f"Android Result:  {android_result}")
     logging.info(f"Android result: , {android_result}")
 
 
@@ -82,34 +125,34 @@ def notify_ios_device(token, name, message_value, data_message):
         content_available=True,
         extra_kwargs={"mutable_content": True},
     )
-    print(
-        f"iOS Notification - Token: {token}, Message: {message_value}, Title: {name}, Data: {data_message}"
-    )
-    print(f"IOS Result:  {result}")
+    # Enable debug statements when needed
+    # print(
+    #     f"iOS Notification - Token: {token}, Message: {message_value}, Title: {name}, Data: {data_message}"
+    # )
+    # print(f"IOS Result:  {result}")
     logging.info(f"IOS result: , {result}")
 
 
 def prepare_data_message(to_user, from_user, message, xml, body):
+    print(f"xml message: {xml}")
     name = from_user.name
-
     message_value = extract_message_value(xml)
-    message_value = body[0] if message_value == "Text" else message_value
-    xml = process_media(xml)
-    xml = process_command_action(xml, message_value)
+    bubble_type = extract_bubble_type(xml)
+    data = extract_data(xml)
+    message_id = extract_message_id(xml)
 
     data_message = {
         "notification": {
-            "click_action": "ReplyOrRead",
-            "xml": xml,
-            "title": name,
-            "body": message_value,
-            "sound": "default",
+            "sender_jid": from_user.jid,
+            "room_id": "",
+            "bubble_type": bubble_type,
+            "data": data,
+            "message_id": message_id,
         },
         "to": to_user.fcm_token,
         "Nick": name,
         "body": message_value,
         "priority": "high",
-        "content_available": True,
     }
     print(f"data_message: {data_message}")
     return data_message
@@ -128,11 +171,11 @@ def extract_message_value(xml):
         "5": "Document",
         "11": "Contact",
     }
+
     bubble_start = xml.find("<Bubble>") + len("<Bubble>")
     bubble_end = xml.find("</Bubble>")
     message_value = xml[bubble_start:bubble_end]
-    return message_value_dict.get(message_value, None)
-
+    return message_value_dict.get(message_value)
 
 def notify_dm_v2(
     to_user=None,
@@ -275,7 +318,7 @@ def notify_dm(
                         data_message=android_data_message,
                         content_available=True,
                     )
-                    print(android_result)
+                    # print(android_result)
                     logging.info(f"Android result: , {android_result}")
                 else:
                     token = to_user.fcm_token
@@ -289,6 +332,6 @@ def notify_dm(
                         content_available=True,
                         extra_kwargs={"mutable_content": True},
                     )
-                    print(result)
+                    # print(result)
                     logging.info(f"IOS result: , {result}")
                 return True

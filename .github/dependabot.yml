@@ -19,6 +19,7 @@ updates:
       include: "scope"
     assignees:
       - "aliaapoon"
+      - "praveengouda007"
 
   # Python
   - package-ecosystem: "pip"
@@ -34,6 +35,7 @@ updates:
       include: "scope"
     assignees:
       - "aliaapoon"
+      - "praveengouda007"
     groups:
       development-dependencies:
         dependency-type: "development"

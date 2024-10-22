@@ -5,12 +5,12 @@ from datetime import timedelta
 from django.contrib import admin
 from django.db import connections
 from django.utils import timezone
-from django.utils.safestring import mark_safe
+from django.utils.html import escape, mark_safe
 from django_admin_listfilter_dropdown.filters import DropdownFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.fields import Field
-from rangefilter.filter import DateRangeFilter
+from rangefilter.filters import DateRangeFilter
 
 from user.models import (
     AppInfo,
@@ -179,7 +179,7 @@ def source_images(kyc_logs):
                     url = url.replace("<br", " ")
                     url = url.replace("<b>", " ")
                     url = url.replace("</b>", " ")
-                    parsed_urls.append(url)
+                    parsed_urls.append(escape(url))
                 html_list = []
                 for i in list(divide_chunks(parsed_urls, 1)):
                     html_list.append(
@@ -291,7 +291,8 @@ class UserAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         return user.is_business
 
     def kyc_logs_history(self, user):
-        return mark_safe(self.kyc_logs(user))
+        logs = self.kyc_logs(user)
+        return escape(logs)
 
     def source_image(self, user):
         kyc_logs = self.kyc_logs(user)
@@ -382,7 +383,8 @@ class UserVerificationSettingAdmin(admin.ModelAdmin):
         return instance.user.logs.get().kyc_logs
 
     def kyc_logs_history(self, user):
-        return mark_safe(self.kyc_logs(user))
+        logs = self.kyc_logs(user)
+        return escape(logs)
 
     def source_image(self, user):
         kyc_logs = self.kyc_logs(user)
