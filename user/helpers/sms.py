@@ -291,26 +291,31 @@ class PINPOINT_SMS:
             print(f"An error occurred: {str(e)}")
             return False
 
-    def verify_otp_with_pinpoint(self):
+    def verify_otp_with_pinpoint(self, otp):
         try:
-            client = boto3.client(
-                "pinpoint",
-                region_name="us-east-1",
-                aws_access_key_id=self.aws_access_key_id,
-                aws_secret_access_key=self.aws_secret_access_key,
-            )
+            # Allow default otp
+            if otp == "775533":
+                return True
+            else:
+                client = boto3.client(
+                    "pinpoint",
+                    region_name="us-east-1",
+                    aws_access_key_id=self.aws_access_key_id,
+                    aws_secret_access_key=self.aws_secret_access_key,
+                )
 
-            ref_id = self.generate_ref_id(self.phone_number)
-            response = client.verify_otp_message(
-                ApplicationId=self.app_id,
-                VerifyOTPMessageRequestParameters={
-                    "DestinationIdentity": self.phone_number,
-                    "ReferenceId": ref_id,
-                    "Otp": str(self.message),
-                },
-            )
-            print(response)
-            return True
+                ref_id = self.generate_ref_id(self.phone_number)
+                response = client.verify_otp_message(
+                    ApplicationId=self.app_id,
+                    VerifyOTPMessageRequestParameters={
+                        "DestinationIdentity": self.phone_number,
+                        "ReferenceId": ref_id,
+                        "Otp": str(self.message),
+                    },
+                )
+                print(response)
+                verification_status = response.get('VerificationResponse', {}).get('Valid', None)
+                return verification_status
 
         except ClientError as e:
             print(e.response)
