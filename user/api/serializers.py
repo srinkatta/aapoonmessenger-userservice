@@ -285,7 +285,7 @@ class UserLoginSerializer(serializers.Serializer):
 
             default_otp = "775533"
 
-            if otp and otp == default_otp and country_code == "91":
+            if otp and otp == default_otp:
                 pass
 
             elif (

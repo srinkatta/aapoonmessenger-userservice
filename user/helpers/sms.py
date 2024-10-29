@@ -320,4 +320,5 @@ class PINPOINT_SMS:
         self, destination_number, brand_name="aapoon", source="OTP_verify"
     ):
         ref_id = brand_name + source + destination_number
-        return hashlib.sha256(ref_id.encode()).hexdigest()
+        hashed_ref_id = hashlib.sha256(ref_id.encode()).hexdigest()
+        return hashed_ref_id[:48]
