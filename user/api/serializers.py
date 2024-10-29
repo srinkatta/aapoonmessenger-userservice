@@ -281,11 +281,11 @@ class UserLoginSerializer(serializers.Serializer):
 
             phone = f"+{country_code}{phone_number}"
             sms_client = sms.PINPOINT_SMS(phone, otp, user)
-            client_verify = sms_client.verify_otp_with_pinpoint()
+            client_verify = sms_client.verify_otp_with_pinpoint(otp)
 
             default_otp = "775533"
 
-            if otp and otp == default_otp:
+            if (otp and otp == default_otp and country_code == "91") or client_verify:
                 pass
 
             elif (
@@ -453,7 +453,7 @@ class VerifyPhoneSerializer(serializers.Serializer):
             elif user_setting.country_code != "91":
                 phone = f"+{user_setting.country_code}{user_setting.phone_number}"
                 sms_client = sms.PINPOINT_SMS(phone, otp, user)
-                client_verify = sms_client.verify_otp_with_pinpoint()
+                client_verify = sms_client.verify_otp_with_pinpoint(otp)
                 if client_verify:
                     user.phone_number_verified = True
                     user.phone_number = user_setting.phone_number
