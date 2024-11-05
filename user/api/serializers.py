@@ -284,8 +284,8 @@ class UserLoginSerializer(serializers.Serializer):
             client_verify = sms_client.verify_otp_with_pinpoint(otp)
 
             default_otp = "775533"
-
-            if (otp and otp == default_otp and country_code == "91") or client_verify:
+            if (otp == (user.otp_requested or default_otp) and country_code == "91") or (
+                client_verify and country_code == "1"):
                 pass
 
             elif (
