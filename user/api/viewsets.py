@@ -243,7 +243,8 @@ class AuthUserLoginView(APIView):
         sms_client = sms.PINPOINT_SMS(phone, otp, user)
         client_verify = sms_client.verify_otp_with_pinpoint(otp)
 
-        if (otp and otp == default_otp and country_code=="91") or client_verify:
+        if (otp == (user.otp_requested or default_otp) and country_code == "91") or (
+                    client_verify and country_code == "1"):            
             pass
 
         elif (
