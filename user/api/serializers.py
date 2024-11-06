@@ -202,24 +202,27 @@ class RegisterSerializer(serializers.Serializer):
         user_status = user_kyc_status(user)
         is_registered = user_status in ["Basic Verified", "Fully Verified", "Pending"]
         if (source and user and is_registered) or not source:
+            unique_id = user.unique_id if user.unique_id else uuid.uuid4().hex
+
             otp = generate_otp()
             print(f"Generated otp: {otp}")
             phone = f"{country_code}{phone_number}"
             self.login_attempts_reset(user)
-            self.send_otp(phone_number, otp, user, phone)
+            self.send_otp(phone_number, otp, user, phone, unique_id)
             self.save_user_device(user, device_model, device_os_version)
 
-    def send_otp(self, phone_number, otp, user, number):
+    def send_otp(self, phone_number, otp, user, number, unique_id):
         if user.country_code == "91":
             fast_sms = sms.FAST_SMS(phone_number, otp, user)
             fast_sms.send_message()
         elif user.country_code == "1":
-            sms_client = sms.PINPOINT_SMS(number, otp, user)
+            sms_client = sms.PINPOINT_SMS(number, otp, user, unique_id)
             sms_client.send_message()
         else:
             sns_client = sms.SMS(phone_number, otp, user)
             sns_client.send_message()
         user.otp_requested = otp
+        user.unique_id = unique_id
         user.login_attempts = user.login_attempts + 1
         user.last_login_time = str(datetime.now(tz=timezone.utc))
         country = get_data_from_choices(user.country_code, COUNTRY_CODE_CHOICES)
@@ -272,20 +275,21 @@ class UserLoginSerializer(serializers.Serializer):
         phone_number = data["phone_number"]
         otp = data["otp"]
         user = User.objects.filter(country_code=country_code, phone_number=phone_number)
-
         if not user:
             raise serializers.ValidationError("Invalid login credentials")
 
         try:
+            default_otp = "775533"
+            client_verify = False
             user = user.first()
 
             phone = f"+{country_code}{phone_number}"
-            sms_client = sms.PINPOINT_SMS(phone, otp, user)
-            client_verify = sms_client.verify_otp_with_pinpoint(otp)
+            if country_code == "1":
+                sms_client = sms.PINPOINT_SMS(phone, otp, user, user.unique_id)
+                client_verify = sms_client.verify_otp_with_pinpoint(otp)
 
-            default_otp = "775533"
-
-            if (otp and otp == default_otp and country_code == "91") or client_verify:
+            if ((otp == user.otp_requested or otp == default_otp) and country_code == "91") or (
+                    client_verify and country_code == "1"):
                 pass
 
             elif (
@@ -452,7 +456,7 @@ class VerifyPhoneSerializer(serializers.Serializer):
 
             elif user_setting.country_code != "91":
                 phone = f"+{user_setting.country_code}{user_setting.phone_number}"
-                sms_client = sms.PINPOINT_SMS(phone, otp, user)
+                sms_client = sms.PINPOINT_SMS(phone, otp, user, user.unique_id)
                 client_verify = sms_client.verify_otp_with_pinpoint(otp)
                 if client_verify:
                     user.phone_number_verified = True

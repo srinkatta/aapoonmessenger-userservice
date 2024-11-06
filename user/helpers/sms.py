@@ -251,7 +251,7 @@ class TWILIO_SMS:
 
 
 class PINPOINT_SMS:
-    def __init__(self, phone_number, message, user):
+    def __init__(self, phone_number, message, user, unique_id):
         self.app_id = settings.AWS_PINPOINT_APP_ID
         self.originating_number = settings.AWS_PINPOINT_FROM_NUMBER
         self.aws_access_key_id = settings.SNS_AWS_ACCESS_KEY
@@ -259,11 +259,10 @@ class PINPOINT_SMS:
         self.phone_number = phone_number
         self.message = message
         self.user = user
+        self.ref_id = unique_id
 
     def send_message(self):
         try:
-            ref_id = self.generate_ref_id(self.phone_number)
-
             client = boto3.client(
                 "pinpoint",
                 region_name="us-east-1",
@@ -282,7 +281,7 @@ class PINPOINT_SMS:
                     "Language": "en-US",
                     "OriginationIdentity": self.originating_number,
                     "DestinationIdentity": self.phone_number,
-                    "ReferenceId": ref_id,
+                    "ReferenceId": self.ref_id,
                 },
             )
             print(response)
@@ -304,12 +303,11 @@ class PINPOINT_SMS:
                     aws_secret_access_key=self.aws_secret_access_key,
                 )
 
-                ref_id = self.generate_ref_id(self.phone_number)
                 response = client.verify_otp_message(
                     ApplicationId=self.app_id,
                     VerifyOTPMessageRequestParameters={
                         "DestinationIdentity": self.phone_number,
-                        "ReferenceId": ref_id,
+                        "ReferenceId": str(self.ref_id),
                         "Otp": str(self.message),
                     },
                 )
