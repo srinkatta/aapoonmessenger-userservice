@@ -434,54 +434,51 @@ class VerifyPhoneSerializer(serializers.Serializer):
 
     def phone_validate(self, request):
         user = request.user
-        otp = user.otp_requested
-        user_setting = request.user.settings.filter().first()
-        if user_setting.wrong_attempts <= 2:
-            if request.data["otp"] == otp:
-                if not user.phone_number_verified:
-                    user.phone_number_verified = True
-                    user.save()
-                if user_setting.phone_number:
-                    user.phone_number = user_setting.phone_number
-                    user.country_code = user_setting.country_code
-                    user.save()
-            elif request.data["otp"] == "440098":
-                if not user.phone_number_verified:
-                    user.phone_number_verified = True
-                    user.save()
-                if user_setting.phone_number:
-                    user.phone_number = user_setting.phone_number
-                    user.country_code = user_setting.country_code
-                    user.save()
+        otp = getattr(user, "otp_requested", None)
+        user_setting = user.settings.filter().first()
 
-            elif user_setting.country_code != "91":
-                phone = f"+{user_setting.country_code}{user_setting.phone_number}"
+        if not user_setting:
+            raise ValidationError({"detail": "User settings not found."})
+
+        if user_setting.wrong_attempts >= 3:
+            raise ValidationError(
+                {
+                    "detail": "You have reached the maximum attempts to log in. "
+                              "Please try again after 10 minutes."
+                }
+            )
+        input_otp = request.data.get("otp")
+        if not input_otp:
+            raise ValidationError({"detail": "OTP is required."})
+
+        if input_otp == otp or input_otp == "440098":
+            if not user.phone_number_verified:
+                user.phone_number_verified = True
+                user.save()
+
+            if user_setting.phone_number:
+                user.phone_number = user_setting.phone_number
+                user.country_code = user_setting.country_code
+                user.save()
+            return {"status": "success", "message": "Phone number verified successfully."}
+        if user_setting.country_code != "91":
+            phone = f"+{user_setting.country_code}{user_setting.phone_number}"
+            try:
                 sms_client = sms.PINPOINT_SMS(phone, otp, user, user.unique_id)
-                client_verify = sms_client.verify_otp_with_pinpoint(otp)
+                client_verify = sms_client.verify_otp_with_pinpoint(input_otp)
+
                 if client_verify:
                     user.phone_number_verified = True
                     user.phone_number = user_setting.phone_number
                     user.country_code = user_setting.country_code
                     user.save()
-                else:
-                    user_setting.wrong_attempts = user_setting.wrong_attempts + 1
-                    user_setting.save()
-                    raise serializers.ValidationError(
-                        {"detail": "Your OTP is Incorrect. Please re-enter."}
-                    )
-
-            else:
-                user_setting.wrong_attempts = user_setting.wrong_attempts + 1
-                user_setting.save()
-                raise serializers.ValidationError(
-                    {"detail": "Your OTP is Incorrect. Please re-enter."}
-                )
-        else:
-            raise serializers.ValidationError(
-                {
-                    "detail": "You have reached the maximum attempts to log in. Please try again after 10 minutes"
-                }
-            )
+                    return {"status": "success", "message": "Phone number verified successfully."}
+            except Exception as e:
+                print(f"SMS Verification Error: {e}")
+                raise ValidationError({"detail": "Failed to verify OTP. Please try again."})
+        user_setting.wrong_attempts += 1
+        user_setting.save()
+        raise ValidationError({"detail": "Your OTP is incorrect. Please re-enter."})
 
 
 class UserSerializer(FlexFieldsModelSerializer):
