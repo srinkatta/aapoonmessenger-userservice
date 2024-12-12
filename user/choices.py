@@ -653,3 +653,9 @@ COUNTRIES_CHOICES = (
     (u'ZMB', _(u'Zambia')),
     (u'ZWE', _(u'Zimbabwe')),
 )
+
+ROLE_CHOICES = (
+    ("ADMIN", "Admin"),
+    ("MODERATOR", "Moderator"),
+    ("MEMBER", "Member"),
+)

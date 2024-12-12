@@ -21,6 +21,7 @@ from user.choices import (
     INTEREST_CHOICES,
     SECTORS_TYPE_CHOICES,
     SPORTS_CHOICES,
+    ROLE_CHOICES,
 )
 from user.helpers import hotp, sms
 from user.helpers.otp import generate_otp
@@ -541,6 +542,7 @@ class UserProfileInputSerializer(FlexFieldsModelSerializer):
     ACTION_CHOICES = (("account", "account"), ("profile", "profile"))
 
     action = serializers.ChoiceField(required=True, choices=ACTION_CHOICES)
+    role = serializers.ChoiceField(choices=ROLE_CHOICES, required=False)
     name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     email = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     country_iso_code = serializers.CharField(
@@ -823,12 +825,17 @@ class UserDetailsSerializer(serializers.Serializer):
     profile_pic = serializers.SerializerMethodField()
     user_type = serializers.SerializerMethodField()
     fcm_token = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
 
     def get_profile_pic(self, obj):
         return obj.secondary_picture
 
     def get_fcm_token(self, obj):
         return obj.fcm_token
+
+    def get_role(self, obj):
+        profile = obj.profile.first()
+        return profile.role if profile else None
 
     def get_user_type(self, obj):
         return user_kyc_status(obj)
