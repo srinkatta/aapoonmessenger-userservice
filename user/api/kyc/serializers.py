@@ -143,7 +143,7 @@ class BaseKYCSerializer(serializers.Serializer):
         self.aws_access_key = settings.S3_AWS_ACCESS_KEY_ID
         self.aws_secret_key = settings.S3_AWS_SECRET_ACCESS_KEY
         self.threshold = 0
-        self.region = "us-east-1"
+        self.region = settings.AWS_S3_BUCKET_REGION_NAME
         self.subscription_key = "a3d28bc8888240c78570d1ca378da9bf"
         self.computer_vision_subscription_key = "aefb44866678438992b4e205965f4c4d"
         self.face_api_url = (

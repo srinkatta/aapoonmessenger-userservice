@@ -256,6 +256,7 @@ class PINPOINT_SMS:
         self.originating_number = settings.AWS_PINPOINT_FROM_NUMBER
         self.aws_access_key_id = settings.SNS_AWS_ACCESS_KEY
         self.aws_secret_access_key = settings.SNS_AWS_SECRET_KEY
+        self.region = settings.AWS_S3_BUCKET_REGION_NAME
         self.phone_number = phone_number
         self.message = message
         self.user = user
@@ -266,7 +267,7 @@ class PINPOINT_SMS:
 
             client = boto3.client(
                 "pinpoint",
-                region_name="us-east-1",
+                region_name=self.region,
                 aws_access_key_id=self.aws_access_key_id,
                 aws_secret_access_key=self.aws_secret_access_key,
             )
@@ -295,7 +296,7 @@ class PINPOINT_SMS:
         try:
             client = boto3.client(
                 "pinpoint",
-                region_name="us-east-1",
+                region_name=self.region,
                 aws_access_key_id=self.aws_access_key_id,
                 aws_secret_access_key=self.aws_secret_access_key,
             )
