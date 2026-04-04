@@ -321,6 +321,10 @@ class UserLoginSerializer(serializers.Serializer):
             )
             user.otp_requested = None
             user.phone_number_verified = True
+            user_kyc_settings = user.settings.filter().first()
+            if user.phone_number_verified and not user_kyc_settings.account_details:
+                user_kyc_settings.account_details = True
+                user_kyc_settings.save()
             if user.login_attempts <= 3:
                 "if user login attempts between 1 - 3, reset it back to 0"
                 user.login_attempts = 0
