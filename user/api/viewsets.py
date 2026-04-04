@@ -1496,20 +1496,6 @@ class UserDeleteRequestList(ListAPIView):
     serializer_class = DeletedUserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def list(self, request, *args, **kwargs):
-        """
-        Handle GET requests to retrieve a list of deleted user objects.
-
-        Args:
-            request (Request): The HTTP request object.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            Response: A response containing the serialized data of deleted user objects.
-        """
-        return super().list(request, *args, **kwargs)
-
 
 class UserDeleteRevokeView(APIView):
     """
